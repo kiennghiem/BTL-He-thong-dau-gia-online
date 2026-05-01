@@ -1,0 +1,3 @@
+Thu muc nay de chua file class
+khi compile file .java , 
+javac -cp "Lib" -d Lib <Dir>/<file.java>
