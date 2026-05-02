@@ -1,6 +1,7 @@
 package Base;
 import java.time.LocalDateTime;
-
+import SharedException.InvalidBidException;
+import SharedException.InvalidStatusException;
 
 public abstract class Item extends Entity{
     private static final long serialVersionUID = 1L;
@@ -10,7 +11,7 @@ public abstract class Item extends Entity{
     private double startingPrice;
     private LocalDateTime startingTime;
     private LocalDateTime closingTime;
-    private String status;
+    private ItemStatus status;
     private User owner;
     private User currentBidder;
     private User buyer;
@@ -23,7 +24,7 @@ public abstract class Item extends Entity{
         this.currentPrice = startingPrice;
         this.startingTime = startingTime;
         this.closingTime = closingTime;
-        this.status = "PENDING";
+        this.status = ItemStatus.PENDING;
         this.owner = owner;
     }
 
@@ -39,8 +40,8 @@ public abstract class Item extends Entity{
     public void setStartingTime(LocalDateTime startingTime) { this.startingTime = startingTime; }
     public void setClosingTime(LocalDateTime closingTime) { this.closingTime = closingTime; }
     public LocalDateTime getClosingTime() { return closingTime; }
-    public String getStatus() { return status; }
-    public void setStatus(String status) { this.status = status; }
+    public ItemStatus getStatus() { return status; }
+    public void setStatus(ItemStatus status) { this.status = status; }
     public String getOwner() { return owner.getUser_Name(); }
     public void setOwner(User owner) { this.owner = owner; }
     public String getCurrentBidder() { return currentBidder.getUser_Name(); }
@@ -52,14 +53,42 @@ public abstract class Item extends Entity{
         LocalDateTime now = LocalDateTime.now();
         if ( now.isBefore(startingTime)) return false;
         else if (closingTime == null || now.isAfter(closingTime)) return false;
-        else if (!"RUNNING".equals(status))return false;
-        return true;
+        else return "RUNNING".equals(status);
     }
 
-    public void UpdateBidder(double price, User Bidder){
-        // Them exception sau nua
+    public void UpdateBidder(double price, User Bidder) throws InvalidBidException
+    {
+        if(price< currentPrice) {throw new InvalidBidException("Price must be higher than current price.");}
+        if(!this.IsAutioning()){throw new InvalidBidException("Aution is currently not active.");}
         currentBidder = Bidder;
         currentPrice = price;
+    }
+
+    public void UpdateStatus(ItemStatus newStatus) throws InvalidStatusException
+    {
+        if(this.status == newStatus){return;}
+        switch(newStatus){
+            case OPEN -> {
+                if(this.status != ItemStatus.PENDING){throw new InvalidStatusException("Cannot set this status to OPEN");}
+                this.status = newStatus;
+            }
+            case RUNNING -> {
+                if(this.status != ItemStatus.OPEN){throw new InvalidStatusException("Cannot set this status to RUNNING");}
+                this.status = newStatus;
+            }
+            case FINISHED -> {
+                if(this.status != ItemStatus.RUNNING){throw new InvalidStatusException("Cannot set this status to FINISHED");}
+                this.status = newStatus;
+            }
+            case PAID -> {
+                if(this.status != ItemStatus.FINISHED){throw new InvalidStatusException("Cannot set this status to PAID");}
+                this.status = newStatus;
+            }
+            case CANCELED -> {
+                this.status = newStatus;
+            }
+        }
+
     }
 
     abstract public String getInfo();
