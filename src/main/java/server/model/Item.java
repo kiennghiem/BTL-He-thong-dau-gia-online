@@ -50,19 +50,21 @@ public abstract class Item extends Entity{
     public String getBuyer() { return buyer.getUser_Name(); }
     public void setBuyer(User buyer) { this.buyer = buyer; }
 
-    public boolean IsAutioning(){
+    public boolean IsAuctioning(){
         LocalDateTime now = LocalDateTime.now();
-        if ( now.isBefore(startingTime)) return false;
+        if (now.isBefore(startingTime)) return false;
         else if (closingTime == null || now.isAfter(closingTime)) return false;
         else return "RUNNING".equals(status);
     }
 
     public void UpdateBidder(double price, User Bidder) throws InvalidBidException
     {
-        if(price< currentPrice) {throw new InvalidBidException("Price must be higher than current price.");}
-        if(!this.IsAutioning()){throw new InvalidBidException("Aution is currently not active.");}
-        currentBidder = Bidder;
-        currentPrice = price;
+        if (!this.IsAuctioning()){throw new InvalidBidException("Auction is currently not active.");}
+        else if (price < currentPrice) {throw new InvalidBidException("Price must be higher than current price.");}
+        else {
+            currentBidder = Bidder;
+            currentPrice = price;
+        }
     }
 
     public void UpdateStatus(ItemStatus newStatus) throws InvalidStatusException
