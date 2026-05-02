@@ -1,4 +1,4 @@
-package Base;
+package CommonClass;
 
 public enum ItemStatus {
     PENDING, OPEN, RUNNING, FINISHED, CANCELED, PAID

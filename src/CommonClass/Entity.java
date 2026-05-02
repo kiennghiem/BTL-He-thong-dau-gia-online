@@ -1,4 +1,5 @@
-package Base;
+package CommonClass;
+
 import java.io.Serializable;
 import java.util.UUID;  
 

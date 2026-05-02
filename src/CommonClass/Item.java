@@ -1,4 +1,5 @@
-package Base;
+package CommonClass;
+
 import java.time.LocalDateTime;
 import SharedException.InvalidBidException;
 import SharedException.InvalidStatusException;

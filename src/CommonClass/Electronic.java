@@ -1,4 +1,4 @@
-package Base;
+package CommonClass;
 
 import java.time.LocalDateTime;
 

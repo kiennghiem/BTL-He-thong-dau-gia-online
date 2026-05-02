@@ -1,4 +1,4 @@
-package Base;
+package CommonClass;
 
 public class Seller extends User{
     private static final long serialVersionUID = 1L;

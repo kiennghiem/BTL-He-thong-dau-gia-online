@@ -1,4 +1,4 @@
-package Base;
+package CommonClass;
 
 public abstract class User extends Entity {
     private static final long serialVersionUID = 1L;
