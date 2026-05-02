@@ -1,4 +1,4 @@
-package CommonClass;
+package main.java.server.model;
 
 public class Admin extends User {
     private static final long serialVersionUID = 1L;

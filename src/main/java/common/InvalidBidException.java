@@ -1,4 +1,4 @@
-package SharedException;
+package main.java.common;
 
 public class InvalidBidException extends RuntimeException {
     private static final long serialVersionUID = 1L;

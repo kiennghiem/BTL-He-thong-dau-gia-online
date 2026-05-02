@@ -1,4 +1,4 @@
-package CommonClass;
+package main.java.server.model;
 
 import java.time.LocalDateTime;
 

@@ -1,8 +1,8 @@
-package CommonClass;
+package main.java.server.model;
 
 import java.time.LocalDateTime;
-import SharedException.InvalidBidException;
-import SharedException.InvalidStatusException;
+import main.java.common.InvalidBidException;
+import main.java.common.InvalidStatusException;
 
 public abstract class Item extends Entity{
     private static final long serialVersionUID = 1L;
