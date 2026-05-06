@@ -1,11 +1,15 @@
 package main.java.common.Class;
 
-import main.java.common.commonException.InvalidBidException;
-import main.java.common.commonException.InvalidStatusException;
-
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.LinkedList;
+import java.util.concurrent.Executor;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
+
+import main.java.common.commonException.*;
 
 public class Auction
 {
@@ -17,16 +21,21 @@ public class Auction
     private LocalDateTime closingTime;
     private BidTransaction highestBid;
     private float currentPrice;
-    private List<BidTransaction> BidHistory = new LinkedList<>();
-    // Lock
-    // Add lock here
+    private List<BidTransaction> bidHistory;
+    private List<AuctionObserver> observers;
+    private ScheduledExecutorService scheduler;
 
     // Constructors
-    public Auction(Item item, Seller seller, LocalDateTime staringTime, LocalDateTime closingTime) {
+    public Auction(Item item, Seller seller, LocalDateTime startingTime, LocalDateTime closingTime) {
         this.item = item;
         this.seller = seller;
         status = AuctionStatus.PENDING;
+        this.startingTime = startingTime;
         this.closingTime = closingTime;
+        this.currentPrice = item.getStartingPrice();
+        this.bidHistory = new LinkedList<>();
+        this.observers = new ArrayList<>();
+        this.scheduler = Executors.newSingleThreadScheduledExecutor();
     }
 
     // Getters and Setters
@@ -42,6 +51,9 @@ public class Auction
     public void setSeller(Seller seller) {
         this.seller = seller;
     }
+    public AuctionStatus getStatus() {
+        return status;
+    }
     public LocalDateTime getStartingTime() {
         return startingTime;
     }
@@ -54,57 +66,67 @@ public class Auction
     public LocalDateTime getClosingTime() {
         return closingTime;
     }
-    public AuctionStatus getStatus() {
-        return status;
+    public BidTransaction getHighestBid() {
+        if (bidHistory.isEmpty()) {
+            return null;
+        }
+        else {
+            return highestBid;
+        }
+    }
+    public float getCurrentPrice() {
+        return currentPrice;
     }
 
+    // Method to check if Auction is running (WILL CHANGE cuz will make a seperate timer class)
     public boolean IsAuctioning(){
         LocalDateTime now = LocalDateTime.now();
-        if (now.isBefore(startingTime)) return false;
-        else if (closingTime == null || now.isAfter(closingTime)) return false;
+        if (now.isBefore(startingTime)) {
+            return false;
+        }
+        else if (closingTime == null || now.isAfter(closingTime)) {
+            return false;
+        }
         else return "RUNNING".equals(status);
     }
 
-    // Method for getting highestBid
-
-    public BidTransaction getHighestBid() {
-        highestBid = BidHistory.get(0);
-        for (BidTransaction i : BidHistory) {
-            if (i.getBidPrice() > highestBid.getBidPrice()) {
-                highestBid = i;
-            }
-        }
-        return highestBid;
-    }
-
-    // Add a bid
+    // Method to add a bid ONLY if there is no bid, or the bid is higher than highestBid
     public synchronized void AddBid(BidTransaction bid) throws InvalidBidException
     {
         if (!this.IsAuctioning()) {
             throw new InvalidBidException("Auction is currently not active.");
         }
-        else if (BidHistory.isEmpty()) {
-            BidHistory.add(bid);
-            highestBid = this.getHighestBid();
-            currentPrice = highestBid.getBidPrice();
+        if (bid.getBidPrice() <= currentPrice) {
+            throw new InvalidBidException("Price must be higher than current price.");
         }
-        else {
-            highestBid = this.getHighestBid();
-            currentPrice = highestBid.getBidPrice();
-            if (bid.getBidPrice() < currentPrice) {
-                throw new InvalidBidException("Price must be higher than current price.");
-            }
-            else {
-                BidHistory.add(bid);
-                highestBid = this.getHighestBid();
-                currentPrice = highestBid.getBidPrice();
-            }
+        bidHistory.add(bid);
+        highestBid = bid;
+        currentPrice = highestBid.getBidPrice();
+
+        notifyObservers();
+    }
+
+    // Control observers (every class implementing AuctionObserver can see the latest highestBid)
+    public void addObserver(AuctionObserver observer) {
+        observers.add(observer);
+    }
+
+    public void removeObserver(AuctionObserver observer) {
+        observers.remove(observer);
+    }
+
+    private void notifyObservers() {
+        for (AuctionObserver observer : observers) {
+            observer.update(highestBid);
         }
     }
 
+    // MIGHT change this method
     public void UpdateStatus(AuctionStatus newStatus) throws InvalidStatusException
     {
-        if(this.status == newStatus){return;}
+        if (this.status == newStatus) {
+            return;
+        }
         switch(newStatus){
             case OPEN -> {
                 if(this.status != AuctionStatus.PENDING){throw new InvalidStatusException("Cannot set this status to OPEN");}
@@ -127,6 +149,7 @@ public class Auction
             }
         }
 
+        // MORE METHODS
     }
 
 }
