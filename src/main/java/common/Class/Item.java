@@ -8,9 +8,9 @@ public abstract class Item extends Entity {
     private static final long serialVersionUID = 1L;
     private String itemName;
     private String description;
-    private double startingPrice;
+    private float startingPrice;
 
-    public Item(String itemName, String description, double startingPrice) {
+    public Item(String itemName, String description, float startingPrice) {
         super();
         this.itemName = itemName;
         this.description = description;
@@ -30,10 +30,10 @@ public abstract class Item extends Entity {
     public void setDescription(String description) {
         this.description = description;
     }
-    public double getStartingPrice() {
+    public float getStartingPrice() {
         return startingPrice;
     }
-    public void setStartingPrice(double startingPrice) {
+    public void setStartingPrice(float startingPrice) {
         this.startingPrice = startingPrice;
     }
 
