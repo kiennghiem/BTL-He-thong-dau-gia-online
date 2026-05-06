@@ -1,6 +1,6 @@
-package main.java.server.model;
+package main.java.common.Class;
 
-public class Seller extends User{
+public class Seller extends User {
     private static final long serialVersionUID = 1L;
     
     public Seller(String userName, String password) {

@@ -1,8 +1,8 @@
-package main.java.server.model;
+package main.java.common.Class;
 
 import java.time.LocalDateTime;
 
-public class Art extends Item{
+public class Art extends Item {
     private static final long serialVersionUID = 1L;
     private String artist;
 

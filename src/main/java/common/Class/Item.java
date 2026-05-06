@@ -1,10 +1,10 @@
-package main.java.server.model;
+package main.java.common.Class;
 
 import java.time.LocalDateTime;
-import main.java.common.InvalidBidException;
-import main.java.common.InvalidStatusException;
 
-public abstract class Item extends Entity{
+import main.java.common.commonException.*;
+
+public abstract class Item extends Entity {
     private static final long serialVersionUID = 1L;
     private String itemName;
     private String description;

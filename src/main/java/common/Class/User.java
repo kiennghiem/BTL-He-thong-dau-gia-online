@@ -1,4 +1,4 @@
-package main.java.server.model;
+package main.java.common.Class;
 
 public abstract class User extends Entity {
     private static final long serialVersionUID = 1L;
