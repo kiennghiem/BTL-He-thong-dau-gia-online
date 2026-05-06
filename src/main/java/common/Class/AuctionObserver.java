@@ -1,6 +1,6 @@
 package main.java.common.Class;
 
 public interface AuctionObserver {
-    void update(BidTransaction highestBid);
-
+    void onPriceUpdated(double newPrice, String lastBidder);
+    void onStatusChanged(ItemStatus newStatus);
 }
