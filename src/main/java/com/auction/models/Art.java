@@ -6,8 +6,8 @@ public class Art extends Item {
     private static final long serialVersionUID = 1L;
     private String artist;
 
-    public Art(String itemName, String description, double startingPrice, LocalDateTime startingTime, LocalDateTime closingTime, User owner, String artist){
-        super(itemName,description,startingPrice,startingTime,closingTime,owner);
+    public Art(String itemName, String description, float startingPrice, String artist){
+        super(itemName,description,startingPrice);
         this.artist = artist;
     }
 
@@ -18,7 +18,6 @@ public class Art extends Item {
     public String getInfo(){
         return "Name: " + this.getItemName()
              +"\nDescription: "+ this.getDescription()
-             +"\nOwner: " + this.getOwner()
              +"\nArtist: " + this.getArtist();
     }
 }
