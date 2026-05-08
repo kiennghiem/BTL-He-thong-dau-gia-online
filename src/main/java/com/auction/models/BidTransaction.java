@@ -1,7 +1,7 @@
 package main.java.com.auction.models;
 
-public class BidTransaction
-{
+public class BidTransaction extends Entity {
+
     private static final long serialVersionUID = 1L;
     private Bidder bidder;
     private int bidPrice;
