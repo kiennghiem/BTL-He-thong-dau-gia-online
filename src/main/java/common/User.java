@@ -1,4 +1,4 @@
-package main.java.com.auction.models;
+package main.java.common;
 
 public abstract class User extends Entity {
     private static final long serialVersionUID = 1L;
@@ -13,8 +13,8 @@ public abstract class User extends Entity {
         this.role = " ";
     }
 
-    public String getUsername() { return userName; }
-    public void setUsername ( String user_Name) {  userName = user_Name;}
+    public String getUser_Name() { return userName; }
+    public void setUser_Name ( String user_Name) {  userName = user_Name;}
     public String getPassword() { return password;}
     public void setPassword( String password) {  this.password = password;}
     public String getRole() { return role;}
