@@ -1,60 +1,26 @@
 package main.java.com.auction.models;
-import main.java.common.NetworkMessage;
 
-import java.time.LocalDateTime;
-import java.util.UUID;
-/**
- * Represents a validated and finalized bid in the system.
- * Essential for "Bid History Visualization" and "Realtime Price Curve".
- */
-public class BidTransaction implements NetworkMessage {
+public class BidTransaction extends Entity {
+
     private static final long serialVersionUID = 1L;
+    private Bidder bidder;
+    private int bidPrice;
 
-    private final String id;
-    private final String itemId;
-    private final String bidderId;
-    private final double bidAmount;
-    private final LocalDateTime timestamp;
-
-    /**
-     * Constructor used by the Server after a BidRequest is validated.
-     */
-    public BidTransaction(String itemId, String bidderId, double bidAmount) {
-        this.id = UUID.randomUUID().toString();
-        this.itemId = itemId;
-        this.bidderId = bidderId;
-        this.bidAmount = bidAmount;
-        this.timestamp = LocalDateTime.now();
+    // Constructors
+    public BidTransaction(Bidder bidder, int bidPrice) {
+        this.bidder = bidder;
+        this.bidPrice = bidPrice;
     }
 
-    /**
-     * Overloaded constructor for the DAO when loading from the Database.
-     */
-    public BidTransaction(String id, String itemId, String bidderId, double bidAmount, LocalDateTime timestamp) {
-        this.id = id;
-        this.itemId = itemId;
-        this.bidderId = bidderId;
-        this.bidAmount = bidAmount;
-        this.timestamp = timestamp;
+    // Getters
+    public Bidder getBidder() {
+        return this.bidder;
     }
 
-    // --- Getters for DAO and JavaFX Charts ---
-
-    public String getId() {
-        return id;
+    public int getBidPrice() {
+        return bidPrice;
     }
-
-    public String getItemId() {
-        return itemId;
-    }
-
-    public String getBidderId() {
-        return bidderId;
-    }
-
-    public double getBidAmount() {
-        return bidAmount;
-    }
+}
 
     public LocalDateTime getTimestamp() {
         return timestamp;
