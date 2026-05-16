@@ -1,8 +1,7 @@
-package main.java.models;
-
-import main.java.common.commonException.*;
+package main.java.com.auction.models;
 
 public abstract class Item extends Entity {
+
     private static final long serialVersionUID = 1L;
     private String itemName;
     private String description;
@@ -13,7 +12,6 @@ public abstract class Item extends Entity {
         this.itemName = itemName;
         this.description = description;
         this.startingPrice = startingPrice;
-
     }
 
     public String getItemName() {
@@ -38,4 +36,3 @@ public abstract class Item extends Entity {
 
     abstract public String getInfo();
 }
-

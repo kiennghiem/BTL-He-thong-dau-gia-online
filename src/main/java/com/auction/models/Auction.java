@@ -1,19 +1,17 @@
-package main.java.models;
+package main.java.com.auction.models;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.LinkedList;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.Executors;
 
-import main.java.server.observer.AuctionObserver;
-import main.java.server.observer.AuctionStatus;
-import main.java.exceptions.InvalidBidException;
-import main.java.exceptions.InvalidStatusException;
+import main.java.com.auction.exceptions.*;
+import main.java.com.auction.server.observer.*;
 
-public class Auction
-{
+public class Auction extends Entity {
+
     private static final long serialVersionUID = 1L;
     private Item item;
     private Seller seller;
@@ -22,7 +20,9 @@ public class Auction
     private LocalDateTime closingTime;
     private BidTransaction highestBid;
     private float currentPrice;
+    // History of all proper bids
     private List<BidTransaction> bidHistory;
+    // List of observers
     private List<AuctionObserver> observers;
     private ScheduledExecutorService scheduler;
 
@@ -30,12 +30,13 @@ public class Auction
     public Auction(Item item, Seller seller, LocalDateTime startingTime, LocalDateTime closingTime) {
         this.item = item;
         this.seller = seller;
-        status = AuctionStatus.PENDING;
+        this.status = AuctionStatus.PENDING;
         this.startingTime = startingTime;
         this.closingTime = closingTime;
+        // At first, the current price is the item's starting price
         this.currentPrice = item.getStartingPrice();
-        this.bidHistory = new LinkedList<>();
-        this.observers = new ArrayList<>();
+        this.bidHistory = new ArrayList<>();
+        this.observers = new CopyOnWriteArrayList<>();
         this.scheduler = Executors.newSingleThreadScheduledExecutor();
     }
 
@@ -109,7 +110,9 @@ public class Auction
 
     // Control observers (every class implementing AuctionObserver can see the latest highestBid)
     public void addObserver(AuctionObserver observer) {
-        observers.add(observer);
+        if (!observers.contains(observer)) {
+            observers.add(observer);
+        }
     }
 
     public void removeObserver(AuctionObserver observer) {

@@ -1,4 +1,4 @@
-package main.java.exceptions;
+package main.java.com.auction.exceptions;
 
 public class InvalidBidException extends RuntimeException {
     private static final long serialVersionUID = 1L;
