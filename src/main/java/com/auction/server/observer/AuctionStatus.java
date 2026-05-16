@@ -1,4 +1,4 @@
-package main.java.com.auction.server.observer;
+package com.auction.server.observer;
 
 public enum AuctionStatus {
     PENDING,

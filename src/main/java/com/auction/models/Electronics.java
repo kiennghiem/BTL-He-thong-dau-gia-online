@@ -1,4 +1,4 @@
-package main.java.com.auction.models;
+package com.auction.models;
 
 public class Electronics extends Item {
     private static final long serialVersionUID = 1L;

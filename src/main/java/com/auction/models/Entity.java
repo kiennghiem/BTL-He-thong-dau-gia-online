@@ -1,4 +1,4 @@
-package main.java.com.auction.models;
+package com.auction.models;
 
 import java.io.Serializable;
 import java.util.UUID;

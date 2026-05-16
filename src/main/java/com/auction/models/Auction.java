@@ -1,4 +1,4 @@
-package main.java.com.auction.models;
+package com.auction.models;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -7,8 +7,8 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.Executors;
 
-import main.java.com.auction.exceptions.*;
-import main.java.com.auction.server.observer.*;
+import com.auction.exceptions.*;
+import com.auction.server.observer.*;
 
 public class Auction extends Entity {
 

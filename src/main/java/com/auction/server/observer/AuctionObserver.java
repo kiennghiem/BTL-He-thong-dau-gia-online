@@ -1,6 +1,6 @@
-package main.java.com.auction.server.observer;
+package com.auction.server.observer;
 
-import main.java.com.auction.models.BidTransaction;
+import com.auction.models.BidTransaction;
 
 public interface AuctionObserver {
     void update(BidTransaction highestBid);
