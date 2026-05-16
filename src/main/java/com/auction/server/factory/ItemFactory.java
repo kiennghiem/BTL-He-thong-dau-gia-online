@@ -1,6 +1,6 @@
-package main.java.com.auction.server.factory;
+package com.auction.server.factory;
 
-import main.java.com.auction.models.*;
+import com.auction.models.*;
 
 public class ItemFactory {
     public static Item createItem(ItemType type, String name, String description, float startingPrice, String SpeAttr){

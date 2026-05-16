@@ -1,4 +1,4 @@
-package main.java.com.auction.models;
+package com.auction.models;
 
 public abstract class User extends Entity {
     private static final long serialVersionUID = 1L;
