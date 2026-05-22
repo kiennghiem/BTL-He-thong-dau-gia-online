@@ -1,47 +1,57 @@
 package com.auction.client.controller;
 
+import com.auction.server.database.DBLoginSignupUtils;
 import javafx.event.ActionEvent;
+import javafx.event.EventHandler;
 import javafx.fxml.FXML;
-import javafx.fxml.FXMLLoader;
-import javafx.scene.Node;
-import javafx.scene.Parent;
-import javafx.scene.Scene;
-import javafx.scene.control.PasswordField;
+import javafx.fxml.Initializable;
+import javafx.scene.control.Alert;
+import javafx.scene.control.Button;
 import javafx.scene.control.TextField;
-import javafx.stage.Stage;
 
-import java.io.IOException;
+import java.net.URL;
+import java.util.ResourceBundle;
 
-public class LoginController {
-
-    @FXML
-    TextField usernameLogin;
+public class LoginController implements Initializable {
 
     @FXML
-    PasswordField passwordLogin;
+    TextField tfUsername;
 
-    private Parent root;
-    private Scene scene;
-    private Stage stage;
+    @FXML
+    TextField tfPassword;
 
-    // Handle the texts typed in Username and Password when "Log in" button is clicked
-    // This is UNFINISHED until a database with Users is made
-    public void handleLogin(ActionEvent event) {
-        String username = usernameLogin.getText();
-        String password = passwordLogin.getText();
+    @FXML
+    Button buttonLogin;
 
+    @FXML
+    Button buttonSignUp;
 
+    @Override
+    public void initialize(URL location, ResourceBundle resources) {
+        // Set up the behaviors when the Login button is clicked.
+        buttonLogin.setOnAction(new EventHandler<ActionEvent>() {
+            @Override
+            public void handle(ActionEvent event) {
+                String username = tfUsername.getText().trim();
+                String password = tfPassword.getText().trim();
+
+                // Check if all information has been filled.
+                if (!username.isEmpty() && !password.isEmpty()) {
+                    DBLoginSignupUtils.loginUser(event, username, password);
+                } else {
+                    Alert alert = new Alert(Alert.AlertType.ERROR);
+                    alert.setContentText("Please fill in all information to log in!");
+                    alert.show();
+                }
+            }
+        });
+
+        // Click on "Sign up" button will take user to the Sign up screen.
+        buttonSignUp.setOnAction(new EventHandler<ActionEvent>() {
+            @Override
+            public void handle(ActionEvent event) {
+                DBLoginSignupUtils.changeScene(event, "Signup.fxml");
+            }
+        });
     }
-
-    public void switchToSignup(ActionEvent event) throws IOException {
-        FXMLLoader fxmlLoader = new FXMLLoader(getClass().getResource("/com/auction/view/Signup.fxml"));
-        root = fxmlLoader.load();
-
-        scene = new Scene(root);
-        stage = (Stage)((Node)event.getSource()).getScene().getWindow();
-        stage.setScene(scene);
-        stage.show();
-    }
-
-
 }

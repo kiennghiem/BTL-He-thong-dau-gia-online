@@ -1,34 +1,61 @@
 package com.auction.client.controller;
 
+import com.auction.server.database.DBLoginSignupUtils;
 import javafx.event.ActionEvent;
-import javafx.fxml.FXMLLoader;
-import javafx.scene.Node;
-import javafx.scene.Parent;
-import javafx.scene.Scene;
-import javafx.stage.Stage;
+import javafx.event.EventHandler;
+import javafx.fxml.FXML;
+import javafx.fxml.Initializable;
+import javafx.scene.control.*;
 
-import java.io.IOException;
+import java.net.URL;
+import java.util.ResourceBundle;
 
-public class SignupController {
+public class SignupController implements Initializable {
 
-    private Parent root;
-    private Scene scene;
-    private Stage stage;
+    @FXML
+    TextField tfUsername;
+    @FXML
+    TextField tfPassword;
+    @FXML
+    Button buttonSignUp;
+    @FXML
+    RadioButton rbBidder;
+    @FXML
+    RadioButton rbSeller;
+    @FXML
+    RadioButton rbAdmin;
+    @FXML
+    Button buttonLogin;
 
-    // Handle the texts typed in Username, Password and the Role chosen when "Sign up" button is clicked
-    // This is UNFINISHED until a database with Users is made
-    public void handleSignup(ActionEvent event) {
+    @Override
+    public void initialize(URL location, ResourceBundle resources) {
 
+        buttonSignUp.setOnAction(new EventHandler<ActionEvent>() {
+            @Override
+            public void handle(ActionEvent event) {
+                String username = tfUsername.getText().trim();
+                String password = tfPassword.getText().trim();
+                ToggleGroup toggle = rbBidder.getToggleGroup();
+                RadioButton selectedRole = (RadioButton)toggle.getSelectedToggle();
 
-    }
+                // Check if all information has been filled.
+                if (!username.isEmpty() && !password.isEmpty() && selectedRole != null) {
+                    String role = selectedRole.getText();
+                    DBLoginSignupUtils.signupUser(event, username, password, role);
+                } else {
+                    Alert alert = new Alert(Alert.AlertType.ERROR);
+                    alert.setContentText("Please fill in all information to sign up!");
+                    alert.show();
+                }
+            }
+        });
 
-    public void switchToLogin(ActionEvent event) throws IOException {
-        FXMLLoader fxmlLoader = new FXMLLoader(getClass().getResource("/com/auction/view/Login.fxml"));
-        root = fxmlLoader.load();
-
-        scene = new Scene(root);
-        stage = (Stage)((Node)event.getSource()).getScene().getWindow();
-        stage.setScene(scene);
-        stage.show();
+        // Click on "Log in" button will take user to the Login screen.
+        buttonLogin.setOnAction(new EventHandler<ActionEvent>() {
+            @Override
+            public void handle(ActionEvent event) {
+                DBLoginSignupUtils.changeScene(event, "Login.fxml");
+            }
+        });
     }
 }
