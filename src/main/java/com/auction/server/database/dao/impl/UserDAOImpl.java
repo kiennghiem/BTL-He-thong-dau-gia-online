@@ -1,11 +1,8 @@
 package com.auction.server.database.dao.impl;
 
 import com.auction.models.User;
-import com.auction.models.Bidder;
-import com.auction.models.Seller;
-import com.auction.models.Admin;
 import com.auction.server.database.dao.UserDAO;
-import com.auction.server.database.DatabaseConnection2;
+import com.auction.server.database.DatabaseConnection;
 import com.auction.server.factory.UserFactory;
 
 import java.sql.Connection;
@@ -19,7 +16,7 @@ public class UserDAOImpl implements UserDAO {
     public User authenticate(String username, String password) {
         String query = "SELECT * FROM users WHERE username = ?";
 
-        try (Connection conn = DatabaseConnection2.getConnection();
+        try (Connection conn = DatabaseConnection.getConnection();
              PreparedStatement pstmt = conn.prepareStatement(query)) {
 
             pstmt.setString(1, username);
@@ -46,7 +43,7 @@ public class UserDAOImpl implements UserDAO {
     public boolean registerUser(User user) {
         String query = "INSERT INTO users (username, password, role) VALUES (?, ?, ?)";
 
-        try (Connection conn = DatabaseConnection2.getConnection();
+        try (Connection conn = DatabaseConnection.getConnection();
              PreparedStatement pstmt = conn.prepareStatement(query)) {
 
             pstmt.setString(1, user.getUser_Name());

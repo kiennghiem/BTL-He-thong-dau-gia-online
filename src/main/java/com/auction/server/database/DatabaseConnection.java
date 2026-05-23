@@ -4,8 +4,6 @@ import com.zaxxer.hikari.HikariDataSource;
 import com.zaxxer.hikari.HikariConfig;
 
 import java.sql.Connection;
-import java.sql.DatabaseMetaData;
-import java.sql.DriverManager;
 import java.sql.SQLException;
 
 /**
@@ -15,14 +13,14 @@ import java.sql.SQLException;
  * when the app starts.
  * It is thread-safe and designed to be used throughout the server application.
  */
-public final class DatabaseConnection2 {
+public final class DatabaseConnection {
     private static HikariDataSource dataSource;
     private static HikariConfig config = new HikariConfig();
 
     /**
      * Private constructor to prevent instantiation of this utility class.
      */
-    private DatabaseConnection2() {}
+    private DatabaseConnection() {}
 
     // Constructing a DataSource (connection pool) - this block always runs ONCE when starting the app.
     static {
