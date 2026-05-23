@@ -6,7 +6,7 @@ public class Bidder extends User {
 
     public Bidder(String userName, String password) {
         super(userName,password);
-        this.setRole("BIDDER");
+        this.setRole("Bidder");
     }
     
 }

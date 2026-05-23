@@ -3,7 +3,8 @@ package com.auction.server.factory;
 import com.auction.models.*;
 
 public class ItemFactory {
-    public static Item createItem(ItemType type, String name, String description, float startingPrice, String SpeAttr){
+    public static Item createItem(ItemType type, String name, String description,
+                                  float startingPrice, String SpeAttr) throws IllegalArgumentException {
         switch (type) {
             case ELECTRONICS -> {
                 return new Electronics(name, description, startingPrice, SpeAttr);

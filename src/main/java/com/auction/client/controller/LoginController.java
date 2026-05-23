@@ -1,6 +1,8 @@
 package com.auction.client.controller;
 
-import com.auction.server.database.DBLoginSignupUtils;
+import com.auction.models.User;
+import com.auction.server.database.dao.UserDAO;
+import com.auction.server.database.dao.impl.UserDAOImpl;
 import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
 import javafx.fxml.FXML;
@@ -16,19 +18,18 @@ public class LoginController implements Initializable {
 
     @FXML
     TextField tfUsername;
-
     @FXML
     TextField tfPassword;
-
     @FXML
     Button buttonLogin;
-
     @FXML
     Button buttonSignUp;
 
+    private UserDAO userDao = new UserDAOImpl();
+
     @Override
     public void initialize(URL location, ResourceBundle resources) {
-        // Set up the behaviors when the Login button is clicked.
+
         buttonLogin.setOnAction(new EventHandler<ActionEvent>() {
             @Override
             public void handle(ActionEvent event) {
@@ -37,7 +38,17 @@ public class LoginController implements Initializable {
 
                 // Check if all information has been filled.
                 if (!username.isEmpty() && !password.isEmpty()) {
-                    DBLoginSignupUtils.loginUser(event, username, password);
+
+                    User loggedInUser = userDao.authenticate(username, password);
+
+                    if (loggedInUser != null) {
+                        ControllerUtils.changeScene(event, "AuctionList.fxml");
+                    }
+                    else {
+                        Alert alert = new Alert(Alert.AlertType.ERROR);
+                        alert.setContentText("Provided credentials are incorrect");
+                        alert.show();
+                    }
                 } else {
                     Alert alert = new Alert(Alert.AlertType.ERROR);
                     alert.setContentText("Please fill in all information to log in!");
@@ -50,7 +61,7 @@ public class LoginController implements Initializable {
         buttonSignUp.setOnAction(new EventHandler<ActionEvent>() {
             @Override
             public void handle(ActionEvent event) {
-                DBLoginSignupUtils.changeScene(event, "Signup.fxml");
+                ControllerUtils.changeScene(event, "Signup.fxml");
             }
         });
     }

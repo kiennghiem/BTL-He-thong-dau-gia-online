@@ -1,5 +1,6 @@
 package com.auction;
 
+import com.auction.server.database.DatabaseConnection2;
 import javafx.application.Application;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
@@ -24,5 +25,10 @@ public class AuctionApp extends Application {
 
         stage.setScene(scene);
         stage.show();
+    }
+
+    @Override
+    public void stop() {
+        DatabaseConnection2.shutdown();
     }
 }

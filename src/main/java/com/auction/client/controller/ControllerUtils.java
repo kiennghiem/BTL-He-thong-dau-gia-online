@@ -1,4 +1,4 @@
-package com.auction.server.database;
+package com.auction.client.controller;
 
 import com.auction.server.database.dao.impl.UserDAOImpl;
 import javafx.event.ActionEvent;
@@ -12,10 +12,10 @@ import javafx.stage.Stage;
 import java.io.IOException;
 import java.sql.*;
 
-public final class DBLoginSignupUtils {
+public final class ControllerUtils {
 
     // Private constructor to prevent instantiation of this utility class.
-    private DBLoginSignupUtils() {}
+    private ControllerUtils() {}
     /**
      * Method for changing scene when an event (mouse click) happens.
      *
@@ -26,7 +26,7 @@ public final class DBLoginSignupUtils {
         Parent root = null;
 
         try {
-            FXMLLoader loader = new FXMLLoader(DBLoginSignupUtils.class.getResource("/com/auction/view/" + fxmlFile));
+            FXMLLoader loader = new FXMLLoader(ControllerUtils.class.getResource("/com/auction/view/" + fxmlFile));
             root = loader.load();
         }
         catch (IOException e) {
@@ -38,29 +38,6 @@ public final class DBLoginSignupUtils {
         stage.show();
     }
 
-    /**
-     * Method to handle the Login logic: check if the given username exists in the database, if yes, then check if
-     * the given password matches the password associated with the username in the database.
-     *
-     * @param event The event is mouse click on the Login button.
-     * @param username
-     * @param password
-     */
-    public static void loginUser(ActionEvent event, String username, String password) {
-        try {
-            String retrievedPassword = UserDAOImpl.findPasswordByUsername(username);
-            if (password.equals(retrievedPassword)) {
-                changeScene(event, "AuctionList.fxml");
-            }
-            else {
-                Alert alert = new Alert(Alert.AlertType.ERROR);
-                alert.setContentText("Provided credentials are incorrect");
-                alert.show();
-            }
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
-    }
 
     /**
      * Method to handle Sign up logic: check if the given username exists in the database, if not, then create a new
