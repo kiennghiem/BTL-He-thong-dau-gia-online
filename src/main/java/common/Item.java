@@ -17,6 +17,10 @@ public abstract class Item extends Entity{
     private User currentBidder;
     private User buyer;
 
+    public Item() {
+        super();
+    }
+
     public Item(String itemName, String description, double startingPrice, LocalDateTime startingTime, LocalDateTime closingTime, User owner) {
         super();
         this.itemName = itemName;
@@ -43,11 +47,11 @@ public abstract class Item extends Entity{
     public LocalDateTime getClosingTime() { return closingTime; }
     public ItemStatus getStatus() { return status; }
     public void setStatus(ItemStatus status) { this.status = status; }
-    public String getOwner() { return owner.getUser_Name(); }
+    public String getOwner() { return owner != null ? owner.getUsername() : null; }
     public void setOwner(User owner) { this.owner = owner; }
-    public String getCurrentBidder() { return currentBidder.getUser_Name(); }
+    public String getCurrentBidder() { return currentBidder != null ? currentBidder.getUsername() : null; }
     public void setCurrentBidder(User currentBidder) { this.currentBidder = currentBidder; }
-    public String getBuyer() { return buyer.getUser_Name(); }
+    public String getBuyer() { return buyer != null ? buyer.getUsername() : null; }
     public void setBuyer(User buyer) { this.buyer = buyer; }
 
     public boolean IsAuctioning(){

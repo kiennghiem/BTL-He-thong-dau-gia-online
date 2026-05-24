@@ -1,4 +1,4 @@
-package main.java.com.auction.dao;
+package main.java.com.auction.server.database.dao;
 
 import main.java.common.Item;
 import java.util.List;

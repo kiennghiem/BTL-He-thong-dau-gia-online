@@ -1,6 +1,6 @@
-package main.java.com.auction.dao; // Ensure this matches your folder structure
+package main.java.com.auction.server.database.dao; // Ensure this matches your folder structure
 
-import main.java.com.auction.models.User; // Import the specific User model
+import main.java.common.User; // Import the specific User model
 
 public interface UserDAO {
     /**
