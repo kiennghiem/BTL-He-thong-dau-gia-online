@@ -6,6 +6,10 @@ public abstract class User extends Entity {
     private String password;
     private String role;
 
+    public User() {
+        super();
+    }
+
     public User(String userName, String password) {
         super();
         this.userName = userName;
@@ -13,8 +17,8 @@ public abstract class User extends Entity {
         this.role = " ";
     }
 
-    public String getUser_Name() { return userName; }
-    public void setUser_Name ( String user_Name) {  userName = user_Name;}
+    public String getUsername() { return userName; }
+    public void setUsername ( String userName) {  this.userName = userName;}
     public String getPassword() { return password;}
     public void setPassword( String password) {  this.password = password;}
     public String getRole() { return role;}
