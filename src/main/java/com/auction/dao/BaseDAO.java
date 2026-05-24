@@ -1,38 +1,26 @@
 package main.java.com.auction.dao;
 
 import java.sql.Connection;
-import java.sql.DriverManager;
 import java.sql.SQLException;
 
 /**
- * Abstract Base DAO to provide database connection capabilities.
- * This promotes code reuse across UserDAO, ItemDAO, and AuctionDAO.
+ * Abstract Base DAO providing centralized database connection access.
+ * Routes directly through the centralized HikariCP pool.
  */
 public abstract class BaseDAO {
-    // Database credentials - move these to AppConstants later if possible
-    private static final String URL = "jdbc:mysql://localhost:3306/auction_db";
-    private static final String USER = "root";
-    private static final String PASS = "password";
 
     /**
-     * Establishes a connection to the database.
+     * Obtains an active connection from the HikariCP pool.
      * @return Connection object
-     * @throws SQLException if connection fails
+     * @throws SQLException if connection pool runs out or fails
      */
     protected Connection getConnection() throws SQLException {
-        try {
-            // Loading the driver is often necessary in older JDBC versions
-            Class.forName("com.mysql.cj.jdbc.Driver");
-            return DriverManager.getConnection(URL, USER, PASS);
-        } catch (ClassNotFoundException e) {
-            System.err.println("Database Driver not found: " + e.getMessage());
-            throw new SQLException(e);
-        }
+        return DatabaseConnection.getInstance().getConnection();
     }
 
     /**
-     * Utility method to safely close database resources.
-     * This helps prevent "Memory Leaks" and "Connection Exhaustion".
+     * Utility method to safely return database resources.
+     * With HikariCP, closing the connection returns it to the pool.
      */
     protected void closeResources(AutoCloseable... resources) {
         for (AutoCloseable res : resources) {
@@ -40,7 +28,7 @@ public abstract class BaseDAO {
                 try {
                     res.close();
                 } catch (Exception e) {
-                    System.err.println("Error closing resource: " + e.getMessage());
+                    System.err.println("Error returning resource to pool: " + e.getMessage());
                 }
             }
         }
