@@ -14,7 +14,7 @@ import javafx.scene.control.TextField;
 import java.net.URL;
 import java.util.ResourceBundle;
 
-public class LoginController implements Initializable {
+public class LoginController {
 
     @FXML
     TextField tfUsername;
@@ -27,42 +27,34 @@ public class LoginController implements Initializable {
 
     private UserDAO userDao = new UserDAOImpl();
 
-    @Override
-    public void initialize(URL location, ResourceBundle resources) {
+    public void handleLogin(ActionEvent event) {
+        String username = tfUsername.getText().trim();
+        String password = tfPassword.getText().trim();
 
-        buttonLogin.setOnAction(new EventHandler<ActionEvent>() {
-            @Override
-            public void handle(ActionEvent event) {
-                String username = tfUsername.getText().trim();
-                String password = tfPassword.getText().trim();
+        // Check if all information has been filled.
+        if (!username.isEmpty() && !password.isEmpty()) {
 
-                // Check if all information has been filled.
-                if (!username.isEmpty() && !password.isEmpty()) {
+            User loggedInUser = userDao.authenticate(username, password);
 
-                    User loggedInUser = userDao.authenticate(username, password);
-
-                    if (loggedInUser != null) {
-                        ControllerUtils.changeScene(event, "AuctionList.fxml");
-                    }
-                    else {
-                        Alert alert = new Alert(Alert.AlertType.ERROR);
-                        alert.setContentText("Provided credentials are incorrect");
-                        alert.show();
-                    }
-                } else {
-                    Alert alert = new Alert(Alert.AlertType.ERROR);
-                    alert.setContentText("Please fill in all information to log in!");
-                    alert.show();
-                }
+            if (loggedInUser != null) {
+                ControllerUtils.changeScene(event, "AuctionList.fxml");
             }
-        });
-
-        // Click on "Sign up" button will take user to the Sign up screen.
-        buttonSignUp.setOnAction(new EventHandler<ActionEvent>() {
-            @Override
-            public void handle(ActionEvent event) {
-                ControllerUtils.changeScene(event, "Signup.fxml");
+            else {
+                Alert alert = new Alert(Alert.AlertType.ERROR);
+                alert.setContentText("Provided credentials are incorrect");
+                alert.show();
             }
-        });
+        } else {
+            Alert alert = new Alert(Alert.AlertType.ERROR);
+            alert.setContentText("Please fill in all information to log in!");
+            alert.show();
+        }
+    }
+
+
+    // Click on "Sign up" button will take user to the Sign up screen.
+    public void handleSignup(ActionEvent event) {
+        ControllerUtils.changeScene(event, "Signup.fxml");
     }
 }
+

@@ -9,19 +9,12 @@ import javafx.scene.control.Button;
 import java.net.URL;
 import java.util.ResourceBundle;
 
-public class AuctionListController implements Initializable {
+public class AuctionListController {
 
     @FXML
     private Button buttonLogout;
 
-    @Override
-    public void initialize(URL location, ResourceBundle resources) {
-
-        buttonLogout.setOnAction(new EventHandler<ActionEvent>() {
-            @Override
-            public void handle(ActionEvent event) {
-                ControllerUtils.changeScene(event, "Login.fxml");
-            }
-        });
+    public void handleLogout(ActionEvent event) {
+        ControllerUtils.changeScene(event, "Login.fxml");
     }
 }

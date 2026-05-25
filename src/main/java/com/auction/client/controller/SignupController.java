@@ -13,7 +13,7 @@ import javafx.scene.control.*;
 import java.net.URL;
 import java.util.ResourceBundle;
 
-public class SignupController implements Initializable {
+public class SignupController {
 
     @FXML
     TextField tfUsername;
@@ -32,47 +32,37 @@ public class SignupController implements Initializable {
 
     private UserDAO userDao = new UserDAOImpl();
 
-    @Override
-    public void initialize(URL location, ResourceBundle resources) {
+    public void handleSignup(ActionEvent event) {
+        String username = tfUsername.getText().trim();
+        String password = tfPassword.getText().trim();
+        ToggleGroup roleGroup = rbBidder.getToggleGroup();
+        RadioButton selectedRole = (RadioButton)roleGroup.getSelectedToggle();
 
-        buttonSignUp.setOnAction(new EventHandler<ActionEvent>() {
-            @Override
-            public void handle(ActionEvent event) {
-                String username = tfUsername.getText().trim();
-                String password = tfPassword.getText().trim();
-                ToggleGroup roleGroup = rbBidder.getToggleGroup();
-                RadioButton selectedRole = (RadioButton)roleGroup.getSelectedToggle();
+        // Check if all information has been filled.
+        if (!username.isEmpty() && !password.isEmpty() && selectedRole != null) {
+            String role = selectedRole.getText();
 
-                // Check if all information has been filled.
-                if (!username.isEmpty() && !password.isEmpty() && selectedRole != null) {
-                    String role = selectedRole.getText();
+            User existedUser = userDao.authenticate(username, password);
 
-                    User existedUser = userDao.authenticate(username, password);
-
-                    if (existedUser == null) {
-                        User newUser = UserFactory.createUser(username, password, role);
-                        userDao.registerUser(newUser);
-                        ControllerUtils.changeScene(event, "AuctionList.fxml");
-                    }
-                    else {
-                        Alert alert = new Alert(Alert.AlertType.ERROR);
-                        alert.setContentText("You can not use this username");
-                        alert.show();
-                    }
-                } else {
-                    Alert alert = new Alert(Alert.AlertType.ERROR);
-                    alert.setContentText("Please fill in all information to sign up!");
-                    alert.show();
-                }
+            if (existedUser == null) {
+                User newUser = UserFactory.createUser(username, password, role);
+                userDao.registerUser(newUser);
+                ControllerUtils.changeScene(event, "AuctionList.fxml");
             }
-        });
-
-        // Click on "Log in" button will take user to the Login screen.
-        buttonLogin.setOnAction(new EventHandler<ActionEvent>() {
-            @Override
-            public void handle(ActionEvent event) {
-                ControllerUtils.changeScene(event, "Login.fxml");
+            else {
+                Alert alert = new Alert(Alert.AlertType.ERROR);
+                alert.setContentText("You can not use this username");
+                alert.show();
             }
-        });
+        } else {
+            Alert alert = new Alert(Alert.AlertType.ERROR);
+            alert.setContentText("Please fill in all information to sign up!");
+            alert.show();
+        }
+    }
+
+    // Click on "Log in" button will take user to the Login screen.
+    public void handleLogin(ActionEvent event) {
+        ControllerUtils.changeScene(event, "Login.fxml");
     }
 }
