@@ -5,6 +5,7 @@ import com.auction.models.User;
 import com.auction.server.database.dao.UserDAO;
 import com.auction.server.database.DatabaseConnection;
 import com.auction.server.factory.UserFactory;
+import com.auction.server.factory.UserRole;
 
 import java.sql.*;
 
@@ -25,8 +26,9 @@ public class UserDAOImpl implements UserDAO {
                 // then moves the cursor to the next row in the result set table.
                 if (rs.next()) {
                     String retrievedRole = rs.getString("role");
+                    UserRole roleEnum = UserRole.valueOf(retrievedRole.toUpperCase());
                     // Using constructor from User.java
-                    return UserFactory.createUser(username, password, retrievedRole);
+                    return UserFactory.createUser(roleEnum, username, password);
                 } else {
                     return null;
                 }
