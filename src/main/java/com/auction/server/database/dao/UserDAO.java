@@ -7,12 +7,12 @@ import java.sql.SQLException;
 
 public interface UserDAO {
     /**
-     * Finds a user by their username.
+     * Finds a user by their username and password.
      *
      * @return User object if found, null otherwise.
      * @throws DatabaseException if failure occurs when connecting to the DB.
      */
-    User authenticate(String username) throws DatabaseException;
+    User authenticate(String username, String password) throws DatabaseException;
 
     /**
      * Register a new user in the database.

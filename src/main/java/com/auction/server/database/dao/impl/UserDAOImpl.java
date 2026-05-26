@@ -11,27 +11,28 @@ import java.sql.*;
 public class UserDAOImpl implements UserDAO {
 
     @Override
-    public User authenticate(String username) throws DatabaseException {
-        String query = "SELECT * FROM users WHERE username = ?";
+    public User authenticate(String username, String password) throws DatabaseException {
+        String query = "SELECT * FROM users WHERE username = ? AND password = ?";
 
         try (Connection conn = DatabaseConnection.getConnection();
              PreparedStatement pstmt = conn.prepareStatement(query)) {
 
             pstmt.setString(1, username);
+            pstmt.setString(2, password);
 
             try (ResultSet rs = pstmt.executeQuery()) {
-                // Neu username da ton tai: resultSet has 1 row, and next() returns true, then moves the cursor to the
-                // next row in the result set table.
+                // Neu user voi username va password da ton tai: resultSet has 1 row, and next() returns true,
+                // then moves the cursor to the next row in the result set table.
                 if (rs.next()) {
-                    String retrievedPassword = rs.getString("password");
                     String retrievedRole = rs.getString("role");
                     // Using constructor from User.java
-                    return UserFactory.createUser(username, retrievedPassword, retrievedRole);
+                    return UserFactory.createUser(username, password, retrievedRole);
                 } else {
                     return null;
                 }
             }
         } catch (SQLException e) {
+            e.printStackTrace();
             throw new DatabaseException("Error authenticating user, please try again");
         }
     }

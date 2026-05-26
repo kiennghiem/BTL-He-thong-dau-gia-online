@@ -36,7 +36,7 @@ public class LoginController {
         if (!username.isEmpty() && !password.isEmpty()) {
 
             try {
-                User loggedInUser = userDao.authenticate(username);
+                User loggedInUser = userDao.authenticate(username, password);
                 if (loggedInUser != null) {
                     ControllerUtils.changeScene(event, "AuctionList.fxml");
                 }
