@@ -1,6 +1,6 @@
 package common;
 
-import main.java.common.NetworkMessage;
+import common.NetworkMessage;
 
 /**
  * DTO sent from Client to Server when a user places a bid.

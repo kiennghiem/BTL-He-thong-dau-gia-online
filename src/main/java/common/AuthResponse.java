@@ -1,6 +1,6 @@
 package common;
 
-import main.java.common.NetworkMessage;
+import common.NetworkMessage;
 
 /**
  * DTO sent from Server to Client in response to a LoginRequest.
