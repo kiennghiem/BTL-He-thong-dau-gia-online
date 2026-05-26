@@ -5,14 +5,10 @@ import com.auction.models.User;
 import com.auction.server.database.dao.UserDAO;
 import com.auction.server.database.dao.impl.UserDAOImpl;
 import com.auction.server.factory.UserFactory;
+import com.auction.server.factory.UserRole;
 import javafx.event.ActionEvent;
-import javafx.event.EventHandler;
 import javafx.fxml.FXML;
-import javafx.fxml.Initializable;
 import javafx.scene.control.*;
-
-import java.net.URL;
-import java.util.ResourceBundle;
 
 public class SignupController {
 
@@ -42,7 +38,8 @@ public class SignupController {
         // Check if all information has been filled.
         if (!username.isEmpty() && !password.isEmpty() && selectedRole != null) {
             String role = selectedRole.getText();
-            User newUser = UserFactory.createUser(username, password, role);
+            UserRole roleEnum= UserRole.valueOf(role.toUpperCase());
+            User newUser = UserFactory.createUser(roleEnum, username, password);
 
             try {
                 userDao.registerUser(newUser);
