@@ -6,6 +6,10 @@ import com.auction.models.User;
 import java.sql.SQLException;
 
 public interface UserDAO {
+
+    User findByUsername(String username) throws DatabaseException;
+
+    User findById(String id) throws DatabaseException;
     /**
      * Finds a user by their username and password.
      *

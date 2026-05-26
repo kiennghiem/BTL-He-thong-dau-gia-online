@@ -7,24 +7,24 @@ import com.auction.server.factory.UserRole;
 public abstract class User extends Entity {
     private static final long serialVersionUID = 1L;
     private UserRole role;
-    private String userName;
+    private String username;
     private String password;
     private double balance;
 
     // Create an instance of a new user
-    public User(UserRole role, String userName, String password) {
+    public User(UserRole role, String username, String password) {
         super();
         this.role = role;
-        this.userName = userName;
+        this.username = username;
         this.password = password;
         this.balance = 0;
     }
 
     // Create an instance of an existed user from the DB
-    public User(String id, UserRole role, String userName, String password, double balance) {
+    public User(String id, UserRole role, String username, String password, double balance) {
         super(id);
         this.role = role;
-        this.userName = userName;
+        this.username = username;
         this.password = password;
         this.balance = balance;
     }
@@ -51,8 +51,8 @@ public abstract class User extends Entity {
         }
     }
 
-    public String getUserName() { return userName; }
-    public void setUserName ( String userName) {  this.userName = userName;}
+    public String getUsername() { return username; }
+    public void setUsername ( String username) {  this.username = username;}
     public String getPassword() { return password;}
     public void setPassword( String password) {  this.password = password;}
     public UserRole getRole() { return role;}
