@@ -1,8 +1,7 @@
 package com.auction.server.observer;
 
-import com.auction.models.BidTransaction;
+import com.auction.models.Notification;
 
 public interface AuctionObserver {
-    void update(BidTransaction highestBid);
-
+    void update(Notification notification);
 }

@@ -1,4 +1,4 @@
-package com.auction.server.observer;
+package com.auction.models;
 
 public enum AuctionStatus {
     PENDING,

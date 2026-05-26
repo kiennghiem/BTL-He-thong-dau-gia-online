@@ -1,4 +1,4 @@
-package com.auction.server.factory;
+package com.auction.models;
 
 public enum ItemType {
     ELECTRONICS,
