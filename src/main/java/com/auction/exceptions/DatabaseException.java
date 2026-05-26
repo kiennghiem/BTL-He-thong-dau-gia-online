@@ -1,8 +1,8 @@
 package com.auction.exceptions;
 
-public class InvalidLoginException extends RuntimeException {
+public class DatabaseException extends RuntimeException {
     private static final long serialVersionUID = 1L;
-    public InvalidLoginException(String message) {
+    public DatabaseException(String message) {
         super(message);
     }
 }
