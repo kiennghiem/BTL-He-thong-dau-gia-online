@@ -1,4 +1,4 @@
-package main.java.common;
+package common;
 
 public class Seller extends User{
     private static final long serialVersionUID = 1L;

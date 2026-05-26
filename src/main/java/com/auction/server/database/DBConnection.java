@@ -1,4 +1,4 @@
-package main.java.com.auction.server.database;
+package com.auction.server.database;
 
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
