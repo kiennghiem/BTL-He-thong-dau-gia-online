@@ -1,5 +1,6 @@
 package com.auction.client.controller;
 
+import com.auction.exceptions.DatabaseException;
 import com.auction.models.User;
 import com.auction.server.database.dao.UserDAO;
 import com.auction.server.database.dao.impl.UserDAOImpl;
@@ -34,14 +35,19 @@ public class LoginController {
         // Check if all information has been filled.
         if (!username.isEmpty() && !password.isEmpty()) {
 
-            User loggedInUser = userDao.authenticate(username, password);
-
-            if (loggedInUser != null) {
-                ControllerUtils.changeScene(event, "AuctionList.fxml");
-            }
-            else {
+            try {
+                User loggedInUser = userDao.authenticate(username);
+                if (loggedInUser != null) {
+                    ControllerUtils.changeScene(event, "AuctionList.fxml");
+                }
+                else {
+                    Alert alert = new Alert(Alert.AlertType.ERROR);
+                    alert.setContentText("Provided credentials are incorrect");
+                    alert.show();
+                }
+            } catch (DatabaseException e) {
                 Alert alert = new Alert(Alert.AlertType.ERROR);
-                alert.setContentText("Provided credentials are incorrect");
+                alert.setContentText(e.getMessage());
                 alert.show();
             }
         } else {
@@ -50,7 +56,6 @@ public class LoginController {
             alert.show();
         }
     }
-
 
     // Click on "Sign up" button will take user to the Sign up screen.
     public void handleSignup(ActionEvent event) {

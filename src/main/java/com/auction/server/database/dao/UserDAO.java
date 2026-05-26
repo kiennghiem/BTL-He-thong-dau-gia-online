@@ -1,18 +1,24 @@
 package com.auction.server.database.dao;
 
-import com.auction.exceptions.InvalidLoginException;
+import com.auction.exceptions.DatabaseException;
 import com.auction.models.User;
 
 import java.sql.SQLException;
 
 public interface UserDAO {
     /**
-     * Finds a user by their username and password.
+     * Finds a user by their username.
+     *
+     * @return User object if found, null otherwise.
+     * @throws DatabaseException if failure occurs when connecting to the DB.
      */
-    User authenticate(String username, String password);
+    User authenticate(String username) throws DatabaseException;
 
     /**
-     * Saves a new user to the database.
+     * Register a new user in the database.
+     *
+     * @param user
+     * @throws DatabaseException if the username already exists in the DB, or failure occurs when connecting to the DB.
      */
-    boolean registerUser(User user);
+    void registerUser(User user) throws DatabaseException;
 }

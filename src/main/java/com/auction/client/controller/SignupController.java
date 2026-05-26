@@ -1,5 +1,6 @@
 package com.auction.client.controller;
 
+import com.auction.exceptions.DatabaseException;
 import com.auction.models.User;
 import com.auction.server.database.dao.UserDAO;
 import com.auction.server.database.dao.impl.UserDAOImpl;
@@ -41,17 +42,14 @@ public class SignupController {
         // Check if all information has been filled.
         if (!username.isEmpty() && !password.isEmpty() && selectedRole != null) {
             String role = selectedRole.getText();
+            User newUser = UserFactory.createUser(username, password, role);
 
-            User existedUser = userDao.authenticate(username, password);
-
-            if (existedUser == null) {
-                User newUser = UserFactory.createUser(username, password, role);
+            try {
                 userDao.registerUser(newUser);
                 ControllerUtils.changeScene(event, "AuctionList.fxml");
-            }
-            else {
+            } catch (DatabaseException e) {
                 Alert alert = new Alert(Alert.AlertType.ERROR);
-                alert.setContentText("You can not use this username");
+                alert.setContentText(e.getMessage());
                 alert.show();
             }
         } else {
