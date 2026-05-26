@@ -1,4 +1,4 @@
-package main.java.common;
+package common;
 import java.time.LocalDateTime;
 
 public class Art extends Item{

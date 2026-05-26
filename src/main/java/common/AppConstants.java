@@ -1,4 +1,4 @@
-package main.java.common;
+package common;
 /**
  * Global constants for the Online Auction System.
  * This ensures consistency across the Client and Server modules.

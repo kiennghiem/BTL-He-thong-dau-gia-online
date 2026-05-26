@@ -1,13 +1,13 @@
-package main.java.com.auction.server.database.dao.impl;
+package com.auction.server.database.dao.impl;
 
-import main.java.common.User;
-import main.java.common.Bidder;
-import main.java.common.Seller;
-import main.java.common.Admin;
-import main.java.common.AppConstants;
-import main.java.com.auction.server.database.dao.BaseDAO;
-import main.java.com.auction.server.database.dao.UserDAO;
-import main.java.com.auction.server.database.DBConnection;
+import common.User;
+import common.Bidder;
+import common.Seller;
+import common.Admin;
+import common.AppConstants;
+import com.auction.server.database.dao.BaseDAO;
+import com.auction.server.database.dao.UserDAO;
+import com.auction.server.database.DBConnection;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;

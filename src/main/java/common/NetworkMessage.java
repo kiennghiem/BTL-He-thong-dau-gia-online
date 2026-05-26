@@ -1,4 +1,4 @@
-package main.java.common;
+package common;
 import java.io.Serializable;
 /**
  * The base interface for all data objects sent between the Client and Server.

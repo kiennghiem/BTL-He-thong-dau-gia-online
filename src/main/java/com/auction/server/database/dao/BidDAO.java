@@ -1,4 +1,4 @@
-package main.java.com.auction.server.database.dao;
+package com.auction.server.database.dao;
 
 import main.java.com.auction.models.BidTransaction;
 import java.util.List;

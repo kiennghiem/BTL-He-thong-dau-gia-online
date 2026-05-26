@@ -1,9 +1,9 @@
-package main.java.com.auction.server.database.dao.impl;
+package com.auction.server.database.dao.impl;
 
-import main.java.common.*;
-import main.java.com.auction.server.database.dao.BaseDAO;
-import main.java.com.auction.server.database.dao.ItemDAO;
-import main.java.com.auction.server.database.DBConnection;
+import common.*;
+import com.auction.server.database.dao.BaseDAO;
+import com.auction.server.database.dao.ItemDAO;
+import com.auction.server.database.DBConnection;
 
 import java.sql.*;
 import java.time.LocalDateTime;
