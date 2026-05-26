@@ -19,7 +19,7 @@ public class Auction extends Entity {
     private LocalDateTime startingTime;
     private LocalDateTime closingTime;
     private BidTransaction highestBid;
-    private float currentPrice;
+    private double currentPrice;
     // History of all proper bids
     private List<BidTransaction> bidHistory;
     // List of observers
@@ -76,7 +76,7 @@ public class Auction extends Entity {
             return highestBid;
         }
     }
-    public float getCurrentPrice() {
+    public double getCurrentPrice() {
         return currentPrice;
     }
 

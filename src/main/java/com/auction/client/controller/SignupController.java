@@ -39,7 +39,7 @@ public class SignupController {
         if (!username.isEmpty() && !password.isEmpty() && selectedRole != null) {
             String role = selectedRole.getText();
             UserRole roleEnum= UserRole.valueOf(role.toUpperCase());
-            User newUser = UserFactory.createUser(roleEnum, username, password);
+            User newUser = UserFactory.createNewUser(roleEnum, username, password);
 
             try {
                 userDao.registerUser(newUser);

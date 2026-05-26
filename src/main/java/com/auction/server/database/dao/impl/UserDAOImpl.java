@@ -28,7 +28,7 @@ public class UserDAOImpl implements UserDAO {
                     String retrievedRole = rs.getString("role");
                     UserRole roleEnum = UserRole.valueOf(retrievedRole.toUpperCase());
                     // Using constructor from User.java
-                    return UserFactory.createUser(roleEnum, username, password);
+                    return UserFactory.createNewUser(roleEnum, username, password);
                 } else {
                     return null;
                 }
@@ -46,9 +46,9 @@ public class UserDAOImpl implements UserDAO {
         try (Connection conn = DatabaseConnection.getConnection();
              PreparedStatement pstmt = conn.prepareStatement(query)) {
 
-            pstmt.setString(1, user.getUser_Name());
+            pstmt.setString(1, user.getUserName());
             pstmt.setString(2, user.getPassword());
-            pstmt.setString(3, user.getRole());
+            pstmt.setString(3, user.getRole().toString());
 
             pstmt.executeUpdate();
         }
