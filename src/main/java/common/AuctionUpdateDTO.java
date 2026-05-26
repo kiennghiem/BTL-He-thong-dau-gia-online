@@ -1,6 +1,4 @@
-package main.java.common;
-
-import main.java.common.NetworkMessage;
+package common;
 
 /**
  * DTO sent from Server to all Clients to broadcast changes in an auction.

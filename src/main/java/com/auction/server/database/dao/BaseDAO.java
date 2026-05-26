@@ -1,6 +1,6 @@
-package main.java.com.auction.server.database.dao;
+package com.auction.server.database.dao;
 
-import main.java.com.auction.server.database.DBConnection;
+import com.auction.server.database.DBConnection;
 
 import java.sql.Connection;
 import java.sql.SQLException;

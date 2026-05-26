@@ -1,5 +1,4 @@
-package main.java.common;
-import main.java.common.NetworkMessage;
+package common;
 
 /**
  * DTO sent from Client to Server to initiate authentication.

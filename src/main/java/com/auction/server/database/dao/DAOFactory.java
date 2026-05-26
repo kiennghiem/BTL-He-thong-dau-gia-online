@@ -1,6 +1,6 @@
-package main.java.com.auction.server.database.dao;
+package com.auction.server.database.dao;
 
-import main.java.com.auction.server.database.dao.impl.*;
+import com.auction.server.database.dao.impl.*;
 
 public class DAOFactory {
     public static UserDAO getUserDAO() {
@@ -13,5 +13,9 @@ public class DAOFactory {
 
     public static BidDAO getBidDAO() {
         return new BidDAOImpl();
+    }
+
+    public static AuctionDAO getAuctionDAO() {
+        return new AuctionDAOImpl();
     }
 }

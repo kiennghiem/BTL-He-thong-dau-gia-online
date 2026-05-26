@@ -1,10 +1,10 @@
-package main.java.com.auction.server.database.dao.impl;
+package com.auction.server.database.dao.impl;
 
-import main.java.com.auction.models.BidTransaction;
-import main.java.common.AppConstants;
-import main.java.com.auction.server.database.dao.BaseDAO;
-import main.java.com.auction.server.database.dao.BidDAO;
-import main.java.com.auction.server.database.DBConnection;
+import com.auction.models.BidTransaction;
+import common.AppConstants;
+import com.auction.server.database.dao.BaseDAO;
+import com.auction.server.database.dao.BidDAO;
+import com.auction.server.database.DBConnection;
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;

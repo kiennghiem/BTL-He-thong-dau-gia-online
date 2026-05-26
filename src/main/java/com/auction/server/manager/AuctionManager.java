@@ -1,12 +1,12 @@
 package com.auction.server.manager;
 
-import com.auction.models.Auction;
-import com.auction.models.BidTransaction;
+import com.auction.models.*;
 import com.auction.exceptions.InvalidBidException;
 import com.auction.exceptions.AuctionNotFoundException;
-import com.auction.models.AuctionStatus;
 import com.auction.server.observer.AuctionObserver;
-import main.java.common.AppConstants;
+import com.auction.server.service.AuctionService;
+import common.AppConstants;
+import common.AuctionUpdateDTO;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -28,12 +28,17 @@ public class AuctionManager {
     private final Map<String, Auction> activeAuctions;
     private final Map<String, List<AuctionObserver>> observers;
     private final ScheduledExecutorService scheduler;
+    private AuctionService auctionService;
 
     private AuctionManager() {
         activeAuctions = new ConcurrentHashMap<>();
         observers = new ConcurrentHashMap<>();
         scheduler = Executors.newSingleThreadScheduledExecutor();
         startStatusChecker();
+    }
+
+    public void setAuctionService(AuctionService auctionService) {
+        this.auctionService = auctionService;
     }
 
     public static synchronized AuctionManager getInstance() {
@@ -84,25 +89,35 @@ public class AuctionManager {
             long remainingSeconds = Duration.between(LocalDateTime.now(), auction.getClosingTime()).getSeconds();
             if (remainingSeconds > 0 && remainingSeconds <= AppConstants.SNIPE_WINDOW_SECONDS) {
                 auction.setClosingTime(auction.getClosingTime().plusSeconds(AppConstants.EXTENSION_TIME_SECONDS));
-                System.out.println("[INFO] Anti-sniping triggered: Extended auction " + auctionId + " by " + AppConstants.EXTENSION_TIME_SECONDS + " seconds.");
+                System.out.println("[INFO] Anti-sniping: Extended auction " + auctionId);
+                
+                // Notify about time extension immediately so UI can update timer
+                broadcastNotification(new Notification(
+                        Notification.Type.TIME_EXTENDED,
+                        auctionId,
+                        createUpdateDTO(auction)
+                ));
             }
 
-            // auction.AddBid throws InvalidBidException if bid is too low
-            auction.AddBid(bid);
+            // auction.addBid (camelCase) throws InvalidBidException if bid is too low
+            auction.addBid(bid);
             
-            // Note: DB persistence of the new bid would typically happen here via a Service or DAO call
-            // e.g., DAOFactory.getBidDAO().placeBid(bid);
-            System.out.println("[INFO] Bid placed successfully on auction " + auctionId + ": " + bid.getBidAmount());
+            System.out.println("[INFO] Bid placed successfully on " + auctionId + ": " + bid.getBidAmount());
 
-            notifyObservers(auctionId, auction);
+            // Notify about new bid
+            broadcastNotification(new Notification(
+                    Notification.Type.BID_PLACED,
+                    auctionId,
+                    createUpdateDTO(auction)
+            ));
         }
     }
 
-    public void notifyObservers(String auctionId, Auction auction) {
-        List<AuctionObserver> subs = observers.get(auctionId);
+    private void broadcastNotification(Notification notification) {
+        List<AuctionObserver> subs = observers.get(notification.getAuctionId());
         if (subs != null) {
             for (AuctionObserver observer : subs) {
-                observer.update(auction);
+                observer.update(notification);
             }
         }
     }
@@ -116,35 +131,48 @@ public class AuctionManager {
                         AuctionStatus oldStatus = auction.getStatus();
                         
                         if (oldStatus == AuctionStatus.OPEN && now.isAfter(auction.getStartingTime())) {
-                            auction.UpdateStatus(AuctionStatus.RUNNING);
-                            System.out.println("[INFO] Auction " + auction.getId() + " is now RUNNING.");
-                            notifyObservers(auction.getId(), auction);
+                            auction.updateStatus(AuctionStatus.RUNNING);
+                            broadcastNotification(new Notification(
+                                    Notification.Type.STATUS_CHANGED,
+                                    auction.getId(),
+                                    createUpdateDTO(auction)
+                            ));
                         } 
                         else if (oldStatus == AuctionStatus.RUNNING && now.isAfter(auction.getClosingTime())) {
-                            auction.UpdateStatus(AuctionStatus.FINISHED);
+                            auction.updateStatus(AuctionStatus.FINISHED);
+                            System.out.println("[INFO] Auction " + auction.getId() + " finished.");
                             
-                            // Determine Winner
-                            if (auction.getHighestBid() != null) {
-                                // Real-world logic: fetch Bidder object from UserDAO using bidderId
-                                String winnerId = auction.getHighestBid().getBidderId();
-                                // auction.setWinner(winner); 
-                                System.out.println("[INFO] Auction " + auction.getId() + " finished. Winner: " + winnerId);
-                                
-                                // TODO: Call ItemDAO or AuctionDAO to update the DB status to FINISHED and save winner
-                                // e.g., DAOFactory.getItemDAO().updateItemStatus(auction.getItem().getId(), AppConstants.STATUS_FINISHED);
-                            } else {
-                                System.out.println("[INFO] Auction " + auction.getId() + " finished with no bids.");
+                            // PERSISTENCE
+                            if (auctionService != null) {
+                                auctionService.finishAuction(auction.getId());
                             }
-                            
-                            notifyObservers(auction.getId(), auction);
+
+                            broadcastNotification(new Notification(
+                                    Notification.Type.STATUS_CHANGED,
+                                    auction.getId(),
+                                    createUpdateDTO(auction)
+                            ));
                         }
                     } catch (Exception e) {
-                        System.err.println("[ERROR] Error updating status for auction " + auction.getId() + ": " + e.getMessage());
-                        e.printStackTrace();
+                        System.err.println("[ERROR] Status checker error: " + e.getMessage());
                     }
                 }
             }
         }, 0, 1, TimeUnit.SECONDS);
+    }
+
+    /**
+     * Helper to create a standardized DTO for network transmission.
+     */
+    private AuctionUpdateDTO createUpdateDTO(Auction auction) {
+        String bidderName = (auction.getHighestBid() != null) ? auction.getHighestBid().getBidderId() : "None";
+        return new AuctionUpdateDTO(
+                auction.getId(),
+                auction.getCurrentPrice(),
+                bidderName,
+                auction.getClosingTimeMillis(),
+                auction.getStatus().name()
+        );
     }
 
     public void shutdown() {

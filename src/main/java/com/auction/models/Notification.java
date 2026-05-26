@@ -2,6 +2,10 @@ package com.auction.models;
 
 import java.io.Serializable;
 
+/**
+ * Carrier object for real-time updates sent to observers.
+ * Standardizes communication between Server logic and Network handlers.
+ */
 public class Notification implements Serializable {
     private static final long serialVersionUID = 1L;
 

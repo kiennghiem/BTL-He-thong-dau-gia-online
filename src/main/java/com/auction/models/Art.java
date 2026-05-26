@@ -6,7 +6,7 @@ public class Art extends Item {
     private static final long serialVersionUID = 1L;
     private String artist;
 
-    public Art(String itemName, String description, float startingPrice, String artist){
+    public Art(String itemName, String description, double startingPrice, String artist){
         super(itemName,description,startingPrice);
         this.artist = artist;
     }

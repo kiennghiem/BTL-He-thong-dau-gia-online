@@ -4,7 +4,7 @@ public class Electronics extends Item {
     private static final long serialVersionUID = 1L;
     private String brand;
 
-    public Electronics(String itemName, String description, float startingPrice, String Brand){
+    public Electronics(String itemName, String description, double startingPrice, String Brand){
         super(itemName,description,startingPrice);
         this.brand = Brand;
     }
