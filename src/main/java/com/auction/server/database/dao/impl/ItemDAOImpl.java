@@ -3,10 +3,8 @@ package com.auction.server.database.dao.impl;
 import common.*;
 import com.auction.server.database.dao.BaseDAO;
 import com.auction.server.database.dao.ItemDAO;
-import com.auction.server.database.DBConnection;
 
 import java.sql.*;
-import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 

@@ -1,8 +1,8 @@
 package common;
 
 import java.time.LocalDateTime;
-import main.java.common.InvalidBidException;
-import main.java.common.InvalidStatusException;
+import com.auction.exceptions.InvalidBidException;
+import com.auction.exceptions.InvalidStatusException;
 
 public abstract class Item extends Entity{
     private static final long serialVersionUID = 1L;
