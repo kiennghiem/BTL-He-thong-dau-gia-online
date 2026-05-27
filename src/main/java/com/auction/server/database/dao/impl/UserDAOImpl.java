@@ -57,35 +57,7 @@ public class UserDAOImpl implements UserDAO {
     }
 
     @Override
-    public User authenticate(String username, String password) throws DatabaseException {
-        String query = "SELECT * FROM users WHERE username = ? AND password = ?";
-
-        try (Connection conn = DatabaseConnection.getConnection();
-             PreparedStatement pstmt = conn.prepareStatement(query)) {
-
-            pstmt.setString(1, username);
-            pstmt.setString(2, password);
-
-            try (ResultSet rs = pstmt.executeQuery()) {
-                // Neu user voi username va password da ton tai: resultSet has 1 row, and next() returns true,
-                // then moves the cursor to the next row in the result set table.
-                if (rs.next()) {
-                    String retrievedRole = rs.getString("role");
-                    UserRole roleEnum = UserRole.valueOf(retrievedRole.toUpperCase());
-                    // Using constructor from User.java
-                    return UserFactory.createNewUser(roleEnum, username, password);
-                } else {
-                    return null;
-                }
-            }
-        } catch (SQLException e) {
-            e.printStackTrace();
-            throw new DatabaseException("Error authenticating user, please try again");
-        }
-    }
-
-    @Override
-    public void registerUser(User user) throws DatabaseException {
+    public void addUser(User user) throws DatabaseException {
         String query = "INSERT INTO users (username, password, role) VALUES (?, ?, ?)";
 
         try (Connection conn = DatabaseConnection.getConnection();
@@ -96,11 +68,6 @@ public class UserDAOImpl implements UserDAO {
             pstmt.setString(3, user.getRole().toString());
 
             pstmt.executeUpdate();
-        }
-        // This exception is thrown when inserting a user into the DB but username already exists, preventing
-        // duplicate username in DB if two people sign up at the same time with the same username.
-        catch (SQLIntegrityConstraintViolationException e) {
-            throw new DatabaseException("You cannot use this username");
         }
         catch (SQLException e) {
             throw new DatabaseException("Error registering user, please try again");

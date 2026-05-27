@@ -4,6 +4,7 @@ import com.auction.exceptions.DatabaseException;
 import com.auction.models.User;
 import com.auction.server.database.dao.UserDAO;
 import com.auction.server.database.dao.impl.UserDAOImpl;
+import com.auction.service.LoginSignupService;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.scene.control.Alert;
@@ -27,27 +28,15 @@ public class LoginController {
         String username = tfUsername.getText().trim();
         String password = tfPassword.getText().trim();
 
-        // Check if all information has been filled.
-        if (!username.isEmpty() && !password.isEmpty()) {
+        try {
+            User existedUser = LoginSignupService.login(username, password); // Can throw custom exceptions
+            ControllerUtils.changeScene(event, "AuctionList.fxml");
 
-            try {
-                User loggedInUser = userDao.authenticate(username, password);
-                if (loggedInUser != null) {
-                    ControllerUtils.changeScene(event, "AuctionList.fxml");
-                }
-                else {
-                    Alert alert = new Alert(Alert.AlertType.ERROR);
-                    alert.setContentText("Provided credentials are incorrect");
-                    alert.show();
-                }
-            } catch (DatabaseException e) {
-                Alert alert = new Alert(Alert.AlertType.ERROR);
-                alert.setContentText(e.getMessage());
-                alert.show();
-            }
-        } else {
+            // Catch all custom exceptions
+        } catch (RuntimeException e) {
+            e.printStackTrace();
             Alert alert = new Alert(Alert.AlertType.ERROR);
-            alert.setContentText("Please fill in all information to log in!");
+            alert.setContentText(e.getMessage());
             alert.show();
         }
     }

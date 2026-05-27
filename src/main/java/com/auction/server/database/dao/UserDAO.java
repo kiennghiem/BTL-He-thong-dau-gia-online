@@ -10,19 +10,6 @@ public interface UserDAO {
     User findByUsername(String username) throws DatabaseException;
 
     User findById(String id) throws DatabaseException;
-    /**
-     * Finds a user by their username and password.
-     *
-     * @return User object if found, null otherwise.
-     * @throws DatabaseException if failure occurs when connecting to the DB.
-     */
-    User authenticate(String username, String password) throws DatabaseException;
 
-    /**
-     * Register a new user in the database.
-     *
-     * @param user
-     * @throws DatabaseException if the username already exists in the DB, or failure occurs when connecting to the DB.
-     */
-    void registerUser(User user) throws DatabaseException;
+    void addUser(User user) throws DatabaseException;
 }
