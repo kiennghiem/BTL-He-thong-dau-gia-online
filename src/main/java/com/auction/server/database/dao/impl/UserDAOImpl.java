@@ -71,6 +71,11 @@ public class UserDAOImpl implements UserDAO {
 
             pstmt.executeUpdate();
         }
+        // This exception is thrown when inserting a user into the DB but username already exists, preventing
+        // duplicate username in DB if two people sign up at the same time with the same username.
+        catch (SQLIntegrityConstraintViolationException e) {
+            throw new DatabaseException("You cannot use this username");
+        }
         catch (SQLException e) {
             throw new DatabaseException("Error registering user, please try again");
         }
