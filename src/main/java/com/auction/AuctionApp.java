@@ -17,7 +17,7 @@ public class AuctionApp extends Application {
 
     @Override
     public void start(Stage stage) throws IOException {
-        Parent root = FXMLLoader.load(getClass().getResource("view/Login.fxml"));
+        Parent root = FXMLLoader.load(getClass().getResource("client/view/Login.fxml"));
         Scene scene = new Scene(root);
 
         stage.setTitle("Online Auction system!");

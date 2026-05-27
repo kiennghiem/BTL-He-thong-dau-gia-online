@@ -25,7 +25,7 @@ public final class ControllerUtils {
         Parent root = null;
 
         try {
-            FXMLLoader loader = new FXMLLoader(ControllerUtils.class.getResource("/com/auction/view/" + fxmlFile));
+            FXMLLoader loader = new FXMLLoader(ControllerUtils.class.getResource("/com/auction/client/view/" + fxmlFile));
             root = loader.load();
         }
         catch (IOException e) {
