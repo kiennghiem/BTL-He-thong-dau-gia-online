@@ -7,7 +7,7 @@ import common.Admin;
 import common.AppConstants;
 import com.auction.server.database.dao.BaseDAO;
 import com.auction.server.database.dao.UserDAO;
-import com.auction.server.database.DBConnection;
+import com.auction.server.database.DatabaseManager;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -20,7 +20,7 @@ public class UserDAOImpl extends BaseDAO implements UserDAO {
     public User authenticate(String username, String password) {
         String query = "SELECT * FROM users WHERE username = ? AND password = ?";
 
-        try (Connection conn = DBConnection.getInstance().getConnection();
+        try (Connection conn = DatabaseManager.getInstance().getConnection();
              PreparedStatement pstmt = conn.prepareStatement(query)) {
 
             pstmt.setString(1, username);
@@ -42,7 +42,7 @@ public class UserDAOImpl extends BaseDAO implements UserDAO {
     public boolean registerUser(User user) {
         String query = "INSERT INTO users (username, password, role) VALUES (?, ?, ?)";
 
-        try (Connection conn = DBConnection.getInstance().getConnection();
+        try (Connection conn = DatabaseManager.getInstance().getConnection();
              PreparedStatement pstmt = conn.prepareStatement(query)) {
 
             pstmt.setString(1, user.getUsername());
