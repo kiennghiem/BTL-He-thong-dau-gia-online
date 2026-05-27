@@ -1,24 +1,28 @@
 package com.auction.server.database.dao;
 
-import com.auction.models.Auction;
+import com.auction.models.Auction; // Cập nhật đúng package vị trí của Auction.java
+import java.math.BigDecimal;
+import java.sql.SQLException;
+import java.util.List;
 
 /**
- * Interface for Auction persistence.
- * Handles updates to auction status, final price, and winner.
+ * Interface định nghĩa các hợp đồng (contract) thao tác dữ liệu cho thực thể Auction.
  */
 public interface AuctionDAO {
-    /**
-     * Updates the auction state in the database (status, winner, current price).
-     */
-    boolean updateAuctionStatus(Auction auction);
-    
-    /**
-     * Retrieves all active auctions (OPEN, RUNNING, PENDING) from the database.
-     */
-    java.util.List<com.auction.models.Auction> getAllActiveAuctions();
 
-    /**
-     * Finds an auction by ID.
-     */
-    Auction findById(String auctionId);
+    Auction findById(String id) throws SQLException;
+
+    Auction findByItemId(String itemId) throws SQLException;
+
+    List<Auction> findAll() throws SQLException;
+
+    List<Auction> findByStatus(String status) throws SQLException;
+
+    boolean insert(Auction auction) throws SQLException;
+
+    boolean update(Auction auction) throws SQLException;
+
+    boolean updateStatus(String auctionId, String newStatus) throws SQLException;
+
+    boolean placeBid(String auctionId, String bidderId, BigDecimal newBidPrice) throws SQLException;
 }

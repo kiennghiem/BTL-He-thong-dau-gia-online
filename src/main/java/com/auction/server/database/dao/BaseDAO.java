@@ -1,6 +1,6 @@
 package com.auction.server.database.dao;
 
-import com.auction.server.database.DBConnection;
+import com.auction.server.database.DatabaseManager;
 
 import java.sql.Connection;
 import java.sql.SQLException;
@@ -17,7 +17,7 @@ public abstract class BaseDAO {
      * @throws SQLException if connection pool runs out or fails
      */
     protected Connection getConnection() throws SQLException {
-        return DBConnection.getInstance().getConnection();
+        return DatabaseManager.getInstance().getConnection();
     }
 
     /**
