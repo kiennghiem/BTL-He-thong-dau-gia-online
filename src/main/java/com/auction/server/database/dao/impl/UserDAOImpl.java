@@ -58,15 +58,16 @@ public class UserDAOImpl implements UserDAO {
 
     @Override
     public void addUser(User user) throws DatabaseException {
-        String query = "INSERT INTO users (username, password, role, balance) VALUES (?, ?, ?, ?)";
+        String query = "INSERT INTO users (id, username, password, role, balance) VALUES (?, ?, ?, ?, ?)";
 
         try (Connection conn = DatabaseConnection.getConnection();
              PreparedStatement pstmt = conn.prepareStatement(query)) {
 
-            pstmt.setString(1, user.getUsername());
-            pstmt.setString(2, user.getPassword());
-            pstmt.setString(3, user.getRole().toString());
-            pstmt.setBigDecimal(4, user.getBalance());
+            pstmt.setString(1, user.getId());
+            pstmt.setString(2, user.getUsername());
+            pstmt.setString(3, user.getPassword());
+            pstmt.setString(4, user.getRole().toString());
+            pstmt.setBigDecimal(5, user.getBalance());
 
             pstmt.executeUpdate();
         }
