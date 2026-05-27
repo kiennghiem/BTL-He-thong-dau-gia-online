@@ -1,6 +1,7 @@
 package com.auction.models;
 
 import com.auction.server.factory.ItemType;
+import java.math.BigDecimal;
 
 public abstract class Item extends Entity {
 
@@ -8,11 +9,11 @@ public abstract class Item extends Entity {
     private ItemType type;
     private String itemName;
     private String description;
-    private double startingPrice;
+    private BigDecimal startingPrice;
     private Seller owner;
 
     // Create an instance of a new item
-    public Item(ItemType type, String itemName, String description, double startingPrice, Seller owner) {
+    public Item(ItemType type, String itemName, String description, BigDecimal startingPrice, Seller owner) {
         super();
         this.type = type;
         this.itemName = itemName;
@@ -22,7 +23,7 @@ public abstract class Item extends Entity {
     }
 
     // Create an instance of an existed item from the database
-    public Item(String id, ItemType type, String itemName, String description, double startingPrice, Seller owner) {
+    public Item(String id, ItemType type, String itemName, String description, BigDecimal startingPrice, Seller owner) {
         super(id);
         this.type = type;
         this.itemName = itemName;
@@ -43,10 +44,10 @@ public abstract class Item extends Entity {
     public void setDescription(String description) {
         this.description = description;
     }
-    public double getStartingPrice() {
+    public BigDecimal getStartingPrice() {
         return startingPrice;
     }
-    public void setStartingPrice(double startingPrice) {
+    public void setStartingPrice(BigDecimal startingPrice) {
         this.startingPrice = startingPrice;
     }
     public ItemType getType() {

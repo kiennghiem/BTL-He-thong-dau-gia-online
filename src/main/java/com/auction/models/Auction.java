@@ -9,6 +9,7 @@ import java.util.concurrent.Executors;
 
 import com.auction.exceptions.*;
 import com.auction.server.observer.*;
+import java.math.BigDecimal;
 
 public class Auction extends Entity {
 
@@ -16,10 +17,10 @@ public class Auction extends Entity {
     private Item item;
     private Seller seller;
     private AuctionStatus status;
-    private LocalDateTime startingTime;
-    private LocalDateTime closingTime;
+    private LocalDateTime startTime;
+    private LocalDateTime closeTime;
     private BidTransaction highestBid;
-    private double currentPrice;
+    private BigDecimal currentPrice;
     // History of all proper bids
     private List<BidTransaction> bidHistory;
     // List of observers
@@ -27,12 +28,12 @@ public class Auction extends Entity {
     private ScheduledExecutorService scheduler;
 
     // Constructors
-    public Auction(Item item, Seller seller, LocalDateTime startingTime, LocalDateTime closingTime) {
+    public Auction(Item item, Seller seller, LocalDateTime startTime, LocalDateTime closingTime) {
         this.item = item;
         this.seller = seller;
         this.status = AuctionStatus.PENDING;
-        this.startingTime = startingTime;
-        this.closingTime = closingTime;
+        this.startTime = startTime;
+        this.closeTime = closingTime;
         // At first, the current price is the item's starting price
         this.currentPrice = item.getStartingPrice();
         this.bidHistory = new ArrayList<>();
@@ -40,56 +41,16 @@ public class Auction extends Entity {
         this.scheduler = Executors.newSingleThreadScheduledExecutor();
     }
 
-    // Getters and Setters
-    public Item getItem() {
-        return this.item;
-    }
-    public void setItem(Item item) {
-        this.item = item;
-    }
-    public Seller getSeller() {
-        return this.seller;
-    }
-    public void setSeller(Seller seller) {
-        this.seller = seller;
-    }
-    public AuctionStatus getStatus() {
-        return status;
-    }
-    public LocalDateTime getStartingTime() {
-        return startingTime;
-    }
-    public void setStartingTime(LocalDateTime startingTime) {
-        this.startingTime = startingTime;
-    }
-    public void setClosingTime(LocalDateTime closingTime) {
-        this.closingTime = closingTime;
-    }
-    public LocalDateTime getClosingTime() {
-        return closingTime;
-    }
-    public BidTransaction getHighestBid() {
-        if (bidHistory.isEmpty()) {
-            return null;
-        }
-        else {
-            return highestBid;
-        }
-    }
-    public double getCurrentPrice() {
-        return currentPrice;
-    }
-
     // Method to check if Auction is running (WILL CHANGE cuz will make a seperate timer class)
     public boolean IsAuctioning(){
         LocalDateTime now = LocalDateTime.now();
-        if (now.isBefore(startingTime)) {
+        if (now.isBefore(startTime)) {
             return false;
         }
-        else if (closingTime == null || now.isAfter(closingTime)) {
+        else if (closeTime == null || now.isAfter(closeTime)) {
             return false;
         }
-        else return "RUNNING".equals(status);
+        else return AuctionStatus.RUNNING.equals(status);
     }
 
     // Method to add a bid ONLY if there is no bid, or the bid is higher than highestBid
@@ -98,7 +59,7 @@ public class Auction extends Entity {
         if (!this.IsAuctioning()) {
             throw new InvalidBidException("Auction is currently not active.");
         }
-        if (bid.getBidPrice() <= currentPrice) {
+        if (bid.getBidPrice() == null || bid.getBidPrice().compareTo(currentPrice) <= 0) {
             throw new InvalidBidException("Price must be higher than current price.");
         }
         bidHistory.add(bid);
@@ -156,4 +117,43 @@ public class Auction extends Entity {
         // MORE METHODS
     }
 
+    // Getters and Setters
+    public Item getItem() {
+        return this.item;
+    }
+    public void setItem(Item item) {
+        this.item = item;
+    }
+    public Seller getSeller() {
+        return this.seller;
+    }
+    public void setSeller(Seller seller) {
+        this.seller = seller;
+    }
+    public AuctionStatus getStatus() {
+        return status;
+    }
+    public LocalDateTime getStartTime() {
+        return startTime;
+    }
+    public void setStartTime(LocalDateTime startTime) {
+        this.startTime = startTime;
+    }
+    public void setCloseTime(LocalDateTime closeTime) {
+        this.closeTime = closeTime;
+    }
+    public LocalDateTime getCloseTime() {
+        return closeTime;
+    }
+    public BidTransaction getHighestBid() {
+        if (bidHistory.isEmpty()) {
+            return null;
+        }
+        else {
+            return highestBid;
+        }
+    }
+    public BigDecimal getCurrentPrice() {
+        return currentPrice;
+    }
 }

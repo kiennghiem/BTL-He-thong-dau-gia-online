@@ -1,13 +1,13 @@
 package com.auction.server.database.dao.impl;
 
 import com.auction.exceptions.DatabaseException;
-import com.auction.models.Bidder;
 import com.auction.models.User;
 import com.auction.server.database.dao.UserDAO;
 import com.auction.server.database.DatabaseConnection;
 import com.auction.server.factory.UserFactory;
 import com.auction.server.factory.UserRole;
 
+import java.math.BigDecimal;
 import java.sql.*;
 
 public class UserDAOImpl implements UserDAO {
@@ -66,7 +66,7 @@ public class UserDAOImpl implements UserDAO {
             pstmt.setString(1, user.getUsername());
             pstmt.setString(2, user.getPassword());
             pstmt.setString(3, user.getRole().toString());
-            pstmt.setDouble(4, user.getBalance());
+            pstmt.setBigDecimal(4, user.getBalance());
 
             pstmt.executeUpdate();
         }
@@ -81,7 +81,7 @@ public class UserDAOImpl implements UserDAO {
         String password = rs.getString("password");
         String role = rs.getString("role");
         UserRole roleEnum = UserRole.valueOf(role.toUpperCase());
-        double balance = rs.getDouble("balance");
+        BigDecimal balance = rs.getBigDecimal("balance");
 
         return UserFactory.createUserFromDB(id, roleEnum, username, password, balance);
     }

@@ -1,6 +1,7 @@
 package com.auction.models;
 
 import com.auction.server.factory.UserRole;
+import java.math.BigDecimal;
 
 public class Seller extends User {
     private static final long serialVersionUID = 1L;
@@ -11,7 +12,7 @@ public class Seller extends User {
     }
 
     // Create a Seller instance from an existed Seller in DB
-    public Seller(String id, String username, String password, double balance) {
+    public Seller(String id, String username, String password, BigDecimal balance) {
         super(id, UserRole.SELLER, username, password, balance);
     }
 }

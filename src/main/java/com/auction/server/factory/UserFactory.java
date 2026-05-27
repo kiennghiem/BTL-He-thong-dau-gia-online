@@ -1,6 +1,7 @@
 package com.auction.server.factory;
 
 import com.auction.models.*;
+import java.math.BigDecimal;
 
 public class UserFactory {
     public static User createNewUser(UserRole role, String username, String password) throws IllegalArgumentException {
@@ -18,7 +19,7 @@ public class UserFactory {
         }
     }
 
-    public static User createUserFromDB(String id, UserRole role, String username, String password, double balance)
+    public static User createUserFromDB(String id, UserRole role, String username, String password, BigDecimal balance)
             throws IllegalArgumentException {
         switch (role) {
             case BIDDER -> {

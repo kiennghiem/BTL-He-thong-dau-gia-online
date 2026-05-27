@@ -1,13 +1,15 @@
 package com.auction.models;
 
+import java.math.BigDecimal;
+
 public class BidTransaction
 {
     private static final long serialVersionUID = 1L;
     private Bidder bidder;
-    private int bidPrice;
+    private BigDecimal bidPrice;
 
     // Constructors
-    public BidTransaction(Bidder bidder, int bidPrice) {
+    public BidTransaction(Bidder bidder, BigDecimal bidPrice) {
         this.bidder = bidder;
         this.bidPrice = bidPrice;
     }
@@ -17,7 +19,7 @@ public class BidTransaction
         return this.bidder;
     }
 
-    public int getBidPrice() {
+    public BigDecimal getBidPrice() {
         return bidPrice;
     }
 }

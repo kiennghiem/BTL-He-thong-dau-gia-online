@@ -1,19 +1,20 @@
 package com.auction.models;
 
 import com.auction.server.factory.ItemType;
+import java.math.BigDecimal;
 
 public class Vehicle extends Item {
     private static final long serialVersionUID = 1L;
     private String brand;
 
     // Create a new Vehicle instance
-    public Vehicle(String itemName, String description, double startingPrice, String brand, Seller owner) {
+    public Vehicle(String itemName, String description, BigDecimal startingPrice, String brand, Seller owner) {
         super(ItemType.VEHICLE, itemName, description,startingPrice, owner);
         this.brand = brand;
     }
 
     // Create a Vehicle instance from the database
-    public Vehicle(String id, String itemName, String description, double startingPrice, String Brand, Seller owner){
+    public Vehicle(String id, String itemName, String description, BigDecimal startingPrice, String Brand, Seller owner){
         super(id, ItemType.VEHICLE, itemName,description,startingPrice, owner);
         this.brand = Brand;
     }
