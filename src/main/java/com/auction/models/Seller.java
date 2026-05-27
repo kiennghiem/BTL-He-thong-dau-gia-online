@@ -5,6 +5,6 @@ public class Seller extends User {
     
     public Seller(String userName, String password) {
         super(userName,password);
-        this.setRole(main.java.common.AppConstants.ROLE_SELLER);
+        this.setRole(com.auction.models.dto.AppConstants.ROLE_SELLER);
     }
 }

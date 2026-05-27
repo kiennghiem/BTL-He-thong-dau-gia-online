@@ -4,7 +4,7 @@ import com.auction.models.Admin;
 import com.auction.models.Bidder;
 import com.auction.models.Seller;
 import com.auction.models.User;
-import main.java.common.AppConstants;
+import com.auction.models.dto.AppConstants;
 import com.auction.server.database.dao.BaseDAO;
 import com.auction.server.database.dao.UserDAO;
 

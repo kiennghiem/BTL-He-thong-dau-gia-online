@@ -5,8 +5,8 @@ import com.auction.exceptions.InvalidBidException;
 import com.auction.exceptions.AuctionNotFoundException;
 import com.auction.server.observer.AuctionObserver;
 import com.auction.server.service.AuctionService;
-import common.AppConstants;
-import common.AuctionUpdateDTO;
+import com.auction.models.dto.AppConstants;
+import com.auction.models.dto.AuctionUpdateDTO;
 
 import java.util.ArrayList;
 import java.util.List;

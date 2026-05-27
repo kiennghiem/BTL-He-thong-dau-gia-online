@@ -9,7 +9,7 @@ public class Bidder extends User {
 
     public Bidder(String username, String password) {
         super(username, password);
-        this.setRole(main.java.common.AppConstants.ROLE_BIDDER);
+        this.setRole(com.auction.models.dto.AppConstants.ROLE_BIDDER);
         this.balance = 0.0;
         this.lockedAmount = 0.0;
     }

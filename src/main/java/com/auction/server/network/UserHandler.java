@@ -4,12 +4,12 @@ import com.auction.exceptions.AuthenticationException;
 import com.auction.exceptions.ValidationException;
 import com.auction.models.*;
 import com.auction.server.service.UserService;
-import common.LoginRequest;
-import common.LogoutRequest;
-import common.RegisterRequest;
-import main.java.common.AppConstants;
-import main.java.common.AuthResponse;
-import common.NetworkMessage;
+import com.auction.models.dto.LoginRequest;
+import com.auction.models.dto.LogoutRequest;
+import com.auction.models.dto.RegisterRequest;
+import com.auction.models.dto.AppConstants;
+import com.auction.models.dto.AuthResponse;
+import com.auction.models.dto.NetworkMessage;
 
 import java.io.IOException;
 import java.io.ObjectOutputStream;
@@ -27,14 +27,18 @@ public class UserHandler {
         this.userService = new UserService();
     }
 
-    public void handleMessage(NetworkMessage message) {
+    public boolean handleMessage(NetworkMessage message) {
         if (message instanceof LoginRequest loginReq) {
             handleLogin(loginReq);
+            return true;
         } else if (message instanceof LogoutRequest logoutReq) {
             handleLogout(logoutReq);
+            return true;
         } else if (message instanceof RegisterRequest registerReq) {
             handleRegister(registerReq);
+            return true;
         }
+        return false;
     }
 
     private void handleLogin(LoginRequest req) {

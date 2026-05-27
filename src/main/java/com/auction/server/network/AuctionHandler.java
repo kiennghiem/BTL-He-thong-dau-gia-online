@@ -4,8 +4,8 @@ import com.auction.models.Notification;
 import com.auction.server.manager.AuctionManager;
 import com.auction.server.observer.AuctionObserver;
 import com.auction.server.service.AuctionService;
-import main.java.common.BidRequest;
-import common.NetworkMessage;
+import com.auction.models.dto.BidRequest;
+import com.auction.models.dto.NetworkMessage;
 
 import java.io.IOException;
 import java.io.ObjectOutputStream;
@@ -18,21 +18,24 @@ public class AuctionHandler implements AuctionObserver {
     private final ObjectOutputStream out;
     private final AuctionService auctionService;
     private final AuctionManager auctionManager;
+    private final java.util.Set<String> subscribedAuctions;
 
     public AuctionHandler(ObjectOutputStream out) {
         this.out = out;
         this.auctionService = new AuctionService();
         this.auctionManager = AuctionManager.getInstance();
+        this.subscribedAuctions = java.util.Collections.synchronizedSet(new java.util.HashSet<>());
     }
 
     /**
      * Entry point for messages identified as auction-related.
      */
-    public void handleMessage(NetworkMessage message) {
+    public boolean handleMessage(NetworkMessage message) {
         if (message instanceof BidRequest bidReq) {
             handleBid(bidReq);
+            return true;
         }
-        // Future: Handle ViewAuctionRequest, CancelAuctionRequest, etc.
+        return false;
     }
 
     private void handleBid(BidRequest req) {
@@ -41,12 +44,27 @@ public class AuctionHandler implements AuctionObserver {
             auctionService.placeBid(req.getAuctionId(), req.getBidderId(), req.getAmount());
             
             // 2. Automatically subscribe this client to real-time updates for this auction
-            auctionManager.subscribe(req.getAuctionId(), this);
+            if (subscribedAuctions.add(req.getAuctionId())) {
+                auctionManager.subscribe(req.getAuctionId(), this);
+            }
             
             System.out.println("[AuctionHandler] Bid successful: " + req.getBidderId() + " on " + req.getAuctionId());
         } catch (Exception e) {
             sendResponse("ERROR: " + e.getMessage());
         }
+    }
+
+    /**
+     * Unsubscribes from all auctions when the connection is closed.
+     */
+    public void cleanUp() {
+        synchronized (subscribedAuctions) {
+            for (String auctionId : subscribedAuctions) {
+                auctionManager.unsubscribe(auctionId, this);
+            }
+            subscribedAuctions.clear();
+        }
+        System.out.println("[AuctionHandler] Cleaned up subscriptions.");
     }
 
     /**

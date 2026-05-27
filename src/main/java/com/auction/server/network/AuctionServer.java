@@ -1,8 +1,8 @@
 package com.auction.server.network;
 
 import com.auction.server.service.AuctionService;
-import common.NetworkMessage;
-import main.java.common.AppConstants;
+import com.auction.models.dto.NetworkMessage;
+import com.auction.models.dto.AppConstants;
 
 import java.io.IOException;
 import java.io.ObjectInputStream;
@@ -18,9 +18,14 @@ public class AuctionServer {
     private final AuctionService auctionService;
 
     public AuctionServer() {
-        this.auctionService = new AuctionService();
-        // Link Service with Manager for end-of-auction persistence
-        com.auction.server.manager.AuctionManager.getInstance().setAuctionService(this.auctionService);
+        try {
+            this.auctionService = new AuctionService();
+            // Link Service with Manager for end-of-auction persistence
+            com.auction.server.manager.AuctionManager.getInstance().setAuctionService(this.auctionService);
+        } catch (Exception e) {
+            System.err.println("[SERVER] Fatal Error during initialization: " + e.getMessage());
+            throw new RuntimeException("Server could not start due to initialization failure.", e);
+        }
     }
 
     public void start() {
@@ -55,13 +60,15 @@ public class AuctionServer {
         @Override
         public void run() {
             UserHandler userHandler = null;
+            AuctionHandler auctionHandler = null;
+            
             try (
                 ObjectOutputStream out = new ObjectOutputStream(socket.getOutputStream());
                 ObjectInputStream in = new ObjectInputStream(socket.getInputStream())
             ) {
                 // Initialize specialized handlers for this session
                 userHandler = new UserHandler(out);
-                AuctionHandler auctionHandler = new AuctionHandler(out);
+                auctionHandler = new AuctionHandler(out);
 
                 System.out.println("[SESSION] Handlers initialized for " + socket.getInetAddress());
 
@@ -70,22 +77,34 @@ public class AuctionServer {
                     try {
                         Object received = in.readObject();
                         if (received instanceof NetworkMessage msg) {
-                            // Routing logic: Identify the type of message and delegate
-                            userHandler.handleMessage(msg);
-                            auctionHandler.handleMessage(msg);
+                            // Routing logic with short-circuiting: 
+                            // Try UserHandler first, if not handled, try AuctionHandler
+                            boolean handled = userHandler.handleMessage(msg);
+                            if (!handled) {
+                                handled = auctionHandler.handleMessage(msg);
+                            }
+                            
+                            if (!handled) {
+                                System.out.println("[SESSION] Unhandled message: " + msg.getClass().getSimpleName());
+                            }
                         }
                     } catch (ClassNotFoundException e) {
                         System.err.println("[SESSION] Unknown data received: " + e.getMessage());
                     } catch (IOException e) {
+                        // Connection closed by client
                         break;
                     }
                 }
             } catch (IOException e) {
-                // Normal disconnect or network error
+                // IO Error (e.g. broken pipe)
             } finally {
                 System.out.println("[SESSION] Client disconnected: " + socket.getInetAddress());
+                // Mandatory cleanup to prevent memory leaks and ghost users
                 if (userHandler != null) {
                     userHandler.cleanUp();
+                }
+                if (auctionHandler != null) {
+                    auctionHandler.cleanUp();
                 }
                 try {
                     socket.close();

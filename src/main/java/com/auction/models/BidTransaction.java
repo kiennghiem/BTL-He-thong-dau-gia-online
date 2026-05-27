@@ -1,5 +1,5 @@
 package com.auction.models;
-import common.NetworkMessage;
+import com.auction.models.dto.NetworkMessage;
 
 import java.time.LocalDateTime;
 import java.util.UUID;
