@@ -7,7 +7,7 @@ public class Vehicle extends Item {
     private static final long serialVersionUID = 1L;
     private String brand;
 
-    public Vehicle(String itemName, String description, float startingPrice, String brand) {
+    public Vehicle(String itemName, String description, double startingPrice, String brand) {
         super(itemName,description,startingPrice);
         this.brand = brand;
     }

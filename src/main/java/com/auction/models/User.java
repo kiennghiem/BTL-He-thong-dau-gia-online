@@ -1,12 +1,13 @@
 package com.auction.models;
 
+
 public abstract class User extends Entity {
     private static final long serialVersionUID = 1L;
     private String userName;
     private String password;
     private String role;
 
-    public User(String userName, String password) {
+    public User(String username, String password) {
         super();
         this.userName = userName;
         this.password = password;
