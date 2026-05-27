@@ -7,9 +7,9 @@ import java.sql.SQLException;
 
 public interface UserDAO {
 
-    User findByUsername(String username) throws DatabaseException;
+    User findByUsername(String username); // Used for login, sign up
 
-    User findById(String id) throws DatabaseException;
+    User findById(String id);
 
-    void addUser(User user) throws DatabaseException;
+    void addUser(User user); // Used for sign up
 }
