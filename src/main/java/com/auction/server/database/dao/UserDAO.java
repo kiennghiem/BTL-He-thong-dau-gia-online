@@ -1,15 +1,17 @@
-package com.auction.server.database.dao; // Ensure this matches your folder structure
+package com.auction.server.database.dao;
 
-import common.User; // Import the specific User model
+import com.auction.exceptions.DatabaseException;
+import com.auction.models.User;
+
+import java.sql.SQLException;
 
 public interface UserDAO {
-    /**
-     * Finds a user by their username and password.
-     */
-    User authenticate(String username, String password);
 
-    /**
-     * Saves a new user to the database.
-     */
-    boolean registerUser(User user);
+    User findByUsername(String username); // Used for login, sign up
+
+    User findById(String id);
+
+    void addUser(User user); // Used for sign up
+
+    void updateUser(User user);
 }

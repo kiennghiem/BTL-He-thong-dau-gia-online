@@ -22,6 +22,7 @@ public final class DatabaseManager {
     private String url = "jdbc:mysql://localhost:3306/auction_db?useSSL=false&allowPublicKeyRetrieval=true";
     private String username = "root";
     private String password = "Seductivemonke";
+
     private int poolSize = 10;
     private int connectionTimeout = 30000;
     private int idleTimeout = 600000;

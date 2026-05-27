@@ -81,14 +81,14 @@ public class AuctionManager {
         }
 
         synchronized (auction) {
-            if (auction.getStatus() != AuctionStatus.RUNNING) {
+            if (auction.getAuctionStatus() != AuctionStatus.RUNNING) {
                 throw new InvalidBidException(AppConstants.ERR_AUCTION_CLOSED);
             }
 
             // Anti-sniping logic
-            long remainingSeconds = Duration.between(LocalDateTime.now(), auction.getClosingTime()).getSeconds();
+            long remainingSeconds = Duration.between(LocalDateTime.now(), auction.getEndTime()).getSeconds();
             if (remainingSeconds > 0 && remainingSeconds <= AppConstants.SNIPE_WINDOW_SECONDS) {
-                auction.setClosingTime(auction.getClosingTime().plusSeconds(AppConstants.EXTENSION_TIME_SECONDS));
+                auction.setEndTime(auction.getEndTime().plusSeconds(AppConstants.EXTENSION_TIME_SECONDS));
                 System.out.println("[INFO] Anti-sniping: Extended auction " + auctionId);
                 
                 // Notify about time extension immediately so UI can update timer
@@ -99,7 +99,7 @@ public class AuctionManager {
                 ));
             }
 
-            // auction.addBid (camelCase) throws InvalidBidException if bid is too low
+            // auction.addBid throws InvalidBidException if bid is too low
             auction.addBid(bid);
             
             System.out.println("[INFO] Bid placed successfully on " + auctionId + ": " + bid.getBidAmount());
@@ -128,9 +128,9 @@ public class AuctionManager {
             for (Auction auction : activeAuctions.values()) {
                 synchronized (auction) {
                     try {
-                        AuctionStatus oldStatus = auction.getStatus();
+                        AuctionStatus oldStatus = auction.getAuctionStatus();
                         
-                        if (oldStatus == AuctionStatus.OPEN && now.isAfter(auction.getStartingTime())) {
+                        if (oldStatus == AuctionStatus.OPEN && now.isAfter(auction.getStartTime())) {
                             auction.updateStatus(AuctionStatus.RUNNING);
                             broadcastNotification(new Notification(
                                     Notification.Type.STATUS_CHANGED,
@@ -138,7 +138,7 @@ public class AuctionManager {
                                     createUpdateDTO(auction)
                             ));
                         } 
-                        else if (oldStatus == AuctionStatus.RUNNING && now.isAfter(auction.getClosingTime())) {
+                        else if (oldStatus == AuctionStatus.RUNNING && now.isAfter(auction.getEndTime())) {
                             auction.updateStatus(AuctionStatus.FINISHED);
                             System.out.println("[INFO] Auction " + auction.getId() + " finished.");
                             
@@ -166,12 +166,14 @@ public class AuctionManager {
      */
     private AuctionUpdateDTO createUpdateDTO(Auction auction) {
         String bidderName = (auction.getHighestBid() != null) ? auction.getHighestBid().getBidderId() : "None";
+        double currentPrice = (auction.getCurrentPrice() != null) ? auction.getCurrentPrice().doubleValue() : 0.0;
+        
         return new AuctionUpdateDTO(
                 auction.getId(),
-                auction.getCurrentPrice(),
+                currentPrice,
                 bidderName,
                 auction.getClosingTimeMillis(),
-                auction.getStatus().name()
+                auction.getAuctionStatus() != null ? auction.getAuctionStatus().name() : "PENDING"
         );
     }
 

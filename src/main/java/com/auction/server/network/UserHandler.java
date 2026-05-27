@@ -2,12 +2,12 @@ package com.auction.server.network;
 
 import com.auction.exceptions.AuthenticationException;
 import com.auction.exceptions.ValidationException;
-import com.auction.models.*;
+import com.auction.models.User;
 import com.auction.server.service.UserService;
+import com.auction.server.factory.UserRole;
 import com.auction.models.dto.LoginRequest;
 import com.auction.models.dto.LogoutRequest;
 import com.auction.models.dto.RegisterRequest;
-import com.auction.models.dto.AppConstants;
 import com.auction.models.dto.AuthResponse;
 import com.auction.models.dto.NetworkMessage;
 
@@ -16,6 +16,7 @@ import java.io.ObjectOutputStream;
 
 /**
  * UserHandler manages authentication and user-profile communication.
+ * Standardizes security checks and session tracking for each connection.
  */
 public class UserHandler {
     private final ObjectOutputStream out;
@@ -27,6 +28,9 @@ public class UserHandler {
         this.userService = new UserService();
     }
 
+    /**
+     * Entry point for messages identified as user-related.
+     */
     public boolean handleMessage(NetworkMessage message) {
         if (message instanceof LoginRequest loginReq) {
             handleLogin(loginReq);
@@ -45,8 +49,12 @@ public class UserHandler {
         try {
             User user = userService.login(req.getUsername(), req.getPassword());
             this.currentUsername = user.getUsername();
-            AuthResponse response = new AuthResponse(true, "Đăng nhập thành công!", user.getRole());
+            
+            // Fixed: Convert UserRole enum to String for AuthResponse
+            AuthResponse response = new AuthResponse(true, "Đăng nhập thành công!", user.getRole().name());
             sendResponse(response);
+            
+            System.out.println("[UserHandler] Login successful for: " + currentUsername);
         } catch (AuthenticationException e) {
             sendResponse(new AuthResponse(false, e.getMessage(), null));
         }
@@ -62,23 +70,21 @@ public class UserHandler {
 
     private void handleRegister(RegisterRequest req) {
         try {
-            // Determine user type based on role in request
-            User newUser;
-            String role = req.getRole();
-            if (AppConstants.ROLE_SELLER.equalsIgnoreCase(role)) {
-                newUser = new Seller(req.getUsername(), req.getPassword());
-            } else if (AppConstants.ROLE_ADMIN.equalsIgnoreCase(role)) {
-                newUser = new Admin(req.getUsername(), req.getPassword());
-            } else {
-                newUser = new Bidder(req.getUsername(), req.getPassword());
+            // 1. Convert role string from request to UserRole enum
+            UserRole role;
+            try {
+                role = UserRole.valueOf(req.getRole().toUpperCase());
+            } catch (Exception e) {
+                role = UserRole.BIDDER; // Safe default
             }
 
-            // Call the Orchestrator Service
-            userService.register(newUser, req.getPassword());
+            // 2. Delegate creation and persistence to the Orchestrator Service
+            User newUser = userService.register(role, req.getUsername(), req.getPassword());
             
-            // Success response
-            sendResponse(new AuthResponse(true, "Đăng ký tài khoản thành công!", newUser.getRole()));
+            // 3. Success response (Fixed: Convert UserRole enum to String)
+            sendResponse(new AuthResponse(true, "Đăng ký tài khoản thành công!", newUser.getRole().name()));
 
+            System.out.println("[UserHandler] Registration successful: " + newUser.getUsername());
         } catch (ValidationException e) {
             // User-friendly validation error
             sendResponse(new AuthResponse(false, e.getMessage(), null));
@@ -88,6 +94,9 @@ public class UserHandler {
         }
     }
 
+    /**
+     * Ensures session cleanup if the connection is lost.
+     */
     public void cleanUp() {
         if (currentUsername != null) {
             userService.forceLogout(currentUsername);
@@ -100,9 +109,10 @@ public class UserHandler {
             synchronized (out) {
                 out.writeObject(response);
                 out.flush();
+                out.reset(); // Crucial: prevents object caching issues in persistent streams
             }
         } catch (IOException e) {
-            System.err.println("[UserHandler] Connection error: " + e.getMessage());
+            System.err.println("[UserHandler] Connection error while sending response: " + e.getMessage());
         }
     }
 }

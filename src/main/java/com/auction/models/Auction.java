@@ -5,12 +5,8 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.Executors;
 
 import com.auction.exceptions.*;
-import com.auction.server.observer.*;
 
 // Giả định Entity là lớp cha của bạn chứa phương thức getId()
 public class Auction extends Entity {
@@ -30,14 +26,10 @@ public class Auction extends Entity {
 
     // History of all proper bids
     private List<BidTransaction> bidHistory;
-    // List of observers
-    private List<AuctionObserver> observers;
-    private ScheduledExecutorService scheduler;
 
     // Constructors trống dành cho DAO RowMapper khởi tạo thực thể
     public Auction() {
         this.bidHistory = new ArrayList<>();
-        this.observers = new CopyOnWriteArrayList<>();
     }
 
     public Auction(Item item, Seller seller, LocalDateTime startTime, LocalDateTime endTime, String title, String description) {
@@ -52,25 +44,6 @@ public class Auction extends Entity {
         this.startingPrice = BigDecimal.valueOf(item.getStartingPrice());
         this.currentPrice = this.startingPrice;
         this.bidHistory = new ArrayList<>();
-        this.observers = new CopyOnWriteArrayList<>();
-        this.scheduler = Executors.newSingleThreadScheduledExecutor();
-    }
-
-    // --- Mẫu thiết kế Observer nâng cao ---
-    public void addObserver(AuctionObserver observer) {
-        if (!observers.contains(observer)) {
-            observers.add(observer);
-        }
-    }
-
-    public void removeObserver(AuctionObserver observer) {
-        observers.remove(observer);
-    }
-
-    private void notifyObservers() {
-        for (AuctionObserver observer : observers) {
-            observer.update(highestBid);
-        }
     }
 
     /**
@@ -168,6 +141,10 @@ public class Auction extends Entity {
         this.endTime = endTime;
     }
 
+    public AuctionStatus getAuctionStatus() {
+        return status;
+    }
+
     public String getStatus() {
         return status != null ? status.name() : null;
     }
@@ -180,6 +157,24 @@ public class Auction extends Entity {
                 // Fallback or log if status string is invalid
             }
         }
+    }
+
+    public void addBid(BidTransaction bid) throws InvalidBidException {
+        if (this.currentPrice != null && bid.getBidAmount().compareTo(this.currentPrice) <= 0) {
+            throw new InvalidBidException("Bid must be higher than current price");
+        }
+        this.highestBid = bid;
+        this.currentPrice = bid.getBidAmount();
+        this.bidHistory.add(bid);
+    }
+
+    public BidTransaction getHighestBid() {
+        return highestBid;
+    }
+
+    public long getClosingTimeMillis() {
+        if (endTime == null) return 0;
+        return endTime.atZone(java.time.ZoneId.systemDefault()).toInstant().toEpochMilli();
     }
 
     // Các hàm Setter bổ sung cho việc tái thiết lập Object từ DB

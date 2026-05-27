@@ -1,10 +1,17 @@
 package com.auction.models;
 
+import com.auction.server.factory.UserRole;
+
 public class Seller extends User {
     private static final long serialVersionUID = 1L;
-    
-    public Seller(String userName, String password) {
-        super(userName,password);
-        this.setRole(com.auction.models.dto.AppConstants.ROLE_SELLER);
+
+    // Create a new Seller instance
+    public Seller(String username, String password) {
+        super(UserRole.SELLER, username, password);
+    }
+
+    // Create a Seller instance from an existed Seller in DB
+    public Seller(String id, String username, String password, double balance) {
+        super(id, UserRole.SELLER, username, password, balance);
     }
 }

@@ -7,4 +7,8 @@ public class UserAlreadyLoggedInException extends AuthenticationException {
     public UserAlreadyLoggedInException(String message) {
         super(message);
     }
+
+    public UserAlreadyLoggedInException(String message, Throwable cause) {
+        super(message, cause);
+    }
 }

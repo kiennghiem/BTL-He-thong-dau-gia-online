@@ -1,28 +1,17 @@
 package com.auction.models;
 
+import com.auction.server.factory.UserRole;
 
 public class Bidder extends User {
     private static final long serialVersionUID = 1L;
-    
-    private double balance;
-    private double lockedAmount; // Money temporarily held during active bids
 
+    // Create a new Bidder instance
     public Bidder(String username, String password) {
-        super(username, password);
-        this.setRole(com.auction.models.dto.AppConstants.ROLE_BIDDER);
-        this.balance = 0.0;
-        this.lockedAmount = 0.0;
+        super(UserRole.BIDDER, username, password);
     }
 
-    public double getBalance() { return balance; }
-    public void setBalance(double balance) { this.balance = balance; }
-    public double getLockedAmount() { return lockedAmount; }
-    public void setLockedAmount(double lockedAmount) { this.lockedAmount = lockedAmount; }
-
-    /**
-     * Checks if the bidder has enough funds for a new bid.
-     */
-    public boolean canAfford(double amount) {
-        return (balance - lockedAmount) >= amount;
+    // Create a Bidder instance from an existed Bidder in DB
+    public Bidder(String id, String username, String password, double balance) {
+        super(id, UserRole.BIDDER, username, password, balance);
     }
 }

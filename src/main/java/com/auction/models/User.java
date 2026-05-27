@@ -1,24 +1,67 @@
 package com.auction.models;
 
+import com.auction.exceptions.InvalidDepositException;
+import com.auction.exceptions.InvalidWithdrawException;
+import com.auction.server.factory.UserRole;
 
 public abstract class User extends Entity {
     private static final long serialVersionUID = 1L;
-    private String userName;
+    private UserRole role;
+    private String username;
     private String password;
-    private String role;
+    private double balance;
 
-    public User(String username, String password) {
+    // Create an instance of a new user
+    public User(UserRole role, String username, String password) {
         super();
-        this.userName = userName;
+        this.role = role;
+        this.username = username;
         this.password = password;
-        this.role = " ";
+        this.balance = 0;
     }
 
-    public String getUsername() { return userName; }
-    public void setUsername ( String user_Name) {  userName = user_Name;}
+    // Create an instance of an existed user from the DB
+    public User(String id, UserRole role, String username, String password, double balance) {
+        super(id);
+        this.role = role;
+        this.username = username;
+        this.password = password;
+        this.balance = balance;
+    }
+
+    // Deposit money to balance
+    public void deposit(double amount) throws InvalidDepositException {
+        if (amount > 0) {
+            balance += amount;
+        } else {
+            throw new InvalidDepositException("Deposit amount must be higher than 0");
+        }
+    }
+
+    // Withdraw money from balance (to pay for an item from an auction)
+    public void withdraw(double amount) throws InvalidWithdrawException {
+        if (amount > 0) {
+            if (amount <= balance) {
+                balance -= amount;
+            } else {
+                throw new InvalidWithdrawException("Balance is not enough to withdraw from");
+            }
+        } else {
+            throw new InvalidWithdrawException("Withdraw amount must be higher than 0");
+        }
+    }
+
+    public String getUsername() { return username; }
+    public void setUsername ( String username) {  this.username = username;}
     public String getPassword() { return password;}
     public void setPassword( String password) {  this.password = password;}
-    public String getRole() { return role;}
-    public void setRole(String role) { this.role = role; }
+    public UserRole getRole() { return role;}
+    public void setRole(UserRole role) { this.role = role; }
+    public double getBalance() {
+        return balance;
+    }
+    public void setBalance(double balance) {
+        this.balance = balance;
+    }
 
 }

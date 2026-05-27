@@ -3,14 +3,14 @@ package com.auction.server.service;
 import com.auction.exceptions.AuctionNotFoundException;
 import com.auction.exceptions.InvalidBidException;
 import com.auction.models.*;
-import com.auction.server.database.DBConnection;
 import com.auction.server.database.dao.BidDAO;
 import com.auction.server.database.dao.DAOFactory;
 import com.auction.server.database.dao.ItemDAO;
-import com.auction.server.factory.ItemFactory;
+import com.auction.server.database.dao.AuctionDAO;
 import com.auction.server.manager.AuctionManager;
 
-import java.sql.*;
+import java.math.BigDecimal;
+import java.sql.SQLException;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
@@ -24,8 +24,8 @@ public class AuctionService {
     private final AuctionManager auctionManager;
     private final ItemDAO itemDAO;
     private final BidDAO bidDAO;
-    private final com.auction.server.database.dao.AuctionDAO auctionDAO;
-    
+    private final AuctionDAO auctionDAO;
+
     // Background thread pool for non-blocking database persistence
     private final ExecutorService persistenceExecutor;
 
@@ -43,11 +43,14 @@ public class AuctionService {
     public void finishAuction(String auctionId) {
         Auction auction = auctionManager.getAuction(auctionId);
         if (auction != null) {
-            // ASYNC: Do not block the status checker loop
             persistenceExecutor.submit(() -> {
-                boolean updated = auctionDAO.updateAuctionStatus(auction);
-                if (updated) {
-                    System.out.println("[AuctionService-Async] Auction " + auctionId + " finalized in DB.");
+                try {
+                    boolean updated = auctionDAO.updateStatus(auctionId, "FINISHED");
+                    if (updated) {
+                        System.out.println("[AuctionService-Async] Auction " + auctionId + " finalized in DB.");
+                    }
+                } catch (SQLException e) {
+                    System.err.println("[AuctionService-Async] Error finalizing auction status in DB: " + e.getMessage());
                 }
             });
         }
@@ -56,23 +59,26 @@ public class AuctionService {
     /**
      * Places a bid, updates real-time state, and persists to DB.
      */
-    public void placeBid(String auctionId, String bidderId, double amount) 
+    public void placeBid(String auctionId, String bidderId, double amount)
             throws InvalidBidException, AuctionNotFoundException {
-        
-        // 1. Create the transaction object
-        BidTransaction bid = new BidTransaction(auctionId, bidderId, amount);
 
-        // 2. Process in Real-time Manager (IMMEDIATE FEEDBACK)
-        // This is synchronized inside AuctionManager, ensuring data integrity in memory.
+        BidTransaction bid = new BidTransaction(auctionId, bidderId, BigDecimal.valueOf(amount));
         auctionManager.processBid(auctionId, bid);
 
-        // 3. ASYNC PERSISTENCE: Offload DB write to background thread
-        // The Client will receive success notification as soon as step 2 finishes.
         persistenceExecutor.submit(() -> {
             boolean saved = bidDAO.placeBid(bid);
             if (!saved) {
-                System.err.println("[AuctionService-Async] CRITICAL: Bid for " + bidderId + 
-                                   " on " + auctionId + " failed to save to DB!");
+                System.err.println("[AuctionService-Async] CRITICAL: Bid for " + bidderId +
+                        " on " + auctionId + " failed to save to DB via BidDAO!");
+            }
+
+            try {
+                boolean auctionUpdated = auctionDAO.placeBid(auctionId, bidderId, BigDecimal.valueOf(amount));
+                if (!auctionUpdated) {
+                    System.err.println("[AuctionService-Async] CRITICAL: Auction atomic bid constraints rejected the value for: " + auctionId);
+                }
+            } catch (SQLException e) {
+                System.err.println("[AuctionService-Async] CRITICAL: Database error updating auction current balance: " + e.getMessage());
             }
         });
     }
@@ -80,30 +86,83 @@ public class AuctionService {
     /**
      * Creates a new auction (Seller functionality).
      */
-    public boolean createAuction(ItemType type, String name, String desc, double startingPrice, 
-                                 String specAttr, Seller seller, LocalDateTime start, 
+    public boolean createAuction(ItemType type, String name, String desc, double startingPrice,
+                                 String specAttr, Seller seller, LocalDateTime start,
                                  LocalDateTime end, double minIncrement) {
-        
-        // 1. Create Item via Factory
-        Item item = ItemFactory.createItem(type, name, desc, startingPrice, specAttr);
-        item.setOwner(seller);
-        // Use a simple UUID or similar if id is null
-        if (item.getId() == null) item.setId(java.util.UUID.randomUUID().toString());
+
+        // 1. RESOLVED: Manually construct the correct common.Item subclass to resolve package conflicts
+        common.Item item;
+        switch (type.name()) {
+            case "ELECTRONICS":
+                common.Electronic e = new common.Electronic();
+                e.setBrand(specAttr);
+                item = e;
+                break;
+            case "VEHICLE":
+                common.Vehicle v = new common.Vehicle();
+                v.setBrand(specAttr);
+                item = v;
+                break;
+            case "ART":
+                common.Art a = new common.Art();
+                a.setArtist(specAttr);
+                item = a;
+                break;
+            default:
+                throw new IllegalArgumentException("Unknown item type: " + type);
+        }
+
+        String itemId = java.util.UUID.randomUUID().toString();
+        item.setId(itemId);
+        item.setItemName(name);
+        item.setDescription(desc);
+        item.setStartingPrice(startingPrice);
+        item.setCurrentPrice(startingPrice);
+        item.setStartingTime(start);
+        item.setClosingTime(end);
+
+        try {
+            item.setStatus(common.ItemStatus.RUNNING);
+        } catch (Exception e) {
+            // Fallback block if your enum defaults to a different open status name
+        }
+
+        // RESOLVED: Convert com.auction.models.Seller to common.Seller expected by common.Item
+        common.Seller commonSeller = new common.Seller();
+        commonSeller.setUsername(seller.getUsername());
+        item.setOwner(commonSeller);
 
         // 2. Create Auction object
-        Auction auction = new Auction(item, seller, start, end, minIncrement);
-        auction.setId(item.getId());
+        Auction auction = new Auction();
+        auction.setId(itemId);
+        auction.setItemId(itemId);
+        auction.setTitle(name);
+        auction.setDescription(desc);
+        auction.setStartingPrice(BigDecimal.valueOf(startingPrice));
+        auction.setCurrentPrice(BigDecimal.valueOf(startingPrice));
+        auction.setStartTime(start);
+        auction.setEndTime(end);
+        auction.setStatus("RUNNING");
 
-        // 3. Persist both to Database
-        boolean saved = itemDAO.addItemWithAuction(item, auction);
-        
-        if (saved) {
+        // 3. Persist both sequentially to Database
+        boolean itemSaved = itemDAO.addItem(item); // Compiles perfectly with common.Item
+        boolean auctionSaved = false;
+
+        if (itemSaved) {
+            try {
+                auctionSaved = auctionDAO.insert(auction);
+            } catch (SQLException e) {
+                System.err.println("[AuctionService] Failed to insert auction entity mapping: " + e.getMessage());
+            }
+        }
+
+        if (itemSaved && auctionSaved) {
             // 4. Add to Real-time Manager
             auctionManager.addAuction(auction);
             System.out.println("[AuctionService] New auction created: " + auction.getId());
             return true;
         }
-        
+
         return false;
     }
 
@@ -113,13 +172,15 @@ public class AuctionService {
      */
     public void loadActiveAuctions() {
         System.out.println("[AuctionService] Loading active auctions from database...");
-        List<Auction> activeAuctions = auctionDAO.getAllActiveAuctions();
-        
-        for (Auction auction : activeAuctions) {
-            auctionManager.addAuction(auction);
+        try {
+            List<Auction> activeAuctions = auctionDAO.findByStatus("RUNNING");
+            for (Auction auction : activeAuctions) {
+                auctionManager.addAuction(auction);
+            }
+            System.out.println("[AuctionService] Successfully loaded " + activeAuctions.size() + " auctions into memory.");
+        } catch (SQLException e) {
+            System.err.println("[AuctionService] Failed to load active auctions from DB: " + e.getMessage());
         }
-        
-        System.out.println("[AuctionService] Successfully loaded " + activeAuctions.size() + " auctions into memory.");
     }
 
     public List<Auction> getAllActiveAuctions() {

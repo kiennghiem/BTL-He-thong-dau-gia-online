@@ -4,17 +4,25 @@ import com.auction.models.BidTransaction;
 import common.AppConstants;
 import com.auction.server.database.dao.BaseDAO;
 import com.auction.server.database.dao.BidDAO;
+import com.auction.exceptions.DatabaseException;
+
 import java.math.BigDecimal;
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Implementation of BidDAO using JDBC.
+ * Handles bid persistence and history retrieval with atomic consistency.
+ */
 public class BidDAOImpl extends BaseDAO implements BidDAO {
 
     @Override
     public boolean placeBid(BidTransaction bid) {
+        // camelCase for items table (consistent with ItemDAOImpl)
         String checkPriceSQL = "SELECT currentPrice, status FROM items WHERE id = ? FOR UPDATE";
         String updateItemSQL = "UPDATE items SET currentPrice = ?, current_bidder_id = ? WHERE id = ?";
+        // assuming camelCase for bids table as well for now
         String insertBidSQL = "INSERT INTO bids (id, itemId, bidderId, bidAmount, timestamp) VALUES (?, ?, ?, ?, ?)";
 
         try (Connection conn = getConnection()) {
@@ -22,7 +30,7 @@ public class BidDAOImpl extends BaseDAO implements BidDAO {
             try (PreparedStatement checkStmt = conn.prepareStatement(checkPriceSQL);
                  PreparedStatement upStmt = conn.prepareStatement(updateItemSQL);
                  PreparedStatement inStmt = conn.prepareStatement(insertBidSQL)) {
-                
+
                 // 1. Atomic verification stage
                 checkStmt.setString(1, bid.getItemId());
                 try (ResultSet rs = checkStmt.executeQuery()) {
@@ -30,8 +38,9 @@ public class BidDAOImpl extends BaseDAO implements BidDAO {
                         BigDecimal currentPrice = rs.getBigDecimal("currentPrice");
                         String status = rs.getString("status");
 
-                        // Validate price and open auction state
-                        if (bid.getBidAmount().compareTo(currentPrice) <= 0 || !AppConstants.STATUS_RUNNING.equalsIgnoreCase(status)) {
+                        // Validate bid amount and auction status
+                        if (bid.getBidAmount().compareTo(currentPrice) <= 0 || 
+                            !AppConstants.STATUS_RUNNING.equalsIgnoreCase(status)) {
                             conn.rollback();
                             return false;
                         }
@@ -59,14 +68,12 @@ public class BidDAOImpl extends BaseDAO implements BidDAO {
                 return true;
             } catch (SQLException e) {
                 conn.rollback();
-                e.printStackTrace();
-                return false;
+                throw new DatabaseException("Failed to place bid on item: " + bid.getItemId(), e);
             } finally {
                 conn.setAutoCommit(true);
             }
         } catch (SQLException e) {
-            e.printStackTrace();
-            return false;
+            throw new DatabaseException("Database connection error while placing bid", e);
         }
     }
 
@@ -82,14 +89,16 @@ public class BidDAOImpl extends BaseDAO implements BidDAO {
             try (ResultSet rs = pstmt.executeQuery()) {
                 while (rs.next()) {
                     history.add(new BidTransaction(
-                            rs.getString("id"), rs.getString("itemId"),
-                            rs.getString("bidderId"), rs.getBigDecimal("bidAmount"),
+                            rs.getString("id"), 
+                            rs.getString("itemId"),
+                            rs.getString("bidderId"), 
+                            rs.getBigDecimal("bidAmount"),
                             rs.getTimestamp("timestamp").toLocalDateTime()
                     ));
                 }
             }
         } catch (SQLException e) {
-            e.printStackTrace();
+            throw new DatabaseException("Failed to retrieve bid history for item: " + itemId, e);
         }
         return history;
     }
