@@ -13,6 +13,7 @@ import com.auction.server.database.dao.UserDAO;
 import com.auction.server.factory.UserFactory;
 import com.auction.server.factory.UserRole;
 
+import java.math.BigDecimal;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -94,7 +95,7 @@ public class UserService {
     /**
      * Deposits money into a user's account and persists the change.
      */
-    public void deposit(String username, double amount) throws DatabaseException, InvalidDepositException {
+    public void deposit(String username, BigDecimal amount) throws DatabaseException, InvalidDepositException {
         User user = userDAO.findByUsername(username);
         if (user != null) {
             user.deposit(amount);
@@ -108,7 +109,7 @@ public class UserService {
     /**
      * Withdraws money from a user's account and persists the change.
      */
-    public void withdraw(String username, double amount) throws DatabaseException, InvalidWithdrawException {
+    public void withdraw(String username, BigDecimal amount) throws DatabaseException, InvalidWithdrawException {
         User user = userDAO.findByUsername(username);
         if (user != null) {
             user.withdraw(amount);

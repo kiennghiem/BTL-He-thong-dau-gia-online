@@ -2,6 +2,7 @@ package com.auction.models.dto;
 
 import com.auction.server.factory.ItemType;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 /**
@@ -12,14 +13,14 @@ public class CreateAuctionRequest implements NetworkMessage {
     private final ItemType itemType;
     private final String itemName;
     private final String itemDescription;
-    private final double startingPrice;
-    private final double minIncrement;
+    private final BigDecimal startingPrice;
+    private final BigDecimal minIncrement;
     private final String specificAttribute; // e.g., Brand for Electronics, Artist for Art, Mileage for Vehicle
     private final LocalDateTime startTime;
     private final LocalDateTime endTime;
 
     public CreateAuctionRequest(String sellerUsername, ItemType itemType, String itemName, 
-                                String itemDescription, double startingPrice, double minIncrement, 
+                                String itemDescription, BigDecimal startingPrice, BigDecimal minIncrement,
                                 String specificAttribute, LocalDateTime startTime, LocalDateTime endTime) {
         this.sellerUsername = sellerUsername;
         this.itemType = itemType;
@@ -48,11 +49,11 @@ public class CreateAuctionRequest implements NetworkMessage {
         return itemDescription;
     }
 
-    public double getStartingPrice() {
+    public BigDecimal getStartingPrice() {
         return startingPrice;
     }
 
-    public double getMinIncrement() {
+    public BigDecimal getMinIncrement() {
         return minIncrement;
     }
 

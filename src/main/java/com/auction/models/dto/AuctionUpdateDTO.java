@@ -1,5 +1,7 @@
 package com.auction.models.dto;
 
+import java.math.BigDecimal;
+
 /**
  * DTO sent from Server to all Clients to broadcast changes in an auction.
  * This facilitates "Realtime Update" and "Anti-sniping" visibility.
@@ -7,7 +9,7 @@ package com.auction.models.dto;
 public class AuctionUpdateDTO implements NetworkMessage {
     // Encapsulation: Private fields for the updated auction state
     private final String auctionId;
-    private final double currentHighestBid;
+    private final BigDecimal currentHighestBid;
     private final String leadingBidderName;
     private final long endTimeMillis; // Updated end time (crucial for Anti-sniping)
     private final String status;      // e.g., RUNNING, FINISHED
@@ -21,7 +23,7 @@ public class AuctionUpdateDTO implements NetworkMessage {
      * @param endTimeMillis The current end time (including any extensions).
      * @param status The current state of the auction.
      */
-    public AuctionUpdateDTO(String auctionId, double currentHighestBid,
+    public AuctionUpdateDTO(String auctionId, BigDecimal currentHighestBid,
                             String leadingBidderName, long endTimeMillis, String status) {
         this.auctionId = auctionId;
         this.currentHighestBid = currentHighestBid;
@@ -36,7 +38,7 @@ public class AuctionUpdateDTO implements NetworkMessage {
         return auctionId;
     }
 
-    public double getCurrentHighestBid() {
+    public BigDecimal getCurrentHighestBid() {
         return currentHighestBid;
     }
 

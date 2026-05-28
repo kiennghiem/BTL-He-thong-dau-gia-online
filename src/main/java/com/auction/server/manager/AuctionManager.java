@@ -8,6 +8,7 @@ import com.auction.server.service.AuctionService;
 import com.auction.models.dto.AppConstants;
 import com.auction.models.dto.AuctionUpdateDTO;
 
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -166,7 +167,7 @@ public class AuctionManager {
      */
     private AuctionUpdateDTO createUpdateDTO(Auction auction) {
         String bidderName = (auction.getHighestBid() != null) ? auction.getHighestBid().getBidderId() : "None";
-        double currentPrice = (auction.getCurrentPrice() != null) ? auction.getCurrentPrice().doubleValue() : 0.0;
+        BigDecimal currentPrice = (auction.getCurrentPrice() != null) ? auction.getCurrentPrice() : BigDecimal.ZERO;
         
         return new AuctionUpdateDTO(
                 auction.getId(),

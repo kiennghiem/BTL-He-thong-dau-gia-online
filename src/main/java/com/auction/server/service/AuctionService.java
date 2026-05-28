@@ -63,10 +63,10 @@ public class AuctionService {
     /**
      * Places a bid, updates real-time state, and persists to DB.
      */
-    public void placeBid(String auctionId, String bidderId, double amount)
+    public void placeBid(String auctionId, String bidderId, BigDecimal amount)
             throws InvalidBidException, AuctionNotFoundException {
 
-        BidTransaction bid = new BidTransaction(auctionId, bidderId, BigDecimal.valueOf(amount));
+        BidTransaction bid = new BidTransaction(auctionId, bidderId, amount);
         auctionManager.processBid(auctionId, bid);
 
         persistenceExecutor.submit(() -> {
@@ -77,7 +77,7 @@ public class AuctionService {
             }
 
             try {
-                boolean auctionUpdated = auctionDAO.placeBid(auctionId, bidderId, BigDecimal.valueOf(amount));
+                boolean auctionUpdated = auctionDAO.placeBid(auctionId, bidderId, amount);
                 if (!auctionUpdated) {
                     System.err.println("[AuctionService-Async] CRITICAL: Auction atomic bid constraints rejected the value for: " + auctionId);
                 }

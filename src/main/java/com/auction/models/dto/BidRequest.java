@@ -1,5 +1,7 @@
 package com.auction.models.dto;
 
+import java.math.BigDecimal;
+
 /**
  * DTO sent from Client to Server when a user places a bid.
  * This facilitates the "Tham gia đấu giá" core functionality.
@@ -8,7 +10,7 @@ public class BidRequest implements NetworkMessage {
     // Encapsulation: Private fields to protect the bid data
     private final String auctionId;
     private final String bidderId;
-    private final double amount;
+    private final BigDecimal amount;
     private final long timestamp; // Useful for resolving "Lost Updates" and concurrent ties
 
     /**
@@ -18,7 +20,7 @@ public class BidRequest implements NetworkMessage {
      * @param bidderId The ID of the user placing the bid.
      * @param amount The price the user is offering.
      */
-    public BidRequest(String auctionId, String bidderId, double amount) {
+    public BidRequest(String auctionId, String bidderId, BigDecimal amount) {
         this.auctionId = auctionId;
         this.bidderId = bidderId;
         this.amount = amount;
@@ -35,7 +37,7 @@ public class BidRequest implements NetworkMessage {
         return bidderId;
     }
 
-    public double getAmount() {
+    public BigDecimal getAmount() {
         return amount;
     }
 
