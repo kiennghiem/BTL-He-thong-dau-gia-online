@@ -1,6 +1,7 @@
 package com.auction.models.dto;
 
-import com.auction.models.ItemType;
+import com.auction.server.factory.ItemType;
+
 import java.time.LocalDateTime;
 
 /**

@@ -9,6 +9,7 @@ import com.auction.server.database.dao.DAOFactory;
 import com.auction.server.database.dao.ItemDAO;
 import com.auction.server.database.dao.AuctionDAO;
 import com.auction.server.manager.AuctionManager;
+import com.auction.server.factory.ItemType;
 
 import java.math.BigDecimal;
 import java.sql.SQLException;
