@@ -50,8 +50,7 @@ public class UserHandler {
             User user = userService.login(req.getUsername(), req.getPassword());
             this.currentUsername = user.getUsername();
             
-            // Fixed: Convert UserRole enum to String for AuthResponse
-            AuthResponse response = new AuthResponse(true, "Đăng nhập thành công!", user.getRole().name());
+            AuthResponse response = new AuthResponse(true, "Đăng nhập thành công!", user);
             sendResponse(response);
             
             System.out.println("[UserHandler] Login successful for: " + currentUsername);
@@ -82,7 +81,7 @@ public class UserHandler {
             User newUser = userService.register(role, req.getUsername(), req.getPassword());
             
             // 3. Success response
-            sendResponse(new AuthResponse(true, "Đăng ký tài khoản thành công!", newUser.getRole().name()));
+            sendResponse(new AuthResponse(true, "Đăng ký tài khoản thành công!", newUser));
 
             System.out.println("[UserHandler] Registration successful: " + newUser.getUsername());
         } catch (ValidationException e) {
