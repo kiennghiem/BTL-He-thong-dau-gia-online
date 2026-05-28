@@ -35,6 +35,16 @@ public class AuctionManager {
         observers = new ConcurrentHashMap<>();
         scheduler = Executors.newSingleThreadScheduledExecutor();
         startStatusChecker();
+        startExpirationChecker();
+    }
+
+    private void startExpirationChecker() {
+        // Chạy kiểm tra quá hạn thanh toán mỗi 1 giờ
+        scheduler.scheduleAtFixedRate(() -> {
+            if (auctionService != null) {
+                auctionService.expireUnpaidAuctions();
+            }
+        }, 1, 1, TimeUnit.HOURS);
     }
 
     public void setAuctionService(AuctionService auctionService) {
@@ -50,6 +60,10 @@ public class AuctionManager {
 
     public void addAuction(Auction auction) {
         activeAuctions.put(auction.getId(), auction);
+    }
+
+    public void removeAuction(String auctionId) {
+        activeAuctions.remove(auctionId);
     }
 
     public Auction getAuction(String auctionId) {

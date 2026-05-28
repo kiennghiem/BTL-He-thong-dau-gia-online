@@ -179,6 +179,20 @@ public class AuctionDAOImpl extends BaseDAO implements AuctionDAO {
     }
 
     @Override
+    public boolean delete(String id) throws SQLException {
+        Connection conn = null;
+        PreparedStatement stmt = null;
+        try {
+            conn = getConnection();
+            stmt = conn.prepareStatement("DELETE FROM auctions WHERE id = ?;");
+            stmt.setString(1, id);
+            return stmt.executeUpdate() > 0;
+        } finally {
+            closeResources(stmt, conn);
+        }
+    }
+
+    @Override
     public boolean placeBid(String auctionId, String bidderId, BigDecimal newBidPrice) throws SQLException {
         Connection conn = null;
         PreparedStatement stmt = null;

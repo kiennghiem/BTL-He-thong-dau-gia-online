@@ -24,5 +24,7 @@ public interface AuctionDAO {
 
     boolean updateStatus(String auctionId, String newStatus) throws SQLException;
 
+    boolean delete(String id) throws SQLException;
+
     boolean placeBid(String auctionId, String bidderId, BigDecimal newBidPrice) throws SQLException;
 }

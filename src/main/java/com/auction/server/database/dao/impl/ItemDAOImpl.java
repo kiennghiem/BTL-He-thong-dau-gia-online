@@ -143,6 +143,19 @@ public class ItemDAOImpl extends BaseDAO implements ItemDAO {
         return null;
     }
 
+    @Override
+    public boolean deleteItem(String id) {
+        String sql = "DELETE FROM items WHERE id = ?";
+        try (Connection conn = getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setString(1, id);
+            return pstmt.executeUpdate() > 0;
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+
     private Item createItemByType(String type, ResultSet rs) throws SQLException {
         if ("ELECTRONICS".equalsIgnoreCase(type)) {
             Electronic e = new Electronic();

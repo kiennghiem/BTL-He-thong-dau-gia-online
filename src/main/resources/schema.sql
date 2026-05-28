@@ -1,3 +1,4 @@
+USE auction_db;
 -- 1. BẢNG USERS (Phải tạo đầu tiên và PHẢI CÓ CỘT id)
 CREATE TABLE IF NOT EXISTS users (
                                      id VARCHAR(50) PRIMARY KEY DEFAULT (UUID()), -- Bắt buộc phải có dòng này để tự sinh chuỗi ID

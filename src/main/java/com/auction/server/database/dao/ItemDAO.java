@@ -37,4 +37,11 @@ public interface ItemDAO {
      * @return The Item object if found, null otherwise.
      */
     Item findById(String id);
+
+    /**
+     * Deletes an item from the database.
+     * @param id The item ID.
+     * @return true if successful.
+     */
+    boolean deleteItem(String id);
 }

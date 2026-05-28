@@ -9,6 +9,8 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 /**
  * Main Server class for the Online Auction System.
@@ -16,12 +18,15 @@ import java.net.Socket;
  */
 public class AuctionServer {
     private final AuctionService auctionService;
+    private final ExecutorService clientPool;
 
     public AuctionServer() {
         try {
             this.auctionService = new AuctionService();
             // Link Service with Manager for end-of-auction persistence
             com.auction.server.manager.AuctionManager.getInstance().setAuctionService(this.auctionService);
+            // Initialize cached thread pool for elastic client connection management
+            this.clientPool = Executors.newCachedThreadPool();
         } catch (Exception e) {
             System.err.println("[SERVER] Fatal Error during initialization: " + e.getMessage());
             throw new RuntimeException("Server could not start due to initialization failure.", e);
@@ -39,11 +44,13 @@ public class AuctionServer {
                 Socket clientSocket = serverSocket.accept();
                 System.out.println("[SERVER] Connection accepted from: " + clientSocket.getInetAddress());
                 
-                // Spawn a new session thread for each client
-                new Thread(new ClientSession(clientSocket)).start();
+                // Delegate the session to the thread pool
+                clientPool.execute(new ClientSession(clientSocket));
             }
         } catch (IOException e) {
             System.err.println("[SERVER] Fatal Error: " + e.getMessage());
+        } finally {
+            clientPool.shutdown();
         }
     }
 

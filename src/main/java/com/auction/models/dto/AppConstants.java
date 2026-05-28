@@ -25,6 +25,11 @@ public final class AppConstants {
     // If a bid is placed in the last 10 seconds, extend by 30 seconds[cite: 1]
     public static final int SNIPE_WINDOW_SECONDS = 10;
     public static final int EXTENSION_TIME_SECONDS = 30;
+
+    // --- Payment Configuration ---
+    public static final int PAYMENT_WINDOW_DAYS = 7; // Thời hạn thanh toán sau khi thắng
+
+
     // --- Error Messages ---
     public static final String ERR_LOW_BID = "Giá đặt phải cao hơn giá hiện tại![cite: 1]";
     public static final String ERR_AUCTION_CLOSED = "Phiên đấu giá đã kết thúc![cite: 1]";
