@@ -1,6 +1,6 @@
 -- 1. BẢNG USERS (Phải tạo đầu tiên và PHẢI CÓ CỘT id)
 CREATE TABLE IF NOT EXISTS users (
-                                     id VARCHAR(50) PRIMARY KEY DEFAULT (UUID()), -- Bắt buộc phải có dòng này để tự sinh chuỗi ID
+    id VARCHAR(50) PRIMARY KEY, -- Bắt buộc phải có dòng này để tự sinh chuỗi ID
     username VARCHAR(100) NOT NULL UNIQUE,
     password VARCHAR(255) NOT NULL,
     role VARCHAR(30) NOT NULL,
@@ -9,22 +9,16 @@ CREATE TABLE IF NOT EXISTS users (
 
 -- 2. BẢNG ITEMS (Tạo thứ hai)
 CREATE TABLE IF NOT EXISTS items (
-    id VARCHAR(50) PRIMARY KEY DEFAULT (UUID()),
-    itemName VARCHAR(100) NOT NULL,
-    description TEXT,
-    startingPrice DOUBLE DEFAULT 0.0,
-    currentPrice DOUBLE DEFAULT 0.0,
-    startingTime TIMESTAMP NULL DEFAULT NULL,
-    closingTime TIMESTAMP NULL DEFAULT NULL,
-    status VARCHAR(20) DEFAULT 'PENDING',
-    owner_id VARCHAR(50),
-    current_bidder_id VARCHAR(50),
-    buyer_id VARCHAR(50),
+    id VARCHAR(50) PRIMARY KEY,
     item_type VARCHAR(20),
-    brand VARCHAR(100),
-    artist_name VARCHAR(100),
+    item_name VARCHAR(100) NOT NULL,
+    description TEXT NULL,
+    starting_price DOUBLE DEFAULT 0.0,
+    current_price DOUBLE DEFAULT 0.0,
+    special_attribute VARCHAR(45),
+    owner_id VARCHAR(50),
+    buyer_id VARCHAR(50) NULL,
     FOREIGN KEY (owner_id) REFERENCES users(id),
-    FOREIGN KEY (current_bidder_id) REFERENCES users(id),
     FOREIGN KEY (buyer_id) REFERENCES users(id)
 );
 

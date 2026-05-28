@@ -38,6 +38,8 @@ public class UserDAOImpl extends BaseDAO implements UserDAO {
     public User findById(String id) {
         String query = "SELECT * FROM users WHERE id = ?";
 
+        if (id == null) return null;
+
         try (Connection conn = getConnection();
              PreparedStatement pstmt = conn.prepareStatement(query)) {
 

@@ -8,6 +8,7 @@ import com.auction.server.database.dao.BidDAO;
 import com.auction.server.database.dao.DAOFactory;
 import com.auction.server.database.dao.ItemDAO;
 import com.auction.server.database.dao.AuctionDAO;
+import com.auction.server.factory.ItemFactory;
 import com.auction.server.manager.AuctionManager;
 import com.auction.server.factory.ItemType;
 
@@ -15,6 +16,7 @@ import java.math.BigDecimal;
 import java.sql.SQLException;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.UUID;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -91,47 +93,11 @@ public class AuctionService {
     /**
      * Creates a new auction (Seller functionality).
      */
-    public boolean createAuction(ItemType type, String name, String desc, double startingPrice,
+    public boolean createAuction(ItemType type, String name, String desc, BigDecimal startingPrice,
                                  String specAttr, Seller seller, LocalDateTime start,
-                                 LocalDateTime end, double minIncrement) {
+                                 LocalDateTime end, BigDecimal minIncrement) {
 
-        // 1. FIX: Changed 'models.Item' to 'Item' (relying on the top imports)
-        Item item;
-        switch (type.name()) {
-            case "ELECTRONICS":
-                Electronics e = new Electronics();
-                e.setBrand(specAttr);
-                item = e;
-                break;
-            case "VEHICLE":
-                Vehicle v = new Vehicle();
-                v.setBrand(specAttr);
-                item = v;
-                break;
-            case "ART":
-                Art a = new Art();
-                a.setArtist(specAttr);
-                item = a;
-                break;
-            default:
-                throw new IllegalArgumentException("Unknown item type: " + type);
-        }
-
-        String itemId = java.util.UUID.randomUUID().toString();
-        item.setId(itemId);
-        item.setItemName(name);
-        item.setDescription(desc);
-        item.setStartingPrice(startingPrice);
-        item.setCurrentPrice(startingPrice);
-        item.setStartingTime(start);
-        item.setClosingTime(end);
-
-        // 2. FIX: Target the correct package for the ItemStatus enum
-        try {
-            item.setStatus(com.auction.models.ItemStatus.RUNNING);
-        } catch (Exception e) {
-            // Fallback block if your enum defaults to a different open status name
-        }
+        Item item = ItemFactory.createNewItem(type, name, desc, startingPrice, specAttr, seller);
 
         // 3. FIX: Simplified Seller initialization using imported classes
         Seller commonSeller = new Seller();
@@ -140,12 +106,12 @@ public class AuctionService {
 
         // 4. Create Auction object
         Auction auction = new Auction();
-        auction.setId(itemId);
-        auction.setItemId(itemId);
+        auction.setId(UUID.randomUUID().toString());
+        auction.setItemId(item.getId());
         auction.setTitle(name);
         auction.setDescription(desc);
-        auction.setStartingPrice(BigDecimal.valueOf(startingPrice));
-        auction.setCurrentPrice(BigDecimal.valueOf(startingPrice));
+        auction.setStartingPrice(startingPrice);
+        auction.setCurrentPrice(startingPrice);
         auction.setStartTime(start);
         auction.setEndTime(end);
         auction.setStatus("RUNNING");

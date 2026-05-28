@@ -1,14 +1,21 @@
 package com.auction.server.database.dao.impl;
 
+import com.auction.exceptions.DatabaseException;
 import com.auction.models.*;
 import com.auction.server.database.dao.BaseDAO;
 import com.auction.server.database.dao.ItemDAO;
+import com.auction.server.database.dao.UserDAO;
+import com.auction.server.factory.ItemFactory;
+import com.auction.server.factory.ItemType;
 
+import java.math.BigDecimal;
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
 
 public class ItemDAOImpl extends BaseDAO implements ItemDAO {
+
+    private UserDAO userDAO = new UserDAOImpl();
 
     @Override
     public List<Item> getAllItems() {
@@ -20,12 +27,8 @@ public class ItemDAOImpl extends BaseDAO implements ItemDAO {
              ResultSet rs = pstmt.executeQuery()) {
 
             while (rs.next()) {
-                String type = rs.getString("item_type");
-                Item item = createItemByType(type, rs);
-                if (item != null) {
-                    mapCommonFields(rs, item);
-                    items.add(item);
-                }
+                Item item = createItemFromRow(rs);
+                items.add(item);
             }
         } catch (SQLException e) {
             e.printStackTrace();
@@ -35,42 +38,22 @@ public class ItemDAOImpl extends BaseDAO implements ItemDAO {
 
     @Override
     public boolean addItem(Item item) {
-        String sql = "INSERT INTO items (id, itemName, description, currentPrice, startingPrice, startingTime, closingTime, status, owner_id, current_bidder_id, buyer_id, item_type, brand, artist_name) " +
-                     "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+        String sql = "INSERT INTO items (id, item_type, item_name, description, startingPrice, currentPrice," +
+                     "special_attribute, owner_id, buyer_id" +
+                     "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
         try (Connection conn = getConnection();
              PreparedStatement pstmt = conn.prepareStatement(sql)) {
 
             pstmt.setString(1, item.getId());
-            pstmt.setString(2, item.getItemName());
-            pstmt.setString(3, item.getDescription());
-            pstmt.setDouble(4, item.getCurrentPrice());
-            pstmt.setDouble(5, item.getStartingPrice());
-            pstmt.setTimestamp(6, item.getStartingTime() != null ? Timestamp.valueOf(item.getStartingTime()) : null);
-            pstmt.setTimestamp(7, item.getClosingTime() != null ? Timestamp.valueOf(item.getClosingTime()) : null);
-            pstmt.setString(8, item.getStatus() != null ? item.getStatus().name() : ItemStatus.PENDING.name());
-            
-            pstmt.setString(9, item.getOwner() != null ? item.getOwner().getUsername() : null); 
-            pstmt.setString(10, item.getCurrentBidder() != null ? item.getCurrentBidder().getUsername() : null);
-            pstmt.setString(11, item.getBuyer() != null ? item.getBuyer().getUsername() : null);
-
-            if (item instanceof Electronics) {
-                pstmt.setString(12, "ELECTRONICS");
-                pstmt.setString(13, ((Electronics) item).getBrand());
-                pstmt.setNull(14, Types.VARCHAR);
-            } else if (item instanceof Vehicle) {
-                pstmt.setString(12, "VEHICLE");
-                pstmt.setString(13, ((Vehicle) item).getBrand());
-                pstmt.setNull(14, Types.VARCHAR);
-            } else if (item instanceof Art) {
-                pstmt.setString(12, "ART");
-                pstmt.setNull(13, Types.VARCHAR);
-                pstmt.setString(14, ((Art) item).getArtist());
-            } else {
-                pstmt.setNull(12, Types.VARCHAR);
-                pstmt.setNull(13, Types.VARCHAR);
-                pstmt.setNull(14, Types.VARCHAR);
-            }
+            pstmt.setString(2, item.getType().toString());
+            pstmt.setString(3, item.getItemName());
+            pstmt.setString(4, item.getDescription());
+            pstmt.setBigDecimal(5, item.getStartingPrice());
+            pstmt.setBigDecimal(6, item.getCurrentPrice());
+            pstmt.setString(7, item.getSpecialAttribute());
+            pstmt.setString(8, item.getOwner().getId());
+            pstmt.setString(9, item.getBuyer() != null? item.getBuyer().getId() : null);
 
             return pstmt.executeUpdate() > 0;
         } catch (SQLException e) {
@@ -81,37 +64,21 @@ public class ItemDAOImpl extends BaseDAO implements ItemDAO {
 
     @Override
     public boolean updateItem(Item item) {
-        String sql = "UPDATE items SET itemName = ?, description = ?, currentPrice = ?, startingPrice = ?, startingTime = ?, closingTime = ?, status = ?, owner_id = ?, current_bidder_id = ?, buyer_id = ?, brand = ?, artist_name = ? WHERE id = ?";
+        String sql = "UPDATE items SET item_name = ?, description = ?, startingPrice = ?, currentPrice = ?," +
+                     "special_attribute, owner_id = ?, buyer_id = ? WHERE id = ?";
 
         try (Connection conn = getConnection();
              PreparedStatement pstmt = conn.prepareStatement(sql)) {
 
             pstmt.setString(1, item.getItemName());
             pstmt.setString(2, item.getDescription());
-            pstmt.setDouble(3, item.getCurrentPrice());
-            pstmt.setDouble(4, item.getStartingPrice());
-            pstmt.setTimestamp(5, item.getStartingTime() != null ? Timestamp.valueOf(item.getStartingTime()) : null);
-            pstmt.setTimestamp(6, item.getClosingTime() != null ? Timestamp.valueOf(item.getClosingTime()) : null);
-            pstmt.setString(7, item.getStatus() != null ? item.getStatus().name() : ItemStatus.PENDING.name());
-            pstmt.setString(8, item.getOwner() != null ? item.getOwner().getId() : null);
-            pstmt.setString(9, item.getCurrentBidder() != null ? item.getCurrentBidder().getId() : null);
-            pstmt.setString(10, item.getBuyer() != null ? item.getBuyer().getId() : null);
+            pstmt.setBigDecimal(3, item.getStartingPrice());
+            pstmt.setBigDecimal(4, item.getCurrentPrice());
+            pstmt.setString(5, item.getSpecialAttribute());
+            pstmt.setString(6, item.getOwner().getId());
+            pstmt.setString(7, item.getBuyer() != null? item.getBuyer().getId() : null);
 
-            if (item instanceof Electronics) {
-                pstmt.setString(11, ((Electronics) item).getBrand());
-                pstmt.setNull(12, Types.VARCHAR);
-            } else if (item instanceof Vehicle) {
-                pstmt.setString(11, ((Vehicle) item).getBrand());
-                pstmt.setNull(12, Types.VARCHAR);
-            } else if (item instanceof Art) {
-                pstmt.setNull(11, Types.VARCHAR);
-                pstmt.setString(12, ((Art) item).getArtist());
-            } else {
-                pstmt.setNull(11, Types.VARCHAR);
-                pstmt.setNull(12, Types.VARCHAR);
-            }
-
-            pstmt.setString(13, item.getId());
+            pstmt.setString(8, item.getId());
 
             return pstmt.executeUpdate() > 0;
         } catch (SQLException e) {
@@ -123,17 +90,15 @@ public class ItemDAOImpl extends BaseDAO implements ItemDAO {
     @Override
     public Item findById(String id) {
         String query = "SELECT * FROM items WHERE id = ?";
+
+        if (id == null) return null;
+
         try (Connection conn = getConnection();
              PreparedStatement pstmt = conn.prepareStatement(query)) {
             pstmt.setString(1, id);
             try (ResultSet rs = pstmt.executeQuery()) {
                 if (rs.next()) {
-                    String type = rs.getString("item_type");
-                    Item item = createItemByType(type, rs);
-                    if (item != null) {
-                        mapCommonFields(rs, item);
-                        return item;
-                    }
+                    return createItemFromRow(rs);
                 }
             }
         } catch (SQLException e) {
@@ -142,64 +107,23 @@ public class ItemDAOImpl extends BaseDAO implements ItemDAO {
         return null;
     }
 
-    private Item createItemByType(String type, ResultSet rs) throws SQLException {
-        if ("ELECTRONICS".equalsIgnoreCase(type)) {
-            Electronics e = new Electronics();
-            e.setBrand(rs.getString("brand"));
-            return e;
-        } else if ("ART".equalsIgnoreCase(type)) {
-            Art a = new Art();
-            a.setArtist(rs.getString("artist_name"));
-            return a;
-        } else if ("VEHICLE".equalsIgnoreCase(type)) {
-            Vehicle v = new Vehicle();
-            v.setBrand(rs.getString("brand"));
-            return v;
-        }
-        return null;
-    }
-
-    private void mapCommonFields(ResultSet rs, Item item) throws SQLException {
-        item.setId(rs.getString("id"));
-        item.setItemName(rs.getString("itemName"));
-        item.setDescription(rs.getString("description"));
-        item.setCurrentPrice(rs.getDouble("currentPrice"));
-        item.setStartingPrice(rs.getDouble("startingPrice"));
-        
-        Timestamp startTs = rs.getTimestamp("startingTime");
-        if (startTs != null) item.setStartingTime(startTs.toLocalDateTime());
-        
-        Timestamp closeTs = rs.getTimestamp("closingTime");
-        if (closeTs != null) item.setClosingTime(closeTs.toLocalDateTime());
-
-        String statusStr = rs.getString("status");
-        if (statusStr != null) {
-            try {
-                item.setStatus(ItemStatus.valueOf(statusStr.toUpperCase()));
-            } catch (IllegalArgumentException e) {
-                e.printStackTrace();
-            }
-        }
-
+    private Item createItemFromRow(ResultSet rs) throws SQLException {
+        String id = rs.getString("id");
+        String typeStr = rs.getString("item_type");
+        ItemType type = ItemType.valueOf(typeStr.toUpperCase());
+        String name = rs.getString("item_name");
+        String description = rs.getString("description");
+        BigDecimal startingPrice = rs.getBigDecimal("starting_price");
+        BigDecimal currentPrice = rs.getBigDecimal("current_price");
+        String specialAttribute = rs.getString("special_attribute");
         String ownerId = rs.getString("owner_id");
-        if (ownerId != null) {
-            Seller owner = new Seller();
-            owner.setUsername(ownerId);
-            item.setOwner(owner);
-        }
-
-        String bidderId = rs.getString("current_bidder_id");
-        if (bidderId != null) {
-            Bidder bidder = new Bidder();
-            bidder.setUsername(bidderId);
-            item.setCurrentBidder(bidder);
-        }
-
         String buyerId = rs.getString("buyer_id");
-        if (buyerId != null) {
-            Bidder buyer = new Bidder();
-            buyer.setUsername(buyerId);
-            item.setBuyer(buyer);
-        }
+
+        User owner = userDAO.findById(ownerId);
+
+        User buyer = userDAO.findById(buyerId);
+
+        return ItemFactory.createItemFromDB(id, type, name, description, startingPrice, currentPrice,
+                specialAttribute, (Seller) owner, (Bidder) buyer);
     }
 }

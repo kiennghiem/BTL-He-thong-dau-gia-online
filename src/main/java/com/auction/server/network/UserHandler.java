@@ -81,7 +81,7 @@ public class UserHandler {
             // 2. Delegate creation and persistence to the Orchestrator Service
             User newUser = userService.register(role, req.getUsername(), req.getPassword());
             
-            // 3. Success response (Fixed: Convert UserRole enum to String)
+            // 3. Success response
             sendResponse(new AuthResponse(true, "Đăng ký tài khoản thành công!", newUser.getRole().name()));
 
             System.out.println("[UserHandler] Registration successful: " + newUser.getUsername());

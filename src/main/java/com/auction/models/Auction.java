@@ -8,7 +8,6 @@ import java.util.List;
 
 import com.auction.exceptions.*;
 
-// Giả định Entity là lớp cha của bạn chứa phương thức getId()
 public class Auction extends Entity {
 
     private static final long serialVersionUID = 1L;
@@ -110,7 +109,7 @@ public class Auction extends Entity {
 
     public BigDecimal getStartingPrice() {
         if (startingPrice != null) return startingPrice;
-        return item != null ? BigDecimal.valueOf(item.getStartingPrice()) : BigDecimal.ZERO;
+        return item != null ? item.getStartingPrice() : BigDecimal.ZERO;
     }
 
     public void setStartingPrice(BigDecimal startingPrice) {
