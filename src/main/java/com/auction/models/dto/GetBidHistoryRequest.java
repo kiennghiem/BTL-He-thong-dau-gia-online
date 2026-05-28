@@ -14,4 +14,9 @@ public class GetBidHistoryRequest implements NetworkMessage {
     public String getAuctionId() {
         return auctionId;
     }
+
+    @Override
+    public PacketType getType() {
+        return PacketType.GET_BID_HISTORY;
+    }
 }

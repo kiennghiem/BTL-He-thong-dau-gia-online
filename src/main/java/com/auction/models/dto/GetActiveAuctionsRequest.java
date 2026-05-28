@@ -8,4 +8,9 @@ public class GetActiveAuctionsRequest implements NetworkMessage {
     // Can be expanded later to include filters (e.g., category, search term)
     public GetActiveAuctionsRequest() {
     }
+
+    @Override
+    public PacketType getType() {
+        return PacketType.GET_ACTIVE_AUCTIONS;
+    }
 }

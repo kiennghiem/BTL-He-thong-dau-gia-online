@@ -206,8 +206,8 @@ public class AuctionService {
         persistenceExecutor.submit(() -> {
             try {
                 auctionDAO.update(auction);
-                // Đồng bộ cả bảng items - Sử dụng common.Item để tránh xung đột với com.auction.models.Item
-                common.Item item = itemDAO.findById(auction.getItemId());
+                // Đồng bộ cả bảng items
+                com.auction.models.Item item = itemDAO.findById(auction.getItemId());
                 if (item != null) {
                     item.setItemName(newName);
                     item.setDescription(newDesc);
@@ -264,22 +264,19 @@ public class AuctionService {
                                  String specAttr, Seller seller, LocalDateTime start,
                                  LocalDateTime end, double minIncrement) {
 
-        // 1. RESOLVED: Manually construct the correct common.Item subclass to resolve package conflicts
-        common.Item item;
+        // 1. RESOLVED: Manually construct the correct com.auction.models.Item subclass to resolve package conflicts
+        com.auction.models.Item item;
         switch (type.name()) {
             case "ELECTRONICS":
-                common.Electronic e = new common.Electronic();
-                e.setBrand(specAttr);
+                com.auction.models.Electronics e = new com.auction.models.Electronics(name, desc, startingPrice, specAttr, seller);
                 item = e;
                 break;
             case "VEHICLE":
-                common.Vehicle v = new common.Vehicle();
-                v.setBrand(specAttr);
+                com.auction.models.Vehicle v = new com.auction.models.Vehicle(name, desc, startingPrice, specAttr, seller);
                 item = v;
                 break;
             case "ART":
-                common.Art a = new common.Art();
-                a.setArtist(specAttr);
+                com.auction.models.Art a = new com.auction.models.Art(name, desc, startingPrice, specAttr, seller);
                 item = a;
                 break;
             default:
@@ -288,23 +285,6 @@ public class AuctionService {
 
         String itemId = java.util.UUID.randomUUID().toString();
         item.setId(itemId);
-        item.setItemName(name);
-        item.setDescription(desc);
-        item.setStartingPrice(startingPrice);
-        item.setCurrentPrice(startingPrice);
-        item.setStartingTime(start);
-        item.setClosingTime(end);
-
-        try {
-            item.setStatus(common.ItemStatus.RUNNING);
-        } catch (Exception e) {
-            // Fallback block if your enum defaults to a different open status name
-        }
-
-        // RESOLVED: Convert com.auction.models.Seller to common.Seller expected by common.Item
-        common.Seller commonSeller = new common.Seller();
-        commonSeller.setUsername(seller.getUsername());
-        item.setOwner(commonSeller);
 
         // 2. Create Auction object
         Auction auction = new Auction();

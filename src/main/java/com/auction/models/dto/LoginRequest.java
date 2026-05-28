@@ -27,6 +27,11 @@ public class LoginRequest implements NetworkMessage {
         return password;
     }
 
+    @Override
+    public PacketType getType() {
+        return PacketType.LOGIN;
+    }
+
     /**
      * Overriding toString for easier debugging in logs.
      * We do not print the password for security reasons.

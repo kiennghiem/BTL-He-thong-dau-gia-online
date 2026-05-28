@@ -38,6 +38,11 @@ public class AuthResponse implements NetworkMessage {
     }
 
     @Override
+    public PacketType getType() {
+        return PacketType.AUTH_RESPONSE;
+    }
+
+    @Override
     public String toString() {
         return "AuthResponse{" +
                 "success=" + success +

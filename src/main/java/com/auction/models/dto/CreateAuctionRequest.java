@@ -66,4 +66,9 @@ public class CreateAuctionRequest implements NetworkMessage {
     public LocalDateTime getEndTime() {
         return endTime;
     }
+
+    @Override
+    public PacketType getType() {
+        return PacketType.CREATE_AUCTION;
+    }
 }

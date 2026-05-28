@@ -1,6 +1,7 @@
 package com.auction.models;
 
-import common.NetworkMessage;
+import com.auction.models.dto.NetworkMessage;
+import com.auction.models.dto.PacketType;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.UUID;
@@ -60,6 +61,11 @@ public class BidTransaction implements NetworkMessage {
 
     public LocalDateTime getTimestamp() {
         return timestamp;
+    }
+
+    @Override
+    public PacketType getType() {
+        return PacketType.BID_TRANSACTION;
     }
 
     @Override

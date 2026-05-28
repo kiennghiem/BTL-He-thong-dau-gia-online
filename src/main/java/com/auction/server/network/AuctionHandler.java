@@ -8,9 +8,13 @@ import com.auction.server.manager.AuctionManager;
 import com.auction.server.observer.AuctionObserver;
 import com.auction.server.service.AuctionService;
 import com.auction.models.dto.*;
+import com.auction.util.LocalDateTimeAdapter;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 
 import java.io.IOException;
-import java.io.ObjectOutputStream;
+import java.io.PrintWriter;
+import java.time.LocalDateTime;
 import java.util.List;
 
 /**
@@ -18,116 +22,102 @@ import java.util.List;
  * It implements AuctionObserver to push real-time updates directly to the client.
  */
 public class AuctionHandler implements AuctionObserver {
-    private final ObjectOutputStream out;
+    private final PrintWriter out;
     private final AuctionService auctionService;
     private final AuctionManager auctionManager;
+    private final Gson gson;
     private final java.util.Set<String> subscribedAuctions;
 
-    public AuctionHandler(ObjectOutputStream out) {
+    public AuctionHandler(PrintWriter out) {
         this.out = out;
         this.auctionService = new AuctionService();
         this.auctionManager = AuctionManager.getInstance();
         this.subscribedAuctions = java.util.Collections.synchronizedSet(new java.util.HashSet<>());
+        this.gson = new GsonBuilder()
+                .registerTypeAdapter(LocalDateTime.class, new LocalDateTimeAdapter())
+                .create();
     }
 
-    /**
-     * Entry point for messages identified as auction-related.
-     */
-    public boolean handleMessage(NetworkMessage message) {
-        if (message instanceof BidRequest bidReq) {
-            handleBid(bidReq);
-            return true;
-        } else if (message instanceof CreateAuctionRequest createReq) {
-            handleCreateAuction(createReq);
-            return true;
-        } else if (message instanceof GetActiveAuctionsRequest getReq) {
-            handleGetActiveAuctions(getReq);
-            return true;
-        } else if (message instanceof GetBidHistoryRequest historyReq) {
-            handleGetBidHistory(historyReq);
-            return true;
-        } else if (message instanceof PaymentRequest payReq) {
-            handlePayment(payReq);
-            return true;
-        } else if (message instanceof DeleteItemRequest deleteReq) {
-            handleDeleteAuction(deleteReq);
-            return true;
-        } else if (message instanceof GetSellerItemsRequest sellerReq) {
-            handleGetSellerItems(sellerReq);
-            return true;
-        }
-        return false;
-    }
-
-    private void handleBid(BidRequest req) {
-        try {
-            // Process via Service (Memory + DB)
-            auctionService.placeBid(req.getAuctionId(), req.getBidderId(), req.getAmount());
-            
-            // Automatically subscribe this client to real-time updates for this auction
-            if (subscribedAuctions.add(req.getAuctionId())) {
-                auctionManager.subscribe(req.getAuctionId(), this);
+    public void handleBid(NetworkMessage message) {
+        if (message instanceof BidRequest req) {
+            try {
+                auctionService.placeBid(req.getAuctionId(), req.getBidderId(), req.getAmount());
+                if (subscribedAuctions.add(req.getAuctionId())) {
+                    auctionManager.subscribe(req.getAuctionId(), this);
+                }
+                sendResponse(new GenericResponse(true, "Đặt giá thành công!"));
+                System.out.println("[AuctionHandler] Bid successful: " + req.getBidderId() + " on " + req.getAuctionId());
+            } catch (Exception e) {
+                sendResponse(new GenericResponse(false, "Lỗi đặt giá: " + e.getMessage()));
             }
-            
-            sendResponse(new GenericResponse(true, "Đặt giá thành công!"));
-            System.out.println("[AuctionHandler] Bid successful: " + req.getBidderId() + " on " + req.getAuctionId());
-        } catch (Exception e) {
-            sendResponse(new GenericResponse(false, "Lỗi đặt giá: " + e.getMessage()));
         }
     }
 
-    private void handleCreateAuction(CreateAuctionRequest req) {
-        // Map ItemType from dto to models
-        com.auction.models.ItemType modelType = com.auction.models.ItemType.valueOf(req.getItemType().name());
-        
-        boolean success = auctionService.createAuction(
-                modelType, req.getItemName(), req.getItemDescription(),
-                req.getStartingPrice(), req.getSpecificAttribute(),
-                new Seller(req.getSellerUsername(), ""), 
-                req.getStartTime(), req.getEndTime(), req.getMinIncrement()
-        );
-        
-        if (success) {
-            sendResponse(new GenericResponse(true, "Tạo phiên đấu giá thành công!"));
-        } else {
-            sendResponse(new GenericResponse(false, "Lỗi khi tạo phiên đấu giá."));
+    public void handleCreateAuction(NetworkMessage message) {
+        if (message instanceof CreateAuctionRequest req) {
+            try {
+                com.auction.models.ItemType modelType = com.auction.models.ItemType.valueOf(req.getItemType().name());
+                boolean success = auctionService.createAuction(
+                        modelType, req.getItemName(), req.getItemDescription(),
+                        req.getStartingPrice(), req.getSpecificAttribute(),
+                        new Seller(req.getSellerUsername(), ""), 
+                        req.getStartTime(), req.getEndTime(), req.getMinIncrement()
+                );
+                if (success) {
+                    sendResponse(new GenericResponse(true, "Tạo phiên đấu giá thành công!"));
+                } else {
+                    sendResponse(new GenericResponse(false, "Lỗi khi tạo phiên đấu giá."));
+                }
+            } catch (Exception e) {
+                sendResponse(new GenericResponse(false, "Lỗi tạo đấu giá: " + e.getMessage()));
+            }
         }
     }
 
-    private void handleGetActiveAuctions(GetActiveAuctionsRequest req) {
-        List<Auction> activeAuctions = auctionService.getAllActiveAuctions();
-        sendResponse(activeAuctions);
-    }
-
-    private void handleGetBidHistory(GetBidHistoryRequest req) {
-        List<BidTransaction> history = auctionService.getBidHistory(req.getAuctionId());
-        sendResponse(history);
-    }
-
-    private void handlePayment(PaymentRequest req) {
-        boolean success = auctionService.processPayment(req.getAuctionId(), req.getBidderId());
-        if (success) {
-            sendResponse(new GenericResponse(true, "Thanh toán thành công!"));
-        } else {
-            sendResponse(new GenericResponse(false, "Thanh toán thất bại. Kiểm tra số dư hoặc trạng thái phiên."));
+    public void handleGetActiveAuctions(NetworkMessage message) {
+        if (message instanceof GetActiveAuctionsRequest) {
+            List<Auction> activeAuctions = auctionService.getAllActiveAuctions();
+            sendResponse(activeAuctions);
         }
     }
 
-    private void handleDeleteAuction(DeleteItemRequest req) {
-        Auction auction = auctionManager.getAuction(req.getItemId());
-        if (auction != null) {
-            boolean success = auctionService.deleteAuction(req.getItemId(), auction.getSeller().getUsername());
+    public void handleGetBidHistory(NetworkMessage message) {
+        if (message instanceof GetBidHistoryRequest req) {
+            List<BidTransaction> history = auctionService.getBidHistory(req.getAuctionId());
+            sendResponse(history);
+        }
+    }
+
+    public void handlePayment(NetworkMessage message) {
+        if (message instanceof PaymentRequest req) {
+            boolean success = auctionService.processPayment(req.getAuctionId(), req.getBidderId());
             if (success) {
-                sendResponse(new GenericResponse(true, "Xóa thành công!"));
-                return;
+                sendResponse(new GenericResponse(true, "Thanh toán thành công!"));
+            } else {
+                sendResponse(new GenericResponse(false, "Thanh toán thất bại. Kiểm tra số dư hoặc trạng thái phiên."));
             }
         }
-        sendResponse(new GenericResponse(false, "Xóa thất bại. Phiên đã có người đặt giá hoặc không có quyền."));
     }
 
-    private void handleGetSellerItems(GetSellerItemsRequest req) {
-        List<Auction> auctions = auctionService.getAuctionsBySeller(req.getSellerId());
-        sendResponse(auctions);
+    public void handleDeleteAuction(NetworkMessage message) {
+        if (message instanceof DeleteItemRequest req) {
+            Auction auction = auctionManager.getAuction(req.getItemId());
+            if (auction != null) {
+                boolean success = auctionService.deleteAuction(req.getItemId(), auction.getSeller().getUsername());
+                if (success) {
+                    sendResponse(new GenericResponse(true, "Xóa thành công!"));
+                    return;
+                }
+            }
+            sendResponse(new GenericResponse(false, "Xóa thất bại. Phiên đã có người đặt giá hoặc không có quyền."));
+        }
+    }
+
+    public void handleGetSellerItems(NetworkMessage message) {
+        if (message instanceof GetSellerItemsRequest req) {
+            List<Auction> auctions = auctionService.getAuctionsBySeller(req.getSellerId());
+            sendResponse(auctions);
+        }
     }
 
     /**
@@ -154,13 +144,12 @@ public class AuctionHandler implements AuctionObserver {
 
     private void sendResponse(Object response) {
         try {
+            String json = gson.toJson(response);
             synchronized (out) {
-                out.writeObject(response);
-                out.flush();
-                out.reset(); // Clear object cache to ensure fresh state is sent
+                out.println(json); // Sử dụng println để kết thúc gói tin JSON
             }
-        } catch (IOException e) {
-            System.err.println("[AuctionHandler] Connection error while sending update: " + e.getMessage());
+        } catch (Exception e) {
+            System.err.println("[AuctionHandler] Error sending JSON: " + e.getMessage());
         }
     }
 }

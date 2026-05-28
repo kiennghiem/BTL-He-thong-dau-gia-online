@@ -14,4 +14,9 @@ public class DeleteItemRequest implements NetworkMessage {
 
     public String getItemId() { return itemId; }
     public String getSellerId() { return sellerId; }
+
+    @Override
+    public PacketType getType() {
+        return PacketType.DELETE_ITEM;
+    }
 }

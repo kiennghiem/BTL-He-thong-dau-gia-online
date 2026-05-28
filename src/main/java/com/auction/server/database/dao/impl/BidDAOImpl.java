@@ -1,7 +1,7 @@
 package com.auction.server.database.dao.impl;
 
 import com.auction.models.BidTransaction;
-import common.AppConstants;
+import com.auction.models.dto.AppConstants;
 import com.auction.server.database.dao.BaseDAO;
 import com.auction.server.database.dao.BidDAO;
 import com.auction.exceptions.DatabaseException;

@@ -1,0 +1,19 @@
+package com.auction.models.dto;
+
+public enum PacketType {
+    LOGIN,
+    LOGOUT,
+    REGISTER,
+    AUTH_RESPONSE,
+    BID,
+    CREATE_AUCTION,
+    GET_ACTIVE_AUCTIONS,
+    GET_BID_HISTORY,
+    GET_SELLER_ITEMS,
+    PAYMENT,
+    DELETE_ITEM,
+    GENERIC_RESPONSE,
+    NOTIFICATION,
+    BID_TRANSACTION,
+    AUCTION_UPDATE
+}

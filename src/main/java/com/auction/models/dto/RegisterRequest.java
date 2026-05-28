@@ -25,4 +25,9 @@ public class RegisterRequest implements NetworkMessage {
     public String getRole() {
         return role;
     }
+
+    @Override
+    public PacketType getType() {
+        return PacketType.REGISTER;
+    }
 }

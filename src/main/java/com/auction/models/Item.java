@@ -55,7 +55,12 @@ public abstract class Item extends Entity {
     public void setType(ItemType type) {
         this.type = type;
     }
-
+    public Seller getOwner() {
+        return owner;
+    }
+    public void setOwner(Seller owner) {
+        this.owner = owner;
+    }
 
     abstract public String getInfo();
 }

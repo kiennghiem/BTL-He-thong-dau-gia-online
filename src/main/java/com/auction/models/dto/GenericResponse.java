@@ -31,6 +31,11 @@ public class GenericResponse implements NetworkMessage {
     }
 
     @Override
+    public PacketType getType() {
+        return PacketType.GENERIC_RESPONSE;
+    }
+
+    @Override
     public String toString() {
         return "GenericResponse{" +
                 "success=" + success +

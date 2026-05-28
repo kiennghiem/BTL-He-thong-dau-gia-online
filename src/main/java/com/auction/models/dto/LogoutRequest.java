@@ -13,4 +13,9 @@ public class LogoutRequest implements NetworkMessage {
     public String getUsername() {
         return username;
     }
+
+    @Override
+    public PacketType getType() {
+        return PacketType.LOGOUT;
+    }
 }

@@ -44,6 +44,11 @@ public class BidRequest implements NetworkMessage {
     }
 
     @Override
+    public PacketType getType() {
+        return PacketType.BID;
+    }
+
+    @Override
     public String toString() {
         return String.format("BidRequest[User: %s, Auction: %s, Amount: %.2f]",
                 bidderId, auctionId, amount);

@@ -53,6 +53,11 @@ public class AuctionUpdateDTO implements NetworkMessage {
     }
 
     @Override
+    public PacketType getType() {
+        return PacketType.AUCTION_UPDATE;
+    }
+
+    @Override
     public String toString() {
         return String.format("Update[ID: %s, Price: %.2f, Leader: %s, Ends: %d]",
                 auctionId, currentHighestBid, leadingBidderName, endTimeMillis);

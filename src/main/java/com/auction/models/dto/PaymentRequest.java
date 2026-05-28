@@ -21,4 +21,9 @@ public class PaymentRequest implements NetworkMessage, Serializable {
     public String getBidderId() {
         return bidderId;
     }
+
+    @Override
+    public PacketType getType() {
+        return PacketType.PAYMENT;
+    }
 }

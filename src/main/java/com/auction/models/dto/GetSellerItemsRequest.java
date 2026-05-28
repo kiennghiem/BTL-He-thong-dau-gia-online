@@ -11,4 +11,9 @@ public class GetSellerItemsRequest implements NetworkMessage {
     }
 
     public String getSellerId() { return sellerId; }
+
+    @Override
+    public PacketType getType() {
+        return PacketType.GET_SELLER_ITEMS;
+    }
 }

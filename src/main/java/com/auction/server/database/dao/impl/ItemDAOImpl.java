@@ -1,6 +1,6 @@
 package com.auction.server.database.dao.impl;
 
-import common.*;
+import com.auction.models.*;
 import com.auction.server.database.dao.BaseDAO;
 import com.auction.server.database.dao.ItemDAO;
 
@@ -13,6 +13,7 @@ public class ItemDAOImpl extends BaseDAO implements ItemDAO {
     @Override
     public List<Item> getAllItems() {
         List<Item> items = new ArrayList<>();
+        // Trong kiến trúc này, Item chỉ lưu thông tin tĩnh
         String query = "SELECT * FROM items";
 
         try (Connection conn = getConnection();
@@ -35,8 +36,9 @@ public class ItemDAOImpl extends BaseDAO implements ItemDAO {
 
     @Override
     public boolean addItem(Item item) {
-        String sql = "INSERT INTO items (id, itemName, description, currentPrice, startingPrice, startingTime, closingTime, status, owner_id, current_bidder_id, buyer_id, item_type, brand, artist_name) " +
-                     "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+        // Chỉ insert các trường tĩnh thuộc về Item, các trường động (thời gian, trạng thái) thuộc về Auction
+        String sql = "INSERT INTO items (id, itemName, description, startingPrice, owner_id, item_type, brand, artist_name) " +
+                     "VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
 
         try (Connection conn = getConnection();
              PreparedStatement pstmt = conn.prepareStatement(sql)) {
@@ -44,33 +46,25 @@ public class ItemDAOImpl extends BaseDAO implements ItemDAO {
             pstmt.setString(1, item.getId());
             pstmt.setString(2, item.getItemName());
             pstmt.setString(3, item.getDescription());
-            pstmt.setDouble(4, item.getCurrentPrice());
-            pstmt.setDouble(5, item.getStartingPrice());
-            pstmt.setTimestamp(6, item.getStartingTime() != null ? Timestamp.valueOf(item.getStartingTime()) : null);
-            pstmt.setTimestamp(7, item.getClosingTime() != null ? Timestamp.valueOf(item.getClosingTime()) : null);
-            pstmt.setString(8, item.getStatus().name());
-            
-            // For now, we use usernames/IDs as strings from the User objects
-            pstmt.setString(9, item.getOwner()); 
-            pstmt.setString(10, item.getCurrentBidder());
-            pstmt.setString(11, item.getBuyer());
+            pstmt.setDouble(4, item.getStartingPrice());
+            pstmt.setString(5, item.getOwner() != null ? item.getOwner().getUsername() : null);
 
-            if (item instanceof Electronic) {
-                pstmt.setString(12, "ELECTRONICS");
-                pstmt.setString(13, ((Electronic) item).getBrand());
-                pstmt.setNull(14, Types.VARCHAR);
+            if (item instanceof Electronics) {
+                pstmt.setString(6, "ELECTRONICS");
+                pstmt.setString(7, ((Electronics) item).getBrand());
+                pstmt.setNull(8, Types.VARCHAR);
             } else if (item instanceof Vehicle) {
-                pstmt.setString(12, "VEHICLE");
-                pstmt.setString(13, ((Vehicle) item).getBrand());
-                pstmt.setNull(14, Types.VARCHAR);
+                pstmt.setString(6, "VEHICLE");
+                pstmt.setString(7, ((Vehicle) item).getBrand());
+                pstmt.setNull(8, Types.VARCHAR);
             } else if (item instanceof Art) {
-                pstmt.setString(12, "ART");
-                pstmt.setNull(13, Types.VARCHAR);
-                pstmt.setString(14, ((Art) item).getArtist());
+                pstmt.setString(6, "ART");
+                pstmt.setNull(7, Types.VARCHAR);
+                pstmt.setString(8, ((Art) item).getArtist());
             } else {
-                pstmt.setNull(12, Types.VARCHAR);
-                pstmt.setNull(13, Types.VARCHAR);
-                pstmt.setNull(14, Types.VARCHAR);
+                pstmt.setNull(6, Types.VARCHAR);
+                pstmt.setNull(7, Types.VARCHAR);
+                pstmt.setNull(8, Types.VARCHAR);
             }
 
             return pstmt.executeUpdate() > 0;
@@ -82,37 +76,31 @@ public class ItemDAOImpl extends BaseDAO implements ItemDAO {
 
     @Override
     public boolean updateItem(Item item) {
-        String sql = "UPDATE items SET itemName = ?, description = ?, currentPrice = ?, startingPrice = ?, startingTime = ?, closingTime = ?, status = ?, owner_id = ?, current_bidder_id = ?, buyer_id = ?, brand = ?, artist_name = ? WHERE id = ?";
+        String sql = "UPDATE items SET itemName = ?, description = ?, startingPrice = ?, owner_id = ?, brand = ?, artist_name = ? WHERE id = ?";
 
         try (Connection conn = getConnection();
              PreparedStatement pstmt = conn.prepareStatement(sql)) {
 
             pstmt.setString(1, item.getItemName());
             pstmt.setString(2, item.getDescription());
-            pstmt.setDouble(3, item.getCurrentPrice());
-            pstmt.setDouble(4, item.getStartingPrice());
-            pstmt.setTimestamp(5, item.getStartingTime() != null ? Timestamp.valueOf(item.getStartingTime()) : null);
-            pstmt.setTimestamp(6, item.getClosingTime() != null ? Timestamp.valueOf(item.getClosingTime()) : null);
-            pstmt.setString(7, item.getStatus().name());
-            pstmt.setString(8, item.getOwner());
-            pstmt.setString(9, item.getCurrentBidder());
-            pstmt.setString(10, item.getBuyer());
+            pstmt.setDouble(3, item.getStartingPrice());
+            pstmt.setString(4, item.getOwner() != null ? item.getOwner().getUsername() : null);
 
-            if (item instanceof Electronic) {
-                pstmt.setString(11, ((Electronic) item).getBrand());
-                pstmt.setNull(12, Types.VARCHAR);
+            if (item instanceof Electronics) {
+                pstmt.setString(5, ((Electronics) item).getBrand());
+                pstmt.setNull(6, Types.VARCHAR);
             } else if (item instanceof Vehicle) {
-                pstmt.setString(11, ((Vehicle) item).getBrand());
-                pstmt.setNull(12, Types.VARCHAR);
+                pstmt.setString(5, ((Vehicle) item).getBrand());
+                pstmt.setNull(6, Types.VARCHAR);
             } else if (item instanceof Art) {
-                pstmt.setNull(11, Types.VARCHAR);
-                pstmt.setString(12, ((Art) item).getArtist());
+                pstmt.setNull(5, Types.VARCHAR);
+                pstmt.setString(6, ((Art) item).getArtist());
             } else {
-                pstmt.setNull(11, Types.VARCHAR);
-                pstmt.setNull(12, Types.VARCHAR);
+                pstmt.setNull(5, Types.VARCHAR);
+                pstmt.setNull(6, Types.VARCHAR);
             }
 
-            pstmt.setString(13, item.getId());
+            pstmt.setString(7, item.getId());
 
             return pstmt.executeUpdate() > 0;
         } catch (SQLException e) {
@@ -158,15 +146,15 @@ public class ItemDAOImpl extends BaseDAO implements ItemDAO {
 
     private Item createItemByType(String type, ResultSet rs) throws SQLException {
         if ("ELECTRONICS".equalsIgnoreCase(type)) {
-            Electronic e = new Electronic();
+            Electronics e = new Electronics("", "", 0, "", null);
             e.setBrand(rs.getString("brand"));
             return e;
         } else if ("ART".equalsIgnoreCase(type)) {
-            Art a = new Art();
+            Art a = new Art("", "", 0, "", null);
             a.setArtist(rs.getString("artist_name"));
             return a;
         } else if ("VEHICLE".equalsIgnoreCase(type)) {
-            Vehicle v = new Vehicle();
+            Vehicle v = new Vehicle("", "", 0, "", null);
             v.setBrand(rs.getString("brand"));
             return v;
         }
@@ -175,47 +163,26 @@ public class ItemDAOImpl extends BaseDAO implements ItemDAO {
 
     private void mapCommonFields(ResultSet rs, Item item) throws SQLException {
         item.setId(rs.getString("id"));
-        item.setItemName(rs.getString("itemName"));
+        
+        // Kiểm tra xem cột có tồn tại không trước khi get để tránh lỗi nếu schema thiếu
+        try {
+            item.setItemName(rs.getString("itemName"));
+        } catch (SQLException e) {
+            try { item.setItemName(rs.getString("title")); } catch (Exception ex) {}
+        }
+        
         item.setDescription(rs.getString("description"));
-        item.setCurrentPrice(rs.getDouble("currentPrice"));
-        item.setStartingPrice(rs.getDouble("startingPrice"));
         
-        Timestamp startTs = rs.getTimestamp("startingTime");
-        if (startTs != null) item.setStartingTime(startTs.toLocalDateTime());
-        
-        Timestamp closeTs = rs.getTimestamp("closingTime");
-        if (closeTs != null) item.setClosingTime(closeTs.toLocalDateTime());
-
-        String statusStr = rs.getString("status");
-        if (statusStr != null) {
-            try {
-                item.setStatus(ItemStatus.valueOf(statusStr.toUpperCase()));
-            } catch (IllegalArgumentException e) {
-                e.printStackTrace();
-            }
+        try {
+            item.setStartingPrice(rs.getDouble("startingPrice"));
+        } catch (SQLException e) {
+            // Ignored if missing
         }
 
-        // Handle User objects by creating stubs if necessary
-        // In a real application, you might use a UserDAO to fetch full objects
         String ownerId = rs.getString("owner_id");
         if (ownerId != null) {
-            Seller owner = new Seller();
-            owner.setUsername(ownerId);
+            Seller owner = new Seller(ownerId, "");
             item.setOwner(owner);
-        }
-
-        String bidderId = rs.getString("current_bidder_id");
-        if (bidderId != null) {
-            Bidder bidder = new Bidder();
-            bidder.setUsername(bidderId);
-            item.setCurrentBidder(bidder);
-        }
-
-        String buyerId = rs.getString("buyer_id");
-        if (buyerId != null) {
-            Bidder buyer = new Bidder();
-            buyer.setUsername(buyerId);
-            item.setBuyer(buyer);
         }
     }
 }

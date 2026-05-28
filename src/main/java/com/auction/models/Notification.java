@@ -1,12 +1,14 @@
 package com.auction.models;
 
+import com.auction.models.dto.NetworkMessage;
+import com.auction.models.dto.PacketType;
 import java.io.Serializable;
 
 /**
  * Carrier object for real-time updates sent to observers.
  * Standardizes communication between Server logic and Network handlers.
  */
-public class Notification implements Serializable {
+public class Notification implements NetworkMessage, Serializable {
     private static final long serialVersionUID = 1L;
 
     public enum Type {
@@ -25,8 +27,13 @@ public class Notification implements Serializable {
         this.data = data;
     }
 
-    public Type getType() {
+    public Type getTypeEnum() {
         return type;
+    }
+
+    @Override
+    public PacketType getType() {
+        return PacketType.NOTIFICATION;
     }
 
     public String getAuctionId() {
