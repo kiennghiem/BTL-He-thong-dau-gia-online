@@ -91,10 +91,5 @@ public abstract class Item extends Entity {
         this.buyer = buyer;
     }
 
-    public static void main(String[] args) {
-        Bidder buyer = null;
-        buyer.getId();
-    }
-
     abstract public String getInfo();
 }

@@ -1,6 +1,5 @@
 package com.auction.server.database.dao.impl;
 
-import com.auction.exceptions.DatabaseException;
 import com.auction.models.*;
 import com.auction.server.database.dao.BaseDAO;
 import com.auction.server.database.dao.ItemDAO;
@@ -27,7 +26,7 @@ public class ItemDAOImpl extends BaseDAO implements ItemDAO {
              ResultSet rs = pstmt.executeQuery()) {
 
             while (rs.next()) {
-                Item item = createItemFromRow(rs);
+                Item item = mapRowToItem(rs);
                 items.add(item);
             }
         } catch (SQLException e) {
@@ -98,7 +97,7 @@ public class ItemDAOImpl extends BaseDAO implements ItemDAO {
             pstmt.setString(1, id);
             try (ResultSet rs = pstmt.executeQuery()) {
                 if (rs.next()) {
-                    return createItemFromRow(rs);
+                    return mapRowToItem(rs);
                 }
             }
         } catch (SQLException e) {
@@ -107,7 +106,7 @@ public class ItemDAOImpl extends BaseDAO implements ItemDAO {
         return null;
     }
 
-    private Item createItemFromRow(ResultSet rs) throws SQLException {
+    private Item mapRowToItem(ResultSet rs) throws SQLException {
         String id = rs.getString("id");
         String typeStr = rs.getString("item_type");
         ItemType type = ItemType.valueOf(typeStr.toUpperCase());

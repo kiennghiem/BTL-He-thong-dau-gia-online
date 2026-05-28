@@ -7,6 +7,7 @@ import com.auction.server.database.dao.BaseDAO;
 import com.auction.server.database.dao.UserDAO;
 import com.auction.exceptions.DatabaseException;
 
+import java.math.BigDecimal;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -15,7 +16,7 @@ import java.sql.SQLException;
 public class UserDAOImpl extends BaseDAO implements UserDAO {
 
     @Override
-    public User findByUsername(String username) {
+    public User findByUsername(String username) throws DatabaseException {
         String query = "SELECT * FROM users WHERE username = ?";
 
         try (Connection conn = getConnection();
@@ -35,7 +36,7 @@ public class UserDAOImpl extends BaseDAO implements UserDAO {
     }
 
     @Override
-    public User findById(String id) {
+    public User findById(String id) throws DatabaseException {
         String query = "SELECT * FROM users WHERE id = ?";
 
         if (id == null) return null;
@@ -67,7 +68,7 @@ public class UserDAOImpl extends BaseDAO implements UserDAO {
             pstmt.setString(2, user.getUsername());
             pstmt.setString(3, user.getPassword());
             pstmt.setString(4, user.getRole().name());
-            pstmt.setDouble(5, user.getBalance());
+            pstmt.setBigDecimal(5, user.getBalance());
 
             pstmt.executeUpdate();
         } catch (SQLException e) {
@@ -85,7 +86,7 @@ public class UserDAOImpl extends BaseDAO implements UserDAO {
             pstmt.setString(1, user.getUsername());
             pstmt.setString(2, user.getPassword());
             pstmt.setString(3, user.getRole().name());
-            pstmt.setDouble(4, user.getBalance());
+            pstmt.setBigDecimal(4, user.getBalance());
             pstmt.setString(5, user.getId());
 
             pstmt.executeUpdate();
@@ -102,7 +103,7 @@ public class UserDAOImpl extends BaseDAO implements UserDAO {
         String username = rs.getString("username");
         String password = rs.getString("password");
         String roleStr = rs.getString("role");
-        double balance = rs.getDouble("balance");
+        BigDecimal balance = rs.getBigDecimal("balance");
 
         UserRole role;
         try {

@@ -40,7 +40,7 @@ public class Auction extends Entity {
         this.title = title;
         this.description = description;
         // Khởi tạo giá hiện tại bằng giá khởi điểm của mặt hàng
-        this.startingPrice = BigDecimal.valueOf(item.getStartingPrice());
+        this.startingPrice = item.getStartingPrice();
         this.currentPrice = this.startingPrice;
         this.bidHistory = new ArrayList<>();
     }
