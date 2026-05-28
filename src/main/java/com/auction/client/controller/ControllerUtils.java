@@ -37,4 +37,9 @@ public final class ControllerUtils {
         stage.show();
     }
 
+    public static void showAlert(String message) {
+        Alert alert = new Alert(Alert.AlertType.ERROR);
+        alert.setContentText(message);
+        alert.show();
+    }
 }

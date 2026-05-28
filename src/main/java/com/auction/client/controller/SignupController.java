@@ -47,10 +47,7 @@ public class SignupController {
 
             // Catch all custom exceptions
         } catch (RuntimeException e) {
-            e.printStackTrace();
-            Alert alert = new Alert(Alert.AlertType.ERROR);
-            alert.setContentText(e.getMessage());
-            alert.show();
+            ControllerUtils.showAlert(e.getMessage());
         }
     }
 
