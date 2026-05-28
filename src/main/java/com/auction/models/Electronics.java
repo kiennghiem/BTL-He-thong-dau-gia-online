@@ -6,6 +6,11 @@ public class Electronics extends Item {
     private static final long serialVersionUID = 1L;
     private String brand;
 
+    public Electronics() {
+        super();
+        this.setType(ItemType.ELECTRONICS);
+    }
+
     // Create a new Electronics instance
     public Electronics(String itemName, String description, double startingPrice, String Brand, Seller owner){
         super(ItemType.ELECTRONICS, itemName,description,startingPrice, owner);

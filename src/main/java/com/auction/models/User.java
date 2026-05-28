@@ -11,6 +11,10 @@ public abstract class User extends Entity {
     private String password;
     private double balance;
 
+    public User() {
+        super();
+    }
+
     // Create an instance of a new user
     public User(UserRole role, String username, String password) {
         super();

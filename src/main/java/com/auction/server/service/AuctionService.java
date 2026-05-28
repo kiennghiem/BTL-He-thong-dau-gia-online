@@ -3,6 +3,7 @@ package com.auction.server.service;
 import com.auction.exceptions.AuctionNotFoundException;
 import com.auction.exceptions.InvalidBidException;
 import com.auction.models.*;
+import com.auction.models.dto.*;
 import com.auction.server.database.dao.BidDAO;
 import com.auction.server.database.dao.DAOFactory;
 import com.auction.server.database.dao.ItemDAO;
@@ -86,25 +87,28 @@ public class AuctionService {
     /**
      * Creates a new auction (Seller functionality).
      */
+    /**
+     * Creates a new auction (Seller functionality).
+     */
     public boolean createAuction(ItemType type, String name, String desc, double startingPrice,
                                  String specAttr, Seller seller, LocalDateTime start,
                                  LocalDateTime end, double minIncrement) {
 
-        // 1. RESOLVED: Manually construct the correct common.Item subclass to resolve package conflicts
-        common.Item item;
+        // 1. FIX: Changed 'models.Item' to 'Item' (relying on the top imports)
+        Item item;
         switch (type.name()) {
             case "ELECTRONICS":
-                common.Electronic e = new common.Electronic();
+                Electronics e = new Electronics();
                 e.setBrand(specAttr);
                 item = e;
                 break;
             case "VEHICLE":
-                common.Vehicle v = new common.Vehicle();
+                Vehicle v = new Vehicle();
                 v.setBrand(specAttr);
                 item = v;
                 break;
             case "ART":
-                common.Art a = new common.Art();
+                Art a = new Art();
                 a.setArtist(specAttr);
                 item = a;
                 break;
@@ -121,18 +125,19 @@ public class AuctionService {
         item.setStartingTime(start);
         item.setClosingTime(end);
 
+        // 2. FIX: Target the correct package for the ItemStatus enum
         try {
-            item.setStatus(common.ItemStatus.RUNNING);
+            item.setStatus(com.auction.models.ItemStatus.RUNNING);
         } catch (Exception e) {
             // Fallback block if your enum defaults to a different open status name
         }
 
-        // RESOLVED: Convert com.auction.models.Seller to common.Seller expected by common.Item
-        common.Seller commonSeller = new common.Seller();
+        // 3. FIX: Simplified Seller initialization using imported classes
+        Seller commonSeller = new Seller();
         commonSeller.setUsername(seller.getUsername());
         item.setOwner(commonSeller);
 
-        // 2. Create Auction object
+        // 4. Create Auction object
         Auction auction = new Auction();
         auction.setId(itemId);
         auction.setItemId(itemId);
@@ -144,8 +149,8 @@ public class AuctionService {
         auction.setEndTime(end);
         auction.setStatus("RUNNING");
 
-        // 3. Persist both sequentially to Database
-        boolean itemSaved = itemDAO.addItem(item); // Compiles perfectly with common.Item
+        // 5. Persist both sequentially to Database
+        boolean itemSaved = itemDAO.addItem(item);
         boolean auctionSaved = false;
 
         if (itemSaved) {
@@ -157,7 +162,7 @@ public class AuctionService {
         }
 
         if (itemSaved && auctionSaved) {
-            // 4. Add to Real-time Manager
+            // 6. Add to Real-time Manager
             auctionManager.addAuction(auction);
             System.out.println("[AuctionService] New auction created: " + auction.getId());
             return true;

@@ -1,6 +1,6 @@
 package com.auction.server.database.dao.impl;
 
-import common.*;
+import com.auction.models.*;
 import com.auction.server.database.dao.BaseDAO;
 import com.auction.server.database.dao.ItemDAO;
 
@@ -48,16 +48,15 @@ public class ItemDAOImpl extends BaseDAO implements ItemDAO {
             pstmt.setDouble(5, item.getStartingPrice());
             pstmt.setTimestamp(6, item.getStartingTime() != null ? Timestamp.valueOf(item.getStartingTime()) : null);
             pstmt.setTimestamp(7, item.getClosingTime() != null ? Timestamp.valueOf(item.getClosingTime()) : null);
-            pstmt.setString(8, item.getStatus().name());
+            pstmt.setString(8, item.getStatus() != null ? item.getStatus().name() : ItemStatus.PENDING.name());
             
-            // For now, we use usernames/IDs as strings from the User objects
-            pstmt.setString(9, item.getOwner()); 
-            pstmt.setString(10, item.getCurrentBidder());
-            pstmt.setString(11, item.getBuyer());
+            pstmt.setString(9, item.getOwner() != null ? item.getOwner().getUsername() : null); 
+            pstmt.setString(10, item.getCurrentBidder() != null ? item.getCurrentBidder().getUsername() : null);
+            pstmt.setString(11, item.getBuyer() != null ? item.getBuyer().getUsername() : null);
 
-            if (item instanceof Electronic) {
+            if (item instanceof Electronics) {
                 pstmt.setString(12, "ELECTRONICS");
-                pstmt.setString(13, ((Electronic) item).getBrand());
+                pstmt.setString(13, ((Electronics) item).getBrand());
                 pstmt.setNull(14, Types.VARCHAR);
             } else if (item instanceof Vehicle) {
                 pstmt.setString(12, "VEHICLE");
@@ -93,13 +92,13 @@ public class ItemDAOImpl extends BaseDAO implements ItemDAO {
             pstmt.setDouble(4, item.getStartingPrice());
             pstmt.setTimestamp(5, item.getStartingTime() != null ? Timestamp.valueOf(item.getStartingTime()) : null);
             pstmt.setTimestamp(6, item.getClosingTime() != null ? Timestamp.valueOf(item.getClosingTime()) : null);
-            pstmt.setString(7, item.getStatus().name());
-            pstmt.setString(8, item.getOwner());
-            pstmt.setString(9, item.getCurrentBidder());
-            pstmt.setString(10, item.getBuyer());
+            pstmt.setString(7, item.getStatus() != null ? item.getStatus().name() : ItemStatus.PENDING.name());
+            pstmt.setString(8, item.getOwner() != null ? item.getOwner().getId() : null);
+            pstmt.setString(9, item.getCurrentBidder() != null ? item.getCurrentBidder().getId() : null);
+            pstmt.setString(10, item.getBuyer() != null ? item.getBuyer().getId() : null);
 
-            if (item instanceof Electronic) {
-                pstmt.setString(11, ((Electronic) item).getBrand());
+            if (item instanceof Electronics) {
+                pstmt.setString(11, ((Electronics) item).getBrand());
                 pstmt.setNull(12, Types.VARCHAR);
             } else if (item instanceof Vehicle) {
                 pstmt.setString(11, ((Vehicle) item).getBrand());
@@ -145,7 +144,7 @@ public class ItemDAOImpl extends BaseDAO implements ItemDAO {
 
     private Item createItemByType(String type, ResultSet rs) throws SQLException {
         if ("ELECTRONICS".equalsIgnoreCase(type)) {
-            Electronic e = new Electronic();
+            Electronics e = new Electronics();
             e.setBrand(rs.getString("brand"));
             return e;
         } else if ("ART".equalsIgnoreCase(type)) {
@@ -182,8 +181,6 @@ public class ItemDAOImpl extends BaseDAO implements ItemDAO {
             }
         }
 
-        // Handle User objects by creating stubs if necessary
-        // In a real application, you might use a UserDAO to fetch full objects
         String ownerId = rs.getString("owner_id");
         if (ownerId != null) {
             Seller owner = new Seller();

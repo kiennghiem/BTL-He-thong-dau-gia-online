@@ -6,6 +6,11 @@ public class Art extends Item {
     private static final long serialVersionUID = 1L;
     private String artist;
 
+    public Art() {
+        super();
+        this.setType(ItemType.ART);
+    }
+
     // Create a new Art instance
     public Art(String itemName, String description, double startingPrice, String artist, Seller owner){
         super(ItemType.ART, itemName, description, startingPrice, owner);
