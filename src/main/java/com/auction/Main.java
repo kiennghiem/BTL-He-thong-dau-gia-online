@@ -1,5 +1,6 @@
 package com.auction;
 
+import com.auction.server.ServerApp;
 import com.auction.util.DatabaseSetup;
 
 public class Main {
@@ -13,7 +14,7 @@ public class Main {
             e.printStackTrace();
         }
 
-        // Redirect to JavaFX app
-        AuctionApp.main(args);
+        // Run server to initialize server socket connection
+        ServerApp.main(args);
     }
 }
