@@ -5,7 +5,7 @@
 <?import javafx.scene.layout.*?>
 <?import javafx.scene.text.Font?>
 
-<VBox spacing="15.0" prefWidth="600.0" prefHeight="450.0" xmlns="http://javafx.com/javafx/26" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.auction.client.controller.SellerDashboardController" style="-fx-background-color: #ffffff;">
+<VBox spacing="15.0" prefWidth="600.0" prefHeight="450.0" xmlns="http://javafx.com/javafx/26" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.auction.client.controller.SellerCreateAuctionController" style="-fx-background-color: #ffffff;">
     <padding>
         <Insets top="25.0" right="25.0" bottom="25.0" left="25.0"/>
     </padding>

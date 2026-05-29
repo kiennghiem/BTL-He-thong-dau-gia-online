@@ -87,6 +87,14 @@ public class Auction extends Entity {
         if (this.item != null) this.item.setId(itemId);
     }
 
+    public Seller getSeller() {
+        return seller;
+    }
+
+    public void setSeller(Seller seller) {
+        this.seller = seller;
+    }
+
     public String getHighestBidderId() {
         return highestBid != null ? highestBid.getBidderId() : null;
     }

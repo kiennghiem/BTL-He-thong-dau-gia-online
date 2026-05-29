@@ -1,6 +1,7 @@
 package com.auction.client.controller;
 
 import com.auction.client.network.ClientManager;
+import com.auction.client.util.SessionManager;
 import com.auction.models.dto.AuthResponse;
 import com.auction.models.dto.RegisterRequest;
 import com.auction.server.factory.UserRole;
@@ -8,6 +9,7 @@ import javafx.application.Platform;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.scene.control.*;
+import javafx.stage.Stage;
 
 import java.util.function.Consumer;
 
@@ -30,6 +32,7 @@ public class SignupController {
 
     private Consumer<Object> responseListener;
 
+    @FXML
     public void initialize() {
         // Register listener for server responses
         responseListener = msg -> {
@@ -40,6 +43,7 @@ public class SignupController {
         ClientManager.getInstance().addMessageListener(responseListener);
     }
 
+    @FXML
     public void handleSignup(ActionEvent event) {
         String username = tfUsername.getText().trim();
         String password = tfPassword.getText().trim();
@@ -62,17 +66,26 @@ public class SignupController {
         if (response.isSuccess()) {
             System.out.println("[SIGNUP] Success: " + response.getMessage());
             
-            // Navigate to Auction List (or Login)
-            javafx.stage.Stage stage = (javafx.stage.Stage) buttonSignUp.getScene().getWindow();
-            ControllerUtils.changeScene(stage, "AuctionList.fxml");
+            // Save user to session
+            SessionManager.getInstance().setCurrentUser(response.getUser());
 
-            // Cleanup listener
+            Stage stage = (javafx.stage.Stage) buttonSignUp.getScene().getWindow();
+            
+            if (response.getUser().getRole() == UserRole.SELLER) {
+                ControllerUtils.changeScene(stage, "SellerMainView.fxml");
+                // TODO: ADD OTHER SCENES FOR BIDDER AND ADMIN TO CHANGE TO
+            } else {
+                ControllerUtils.changeScene(stage, "AuctionList.fxml");
+            }
+
+            // Cleanup listener when leaving
             ClientManager.getInstance().removeMessageListener(responseListener);
         } else {
             ControllerUtils.showAlert(response.getMessage());
         }
     }
 
+    @FXML
     // Click on "Log in" button will take user to the Login screen.
     public void handleLogin(ActionEvent event) {
         ClientManager.getInstance().removeMessageListener(responseListener);

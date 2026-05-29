@@ -35,6 +35,7 @@ public final class ControllerUtils {
             stage.show();
         }
         catch (IOException e) {
+            System.err.println("Error changing scene to " + fxmlFile + ": " + e.getMessage());
             e.printStackTrace();
         }
     }

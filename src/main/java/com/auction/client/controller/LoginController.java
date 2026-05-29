@@ -1,9 +1,11 @@
 package com.auction.client.controller;
 
 import com.auction.client.network.ClientManager;
+import com.auction.client.util.SessionManager;
 import com.auction.models.User;
 import com.auction.models.dto.AuthResponse;
 import com.auction.models.dto.LoginRequest;
+import com.auction.server.factory.UserRole;
 import javafx.application.Platform;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
@@ -26,6 +28,7 @@ public class LoginController {
 
     private Consumer<Object> responseListener;
 
+    @FXML
     public void initialize() {
         // Register listener for server responses
         responseListener = msg -> {
@@ -36,6 +39,7 @@ public class LoginController {
         ClientManager.getInstance().addMessageListener(responseListener);
     }
 
+    @FXML
     public void handleLogin(ActionEvent event) {
         String username = tfUsername.getText().trim();
         String password = tfPassword.getText().trim();
@@ -54,8 +58,17 @@ public class LoginController {
         if (response.isSuccess()) {
             System.out.println("[LOGIN] Success: " + response.getMessage());
             
+            // Save user to session
+            SessionManager.getInstance().setCurrentUser(response.getUser());
+            
             Stage stage = (Stage) buttonLogin.getScene().getWindow();
-            ControllerUtils.changeScene(stage, "AuctionList.fxml");
+            
+            if (response.getUser().getRole() == UserRole.SELLER) {
+                ControllerUtils.changeScene(stage, "SellerMainView.fxml");
+                // TODO: ADD OTHER SCENES FOR BIDDER AND ADMIN TO CHANGE TO
+            } else {
+                ControllerUtils.changeScene(stage, "AuctionList.fxml");
+            }
 
             // Cleanup listener when leaving
             ClientManager.getInstance().removeMessageListener(responseListener);
@@ -64,6 +77,7 @@ public class LoginController {
         }
     }
 
+    @FXML
     // Click on "Sign up" button will take user to the Sign up screen.
     public void handleSignup(ActionEvent event) {
         ClientManager.getInstance().removeMessageListener(responseListener);

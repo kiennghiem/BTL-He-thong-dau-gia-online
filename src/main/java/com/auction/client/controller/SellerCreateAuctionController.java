@@ -1,5 +1,7 @@
 package com.auction.client.controller;
 
+import com.auction.client.util.SessionManager;
+import com.auction.server.factory.UserRole;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.event.ActionEvent;
@@ -10,7 +12,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 
-public class SellerDashboardController {
+public class SellerCreateAuctionController {
 
     @FXML private TextField txtTitle;
     @FXML private TextArea txtDescription;
@@ -24,7 +26,7 @@ public class SellerDashboardController {
 
     @FXML
     public void initialize() {
-        // Populate Hours
+        // Populate Hours into the combo boxes
         ObservableList<String> hours = FXCollections.observableArrayList();
         for (int i = 0; i < 24; i++) {
             hours.add(String.format("%02d:00", i));
@@ -79,14 +81,17 @@ public class SellerDashboardController {
 
         showAlert(Alert.AlertType.INFORMATION, "Success", "Auction created successfully!");
 
-        // Go back to the main list after successful creation
-        ControllerUtils.changeScene(event, "AuctionList.fxml");
+        // Go back to the correct view
+        navigateBack(event);
     }
 
     @FXML
     public void handleCancel(ActionEvent event) {
-        // Uses your utility class to safely route back to the Auction List
-        ControllerUtils.changeScene(event, "AuctionList.fxml");
+        navigateBack(event);
+    }
+
+    private void navigateBack(ActionEvent event) {
+        ControllerUtils.changeScene(event, "SellerMainView.fxml");
     }
 
     private void showAlert(Alert.AlertType type, String title, String content) {
