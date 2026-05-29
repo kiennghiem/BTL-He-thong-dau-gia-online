@@ -1,5 +1,6 @@
 package com.auction;
 
+import com.auction.client.network.ClientManager;
 import com.auction.server.database.DatabaseManager;
 import javafx.application.Application;
 import javafx.fxml.FXMLLoader;
@@ -17,6 +18,14 @@ public class AuctionApp extends Application {
 
     @Override
     public void start(Stage stage) throws IOException {
+        // Attempt to connect to the server on startup
+        try {
+            ClientManager.getInstance().connect();
+        } catch (IOException e) {
+            System.err.println("[CLIENT] Could not connect to server on startup: " + e.getMessage());
+            // We can continue, ClientManager will try to reconnect when sending first request
+        }
+
         Parent root = FXMLLoader.load(getClass().getResource("client/view/Login.fxml"));
         Scene scene = new Scene(root);
 
@@ -29,6 +38,7 @@ public class AuctionApp extends Application {
 
     @Override
     public void stop() {
+        ClientManager.getInstance().close();
         DatabaseManager.getInstance().shutdown();
     }
 }
