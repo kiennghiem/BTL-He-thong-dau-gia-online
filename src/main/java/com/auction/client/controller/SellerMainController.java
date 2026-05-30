@@ -1,6 +1,12 @@
 package com.auction.client.controller;
 
+import com.auction.client.network.ClientManager;
 import com.auction.client.util.SessionManager;
+import com.auction.models.User;
+import com.auction.models.dto.AuthResponse;
+import com.auction.models.dto.LogoutRequest;
+import com.mysql.cj.xdevapi.Client;
+import javafx.application.Platform;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
@@ -9,16 +15,28 @@ import javafx.scene.layout.BorderPane;
 import javafx.stage.Stage;
 
 import java.io.IOException;
+import java.util.function.Consumer;
 
 public class SellerMainController {
 
     @FXML
     private BorderPane mainBorderPane;
 
+    private Consumer<Object> responseListener;
+    private User currentUser = SessionManager.getInstance().getCurrentUser();
+
     @FXML
     public void initialize() {
         // Show Available Auctions by default
         handleShowAvailableAuctions(null);
+
+        // Register listener for server responses
+        responseListener = msg -> {
+            if (msg instanceof AuthResponse response) {
+                Platform.runLater(() -> handleAuthResponse(response));
+            }
+        };
+        ClientManager.getInstance().addMessageListener(responseListener);
     }
 
     @FXML
@@ -38,8 +56,8 @@ public class SellerMainController {
 
     @FXML
     private void handleLogout(ActionEvent event) {
-        SessionManager.getInstance().clearSession();
-        ControllerUtils.changeScene((Stage) mainBorderPane.getScene().getWindow(), "Login.fxml");
+        LogoutRequest logoutRequest = new LogoutRequest(currentUser.getUsername());
+        ClientManager.getInstance().sendRequest(logoutRequest);
     }
 
     private void loadView(String fxmlFile, boolean myAuctionsMode) {
@@ -57,6 +75,21 @@ public class SellerMainController {
         } catch (IOException e) {
             e.printStackTrace();
             ControllerUtils.showAlert("Error loading view: " + fxmlFile);
+        }
+    }
+
+    private void handleAuthResponse(AuthResponse response) {
+        if (response.isSuccess()) {
+            System.out.println("[LOGOUT] Success: " + response.getMessage());
+
+            // Clean up listener and clear session with the current user
+            ClientManager.getInstance().removeMessageListener(responseListener);
+            SessionManager.getInstance().clearSession();
+
+            Stage stage = (Stage) mainBorderPane.getScene().getWindow();
+            ControllerUtils.changeScene(stage, "Login.fxml");
+        } else {
+            ControllerUtils.showAlert(response.getMessage());
         }
     }
 }

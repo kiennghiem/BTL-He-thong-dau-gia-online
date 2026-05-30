@@ -23,9 +23,6 @@ import java.util.stream.Collectors;
 
 public class AuctionListController {
 
-    @FXML private Button buttonLogout;
-    @FXML private Button btnCreateAuction;
-
     // Table UI Elements
     @FXML private TableView<Auction> auctionTable;
     @FXML private TableColumn<Auction, String> colTitle;
@@ -99,9 +96,5 @@ public class AuctionListController {
         } else {
             auctionTable.setItems(allData);
         }
-    }
-
-    public void handleGoToSellerDashboard(ActionEvent event) {
-        ControllerUtils.changeScene(event, "SellerCreateAuction.fxml");
     }
 }

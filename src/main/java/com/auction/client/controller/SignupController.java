@@ -69,7 +69,7 @@ public class SignupController {
             // Save user to session
             SessionManager.getInstance().setCurrentUser(response.getUser());
 
-            Stage stage = (javafx.stage.Stage) buttonSignUp.getScene().getWindow();
+            Stage stage = (Stage) buttonSignUp.getScene().getWindow();
             
             if (response.getUser().getRole() == UserRole.SELLER) {
                 ControllerUtils.changeScene(stage, "SellerMainView.fxml");
