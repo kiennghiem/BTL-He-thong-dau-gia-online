@@ -1,19 +1,19 @@
 package com.auction.models;
 
-import java.io.Serializable;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
 import com.auction.exceptions.*;
+import com.auction.server.observer.AuctionStatus;
 
 public class Auction extends Entity {
 
     private static final long serialVersionUID = 1L;
     private Item item;
-    private Seller seller;
     private AuctionStatus status;
+    private Seller seller;
     private LocalDateTime startTime; // Sửa tên thành startTime để khớp DB
     private LocalDateTime endTime;   // Sửa tên thành endTime để khớp DB
     private BidTransaction highestBid;
@@ -31,10 +31,10 @@ public class Auction extends Entity {
         this.bidHistory = new ArrayList<>();
     }
 
-    public Auction(Item item, Seller seller, LocalDateTime startTime, LocalDateTime endTime, String title, String description) {
+    public Auction(Item item, LocalDateTime startTime, LocalDateTime endTime, String title, String description) {
         this.item = item;
+        this.status = AuctionStatus.OPEN;
         this.seller = seller;
-        this.status = AuctionStatus.PENDING;
         this.startTime = startTime;
         this.endTime = endTime;
         this.title = title;
@@ -53,10 +53,6 @@ public class Auction extends Entity {
             return;
         }
         switch(newStatus) {
-            case OPEN -> {
-                if(this.status != AuctionStatus.PENDING) { throw new InvalidStatusException("Cannot set this status to OPEN"); }
-                this.status = newStatus;
-            }
             case RUNNING -> {
                 if(this.status != AuctionStatus.OPEN) { throw new InvalidStatusException("Cannot set this status to RUNNING"); }
                 this.status = newStatus;
@@ -148,21 +144,17 @@ public class Auction extends Entity {
         this.endTime = endTime;
     }
 
-    public AuctionStatus getAuctionStatus() {
+    public AuctionStatus getStatus() {
         return status;
     }
 
-    public String getStatus() {
-        return status != null ? status.name() : null;
+    public String getStatusAsString() {
+        return status.toString();
     }
 
-    public void setStatus(String statusStr) {
-        if (statusStr != null) {
-            try {
-                this.status = AuctionStatus.valueOf(statusStr.toUpperCase());
-            } catch (IllegalArgumentException e) {
-                // Fallback or log if status string is invalid
-            }
+    public void setStatus(AuctionStatus status) {
+        if (status != null) {
+            this.status = status;
         }
     }
 

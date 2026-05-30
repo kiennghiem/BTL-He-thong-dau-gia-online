@@ -2,11 +2,11 @@ package com.auction.client.controller;
 
 import com.auction.client.util.SessionManager;
 import com.auction.models.Auction;
-import com.auction.models.AuctionStatus;
 import com.auction.models.Seller;
 import com.auction.models.User;
 import com.auction.server.factory.UserFactory;
 import com.auction.server.factory.UserRole;
+import com.auction.server.observer.AuctionStatus;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.event.ActionEvent;
@@ -60,7 +60,7 @@ public class AuctionListController {
         Auction dummy1 = new Auction();
         dummy1.setTitle("Vintage Rolex Watch");
         dummy1.setCurrentPrice(new BigDecimal("1500.00"));
-        dummy1.setStatus("RUNNING");
+        dummy1.setStatus(AuctionStatus.RUNNING);
         dummy1.setEndTime(LocalDateTime.now().plusDays(2));
         Seller dummySeller1 = (Seller) UserFactory.createNewUser(UserRole.SELLER, "guy1", "111111");
         dummySeller1.setId("dummy-seller-id-1");
@@ -69,7 +69,7 @@ public class AuctionListController {
         Auction dummy2 = new Auction();
         dummy2.setTitle("MacBook Pro 2023");
         dummy2.setCurrentPrice(new BigDecimal("2200.00"));
-        dummy2.setStatus("OPEN");
+        dummy2.setStatus(AuctionStatus.OPEN);
         dummy2.setEndTime(LocalDateTime.now().plusDays(5));
 
         // Use SessionManager to get current user's ID
@@ -90,7 +90,7 @@ public class AuctionListController {
         if (myAuctionsMode && currentUser != null) {
             List<Auction> filtered = allData.stream()
                     .filter(a -> a.getSeller() != null && currentUserId.equals(a.getSeller().getId()))
-                    .filter(a -> !"CANCELED".equalsIgnoreCase(a.getStatus()))
+                    .filter(a -> !"CANCELED".equalsIgnoreCase(a.getStatusAsString()))
                     .collect(Collectors.toList());
             auctionTable.setItems(FXCollections.observableArrayList(filtered));
         } else {

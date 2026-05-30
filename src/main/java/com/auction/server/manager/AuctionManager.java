@@ -4,6 +4,7 @@ import com.auction.models.*;
 import com.auction.exceptions.InvalidBidException;
 import com.auction.exceptions.AuctionNotFoundException;
 import com.auction.server.observer.AuctionObserver;
+import com.auction.server.observer.AuctionStatus;
 import com.auction.server.service.AuctionService;
 import com.auction.models.dto.AppConstants;
 import com.auction.models.dto.AuctionUpdateDTO;
@@ -82,7 +83,7 @@ public class AuctionManager {
         }
 
         synchronized (auction) {
-            if (auction.getAuctionStatus() != AuctionStatus.RUNNING) {
+            if (auction.getStatus() != AuctionStatus.RUNNING) {
                 throw new InvalidBidException(AppConstants.ERR_AUCTION_CLOSED);
             }
 
@@ -129,7 +130,7 @@ public class AuctionManager {
             for (Auction auction : activeAuctions.values()) {
                 synchronized (auction) {
                     try {
-                        AuctionStatus oldStatus = auction.getAuctionStatus();
+                        AuctionStatus oldStatus = auction.getStatus();
                         
                         if (oldStatus == AuctionStatus.OPEN && now.isAfter(auction.getStartTime())) {
                             auction.updateStatus(AuctionStatus.RUNNING);
@@ -174,7 +175,7 @@ public class AuctionManager {
                 currentPrice,
                 bidderName,
                 auction.getClosingTimeMillis(),
-                auction.getAuctionStatus() != null ? auction.getAuctionStatus().name() : "PENDING"
+                auction.getStatus() != null ? auction.getStatusAsString() : AuctionStatus.OPEN.toString()
         );
     }
 

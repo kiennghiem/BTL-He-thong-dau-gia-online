@@ -11,6 +11,7 @@ import com.auction.server.database.dao.AuctionDAO;
 import com.auction.server.factory.ItemFactory;
 import com.auction.server.manager.AuctionManager;
 import com.auction.server.factory.ItemType;
+import com.auction.server.observer.AuctionStatus;
 
 import java.math.BigDecimal;
 import java.sql.SQLException;
@@ -90,9 +91,6 @@ public class AuctionService {
     /**
      * Creates a new auction (Seller functionality).
      */
-    /**
-     * Creates a new auction (Seller functionality).
-     */
     public boolean createAuction(ItemType type, String name, String desc, BigDecimal startingPrice,
                                  String specAttr, Seller seller, LocalDateTime start,
                                  LocalDateTime end, BigDecimal minIncrement) {
@@ -114,7 +112,7 @@ public class AuctionService {
         auction.setCurrentPrice(startingPrice);
         auction.setStartTime(start);
         auction.setEndTime(end);
-        auction.setStatus("RUNNING");
+        auction.setStatus(AuctionStatus.RUNNING);
 
         // 5. Persist both sequentially to Database
         boolean itemSaved = itemDAO.addItem(item);

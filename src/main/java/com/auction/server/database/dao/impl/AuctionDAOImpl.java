@@ -1,6 +1,8 @@
 package com.auction.server.database.dao.impl;
 import com.auction.server.database.dao.*;
 import com.auction.models.Auction;
+import com.auction.server.observer.AuctionStatus;
+
 import java.math.BigDecimal;
 import java.sql.*;
 import java.time.LocalDateTime;
@@ -138,7 +140,7 @@ public class AuctionDAOImpl extends BaseDAO implements AuctionDAO {
             stmt.setString(7, auction.getHighestBidderId());
             stmt.setTimestamp(8, Timestamp.valueOf(auction.getStartTime()));
             stmt.setTimestamp(9, Timestamp.valueOf(auction.getEndTime()));
-            stmt.setString(10, auction.getStatus());
+            stmt.setString(10, auction.getStatusAsString());
             return stmt.executeUpdate() > 0;
         } finally {
             closeResources(stmt, conn);
@@ -221,6 +223,8 @@ public class AuctionDAOImpl extends BaseDAO implements AuctionDAO {
     private Auction mapRowToAuction(ResultSet rs) throws SQLException {
         Auction auction = new Auction();
         auction.setId(rs.getString("id"));
+        String statusStr = rs.getString("status");
+        auction.setStatus(AuctionStatus.valueOf(statusStr));
         auction.setItemId(rs.getString("item_id"));
         auction.setTitle(rs.getString("title"));
         auction.setDescription(rs.getString("description"));
@@ -237,8 +241,6 @@ public class AuctionDAOImpl extends BaseDAO implements AuctionDAO {
         if (endTs != null) {
             auction.setEndTime(endTs.toLocalDateTime());
         }
-
-        auction.setStatus(rs.getString("status"));
         return auction;
     }
 }
