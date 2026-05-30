@@ -14,14 +14,13 @@ public class Auction extends Entity {
     private Item item;
     private AuctionStatus status;
     private Seller seller;
-    private LocalDateTime startTime; // Sửa tên thành startTime để khớp DB
-    private LocalDateTime endTime;   // Sửa tên thành endTime để khớp DB
+    private String title;
+    private String description;
+    private LocalDateTime startTime;
+    private LocalDateTime endTime;
     private BidTransaction highestBid;
-    private BigDecimal startingPrice; // Bổ sung để khớp với trường thông tin trong DAO
-    private BigDecimal currentPrice; // Đổi sang BigDecimal tránh sai số tài chính
-    private String title;            // Bổ sung để khớp với trường thông tin trong DAO
-    private String description;      // Bổ sung để khớp với trường thông tin trong DAO
-    private String itemId;           // Bổ sung để lưu itemId khi item object chưa được load
+    private BigDecimal startingPrice;
+    private BigDecimal currentPrice;
 
     // History of all proper bids
     private List<BidTransaction> bidHistory;
@@ -31,18 +30,34 @@ public class Auction extends Entity {
         this.bidHistory = new ArrayList<>();
     }
 
-    public Auction(Item item, LocalDateTime startTime, LocalDateTime endTime, String title, String description) {
+    public Auction(Item item, LocalDateTime startTime, LocalDateTime endTime) {
         this.item = item;
         this.status = AuctionStatus.OPEN;
-        this.seller = seller;
+        this.seller = item.getOwner();
+        this.title = item.getItemName();
+        this.description = item.getDescription();
         this.startTime = startTime;
         this.endTime = endTime;
-        this.title = title;
-        this.description = description;
         // Khởi tạo giá hiện tại bằng giá khởi điểm của mặt hàng
         this.startingPrice = item.getStartingPrice();
         this.currentPrice = this.startingPrice;
         this.bidHistory = new ArrayList<>();
+    }
+
+    public Auction(String id, Item item, AuctionStatus status, Seller seller, String title,
+                   String description, LocalDateTime startTime, LocalDateTime endTime,
+                   BidTransaction highestBid, BigDecimal startingPrice, BigDecimal currentPrice) {
+        this.id = id;
+        this.item = item;
+        this.status = status;
+        this.seller = seller;
+        this.title = title;
+        this.description = description;
+        this.startTime = startTime;
+        this.endTime = endTime;
+        this.highestBid = highestBid;
+        this.startingPrice = startingPrice;
+        this.currentPrice = currentPrice;
     }
 
     /**
@@ -73,26 +88,36 @@ public class Auction extends Entity {
 
     // --- Getters & Setters hỗ trợ việc ánh xạ dữ liệu tầng DAO ---
 
-    public String getItemId() {
-        if (item != null) return item.getId();
-        return itemId;
+    public Item getItem() {
+        return item;
     }
 
-    public void setItemId(String itemId) {
-        this.itemId = itemId;
-        if (this.item != null) this.item.setId(itemId);
+    public String getItemId() {
+        return item.getId();
+    }
+
+    public void setItem(Item item) {
+        this.item = item;
     }
 
     public Seller getSeller() {
         return seller;
     }
 
+    public String getSellerId() {
+        return seller.getId();
+    }
+
     public void setSeller(Seller seller) {
         this.seller = seller;
     }
 
+    public BidTransaction getHighestBid() {
+        return highestBid;
+    }
+
     public String getHighestBidderId() {
-        return highestBid != null ? highestBid.getBidderId() : null;
+        return highestBid.getBidderId();
     }
 
     public String getTitle() {
@@ -159,16 +184,12 @@ public class Auction extends Entity {
     }
 
     public void addBid(BidTransaction bid) throws InvalidBidException {
-        if (this.currentPrice != null && bid.getBidAmount().compareTo(this.currentPrice) <= 0) {
+        if (bid.getBidAmount().compareTo(this.currentPrice) <= 0) {
             throw new InvalidBidException("Bid must be higher than current price");
         }
         this.highestBid = bid;
         this.currentPrice = bid.getBidAmount();
         this.bidHistory.add(bid);
-    }
-
-    public BidTransaction getHighestBid() {
-        return highestBid;
     }
 
     public long getClosingTimeMillis() {
@@ -179,7 +200,7 @@ public class Auction extends Entity {
     // Các hàm Setter bổ sung cho việc tái thiết lập Object từ DB
     public void setHighestBidderId(String bidderId) {
         if (bidderId != null) {
-            this.highestBid = new BidTransaction(this.getItemId(), bidderId, this.currentPrice != null ? this.currentPrice : getStartingPrice());
+            this.highestBid = new BidTransaction(this.getItemId(), bidderId, this.currentPrice);
         }
     }
 }

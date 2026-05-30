@@ -1,6 +1,8 @@
 package com.auction.server.database.dao;
 
 import com.auction.models.Auction; // Cập nhật đúng package vị trí của Auction.java
+import com.auction.server.observer.AuctionStatus;
+
 import java.math.BigDecimal;
 import java.sql.SQLException;
 import java.util.List;
@@ -16,13 +18,13 @@ public interface AuctionDAO {
 
     List<Auction> findAll() throws SQLException;
 
-    List<Auction> findByStatus(String status) throws SQLException;
+    List<Auction> findByStatus(AuctionStatus status) throws SQLException;
 
     boolean insert(Auction auction) throws SQLException;
 
     boolean update(Auction auction) throws SQLException;
 
-    boolean updateStatus(String auctionId, String newStatus) throws SQLException;
+    boolean updateStatus(String auctionId, AuctionStatus newStatus) throws SQLException;
 
     boolean placeBid(String auctionId, String bidderId, BigDecimal newBidPrice) throws SQLException;
 }

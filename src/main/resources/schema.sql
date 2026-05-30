@@ -4,7 +4,7 @@ CREATE TABLE IF NOT EXISTS users (
     role VARCHAR(30) NOT NULL,
     username VARCHAR(100) NOT NULL UNIQUE,
     password VARCHAR(255) NOT NULL,
-    balance DOUBLE DEFAULT 0.0
+    balance DECIMAL(15, 2) DEFAULT 0.0
     );
 
 -- 2. BẢNG ITEMS (Tạo thứ hai)
@@ -13,8 +13,8 @@ CREATE TABLE IF NOT EXISTS items (
     item_type VARCHAR(20),
     item_name VARCHAR(100) NOT NULL,
     description TEXT NULL,
-    starting_price DOUBLE DEFAULT 0.0,
-    current_price DOUBLE DEFAULT 0.0,
+    starting_price DECIMAL(15, 2) 0.0,
+    current_price DECIMAL(15, 2) 0.0,
     special_attribute VARCHAR(45),
     owner_id VARCHAR(50),
     buyer_id VARCHAR(50) NULL,
@@ -24,16 +24,16 @@ CREATE TABLE IF NOT EXISTS items (
 
 -- 3. BẢNG AUCTIONS (Tạo cuối cùng)
 CREATE TABLE IF NOT EXISTS auctions (
-                                        id VARCHAR(50) PRIMARY KEY DEFAULT (UUID()),
-    item_id VARCHAR(50),
+    id VARCHAR(50) PRIMARY KEY,
+    status VARCHAR(20),
     title VARCHAR(100),
     description TEXT,
     starting_price DECIMAL(15, 2),
     current_price DECIMAL(15, 2),
-    highest_bidder_id VARCHAR(50),
     start_time TIMESTAMP NULL DEFAULT NULL,
     end_time TIMESTAMP NULL DEFAULT NULL,
-    status VARCHAR(20),
+    item_id VARCHAR(50),
+    highest_bidder_id VARCHAR(50) NULL,
     FOREIGN KEY (item_id) REFERENCES items(id),
     FOREIGN KEY (highest_bidder_id) REFERENCES users(id)
-    );
+);

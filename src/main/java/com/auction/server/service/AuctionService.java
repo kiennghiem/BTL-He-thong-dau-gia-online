@@ -50,7 +50,7 @@ public class AuctionService {
         if (auction != null) {
             persistenceExecutor.submit(() -> {
                 try {
-                    boolean updated = auctionDAO.updateStatus(auctionId, "FINISHED");
+                    boolean updated = auctionDAO.updateStatus(auctionId, AuctionStatus.FINISHED);
                     if (updated) {
                         System.out.println("[AuctionService-Async] Auction " + auctionId + " finalized in DB.");
                     }
@@ -105,7 +105,7 @@ public class AuctionService {
         // 4. Create Auction object
         Auction auction = new Auction();
         auction.setId(UUID.randomUUID().toString());
-        auction.setItemId(item.getId());
+        auction.setItem(item);
         auction.setTitle(name);
         auction.setDescription(desc);
         auction.setStartingPrice(startingPrice);
@@ -143,7 +143,7 @@ public class AuctionService {
     public void loadActiveAuctions() {
         System.out.println("[AuctionService] Loading active auctions from database...");
         try {
-            List<Auction> activeAuctions = auctionDAO.findByStatus("RUNNING");
+            List<Auction> activeAuctions = auctionDAO.findByStatus(AuctionStatus.RUNNING);
             for (Auction auction : activeAuctions) {
                 auctionManager.addAuction(auction);
             }
