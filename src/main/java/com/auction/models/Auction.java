@@ -44,22 +44,6 @@ public class Auction extends Entity {
         this.bidHistory = new ArrayList<>();
     }
 
-    public Auction(String id, Item item, AuctionStatus status, Seller seller, String title,
-                   String description, LocalDateTime startTime, LocalDateTime endTime,
-                   BidTransaction highestBid, BigDecimal startingPrice, BigDecimal currentPrice) {
-        this.id = id;
-        this.item = item;
-        this.status = status;
-        this.seller = seller;
-        this.title = title;
-        this.description = description;
-        this.startTime = startTime;
-        this.endTime = endTime;
-        this.highestBid = highestBid;
-        this.startingPrice = startingPrice;
-        this.currentPrice = currentPrice;
-    }
-
     /**
      * Thay đổi trạng thái phiên đấu giá dựa trên quy tắc chuyển đổi hợp lệ.
      */
