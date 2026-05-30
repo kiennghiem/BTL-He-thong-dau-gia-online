@@ -65,9 +65,9 @@ public class UserDAOImpl extends BaseDAO implements UserDAO {
              PreparedStatement pstmt = conn.prepareStatement(query)) {
 
             pstmt.setString(1, user.getId());
-            pstmt.setString(4, user.getRole().toString());
-            pstmt.setString(2, user.getUsername());
-            pstmt.setString(3, user.getPassword());
+            pstmt.setString(2, user.getRole().toString());
+            pstmt.setString(3, user.getUsername());
+            pstmt.setString(4, user.getPassword());
             pstmt.setBigDecimal(5, user.getBalance());
 
             pstmt.executeUpdate();
