@@ -65,7 +65,7 @@ public class UserDAOImpl extends BaseDAO implements UserDAO {
              PreparedStatement pstmt = conn.prepareStatement(query)) {
 
             pstmt.setString(1, user.getId());
-            pstmt.setString(2, user.getRole().toString());
+            pstmt.setString(2, user.getRoleAsString());
             pstmt.setString(3, user.getUsername());
             pstmt.setString(4, user.getPassword());
             pstmt.setBigDecimal(5, user.getBalance());
@@ -83,7 +83,7 @@ public class UserDAOImpl extends BaseDAO implements UserDAO {
         try (Connection conn = getConnection();
              PreparedStatement pstmt = conn.prepareStatement(query)) {
 
-            pstmt.setString(1, user.getRole().toString());
+            pstmt.setString(1, user.getRoleAsString());
             pstmt.setString(2, user.getUsername());
             pstmt.setString(3, user.getPassword());
             pstmt.setBigDecimal(4, user.getBalance());

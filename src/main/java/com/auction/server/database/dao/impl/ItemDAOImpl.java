@@ -45,7 +45,7 @@ public class ItemDAOImpl extends BaseDAO implements ItemDAO {
              PreparedStatement pstmt = conn.prepareStatement(sql)) {
 
             pstmt.setString(1, item.getId());
-            pstmt.setString(2, item.getType().toString());
+            pstmt.setString(2, item.getTypeAsString());
             pstmt.setString(3, item.getItemName());
             pstmt.setString(4, item.getDescription());
             pstmt.setBigDecimal(5, item.getStartingPrice());

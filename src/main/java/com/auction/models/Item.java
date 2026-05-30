@@ -48,45 +48,63 @@ public abstract class Item extends Entity {
     public void setItemName(String itemName) {
         this.itemName = itemName;
     }
+
     public String getDescription() {
         return description;
     }
+
     public void setDescription(String description) {
         this.description = description;
     }
+
     public BigDecimal getStartingPrice() {
         return startingPrice;
     }
+
     public void setStartingPrice(BigDecimal startingPrice) {
         this.startingPrice = startingPrice;
     }
+
     public BigDecimal getCurrentPrice() {
         return currentPrice;
     }
+
     public void setCurrentPrice(BigDecimal currentPrice) {
         this.currentPrice = currentPrice;
     }
+
     public ItemType getType() {
         return type;
     }
+
+    public String getTypeAsString() {
+        return type.toString();
+    }
+
     public void setType(ItemType type) {
         this.type = type;
     }
+
     public String getSpecialAttribute() {
         return specialAttribute;
     }
+
     public void setSpecialAttribute(String specialAttribute) {
         this.specialAttribute = specialAttribute;
     }
+
     public Seller getOwner() {
         return owner;
     }
+
     public void setOwner(Seller owner) {
         this.owner = owner;
     }
+
     public Bidder getBuyer() {
         return buyer;
     }
+
     public void setBuyer(Bidder buyer) {
         this.buyer = buyer;
     }
