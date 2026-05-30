@@ -101,10 +101,6 @@ public class AuctionListController {
         }
     }
 
-    public void handleLogout(ActionEvent event) {
-        ControllerUtils.changeScene(event, "Login.fxml");
-    }
-
     public void handleGoToSellerDashboard(ActionEvent event) {
         ControllerUtils.changeScene(event, "SellerCreateAuction.fxml");
     }

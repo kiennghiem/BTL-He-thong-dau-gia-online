@@ -1,9 +1,9 @@
 -- 1. BẢNG USERS (Phải tạo đầu tiên và PHẢI CÓ CỘT id)
 CREATE TABLE IF NOT EXISTS users (
     id VARCHAR(50) PRIMARY KEY, -- Bắt buộc phải có dòng này để tự sinh chuỗi ID
+    role VARCHAR(30) NOT NULL,
     username VARCHAR(100) NOT NULL UNIQUE,
     password VARCHAR(255) NOT NULL,
-    role VARCHAR(30) NOT NULL,
     balance DOUBLE DEFAULT 0.0
     );
 

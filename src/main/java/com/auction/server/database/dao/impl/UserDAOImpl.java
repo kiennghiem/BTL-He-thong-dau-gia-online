@@ -59,15 +59,15 @@ public class UserDAOImpl extends BaseDAO implements UserDAO {
 
     @Override
     public void addUser(User user) {
-        String query = "INSERT INTO users (id, username, password, role, balance) VALUES (?, ?, ?, ?, ?)";
+        String query = "INSERT INTO users (id, role, username, password, balance) VALUES (?, ?, ?, ?, ?)";
 
         try (Connection conn = getConnection();
              PreparedStatement pstmt = conn.prepareStatement(query)) {
 
             pstmt.setString(1, user.getId());
+            pstmt.setString(4, user.getRole().toString());
             pstmt.setString(2, user.getUsername());
             pstmt.setString(3, user.getPassword());
-            pstmt.setString(4, user.getRole().name());
             pstmt.setBigDecimal(5, user.getBalance());
 
             pstmt.executeUpdate();
@@ -78,14 +78,14 @@ public class UserDAOImpl extends BaseDAO implements UserDAO {
 
     @Override
     public void updateUser(User user) {
-        String query = "UPDATE users SET username = ?, password = ?, role = ?, balance = ? WHERE id = ?";
+        String query = "UPDATE users SET role = ?, username = ?, password = ?, balance = ? WHERE id = ?";
 
         try (Connection conn = getConnection();
              PreparedStatement pstmt = conn.prepareStatement(query)) {
 
-            pstmt.setString(1, user.getUsername());
-            pstmt.setString(2, user.getPassword());
-            pstmt.setString(3, user.getRole().name());
+            pstmt.setString(1, user.getRole().toString());
+            pstmt.setString(2, user.getUsername());
+            pstmt.setString(3, user.getPassword());
             pstmt.setBigDecimal(4, user.getBalance());
             pstmt.setString(5, user.getId());
 
@@ -100,9 +100,9 @@ public class UserDAOImpl extends BaseDAO implements UserDAO {
      */
     private User mapRowToUser(ResultSet rs) throws SQLException {
         String id = rs.getString("id");
+        String roleStr = rs.getString("role");
         String username = rs.getString("username");
         String password = rs.getString("password");
-        String roleStr = rs.getString("role");
         BigDecimal balance = rs.getBigDecimal("balance");
 
         UserRole role;

@@ -15,8 +15,6 @@
          </font>
       </Label>
 
-      <Button fx:id="buttonLogout" layoutX="600.0" layoutY="33.0" mnemonicParsing="false" onAction="#handleLogout" text="Log out" style="-fx-cursor: hand;" />
-
       <Button fx:id="btnCreateAuction" layoutX="460.0" layoutY="33.0" mnemonicParsing="false" onAction="#handleGoToSellerDashboard" style="-fx-background-color: #0095e0; -fx-text-fill: white; -fx-font-weight: bold; -fx-cursor: hand;" text="+ Create Auction" />
 
       <TableView fx:id="auctionTable" layoutX="26.0" layoutY="80.0" prefHeight="390.0" prefWidth="640.0">
