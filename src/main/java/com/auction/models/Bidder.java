@@ -7,11 +7,6 @@ import java.math.BigDecimal;
 public class Bidder extends User {
     private static final long serialVersionUID = 1L;
 
-    public Bidder() {
-        super();
-        this.setRole(UserRole.BIDDER);
-    }
-
     // Create a new Bidder instance
     public Bidder(String username, String password) {
         super(UserRole.BIDDER, username, password);

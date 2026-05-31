@@ -27,6 +27,7 @@ public class Auction extends Entity {
 
     // Constructors trống dành cho DAO RowMapper khởi tạo thực thể
     public Auction() {
+        super();
         this.bidHistory = new ArrayList<>();
     }
 
@@ -101,7 +102,7 @@ public class Auction extends Entity {
     }
 
     public BidTransaction getHighestBid() {
-        return highestBid;
+        return highestBid != null ? highestBid : null;
     }
 
     public void setHighestBid(BidTransaction highestBid) {
