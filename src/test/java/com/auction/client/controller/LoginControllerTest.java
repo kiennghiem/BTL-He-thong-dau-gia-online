@@ -31,7 +31,7 @@ class LoginControllerTest {
 
     @Test
     void testSignupButtonExists(FxRobot robot) {
-        verifyThat("#buttonSignUp", hasText("Sign up"));
+        verifyThat("#buttonSignUp", hasText("Sign up!"));
     }
 
     @Test

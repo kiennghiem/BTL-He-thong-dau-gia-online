@@ -19,7 +19,7 @@ class DTOTest {
 
     @Test
     void testBidRequest() {
-        BidRequest req = new BidRequest("bidder1", "auction1", new BigDecimal("150"));
+        BidRequest req = new BidRequest("auction1", "bidder1", new BigDecimal("150"));
         assertEquals("bidder1", req.getBidderId());
         assertEquals("auction1", req.getAuctionId());
         assertEquals(new BigDecimal("150"), req.getAmount());
