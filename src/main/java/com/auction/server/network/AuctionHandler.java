@@ -84,13 +84,13 @@ public class AuctionHandler implements AuctionObserver {
 
     private void handleCreateAuction(CreateAuctionRequest req) {
         try {
-            System.out.println("[AuctionHandler] Creating auction for user: " + req.getSellerUsername());
-            ItemType type = ItemType.valueOf(req.getItemType().toString());
+            System.out.println("[AuctionHandler] Creating auction for user: " + req.getSeller().getUsername());
+            ItemType type = req.getItemType();
             
             auctionService.createAuction(
                 type, req.getItemName(), req.getItemDescription(),
                 req.getStartingPrice(), req.getSpecificAttribute(),
-                req.getSellerUsername(),
+                req.getSeller().getUsername(),
                 req.getStartTime(), req.getEndTime());
             
             sendResponse(new GenericResponse(true, "Tạo phiên đấu giá thành công!"));

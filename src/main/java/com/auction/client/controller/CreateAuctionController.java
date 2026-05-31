@@ -107,7 +107,7 @@ public class CreateAuctionController {
         User currentUser = SessionManager.getInstance().getCurrentUser();
         // Fix: Call constructor with 8 arguments (removed the extra BigDecimal)
         CreateAuctionRequest request = new CreateAuctionRequest(
-                currentUser.getUsername(),
+                currentUser,
                 ItemType.ELECTRONICS, // Defaulting for now
                 title,
                 description,
