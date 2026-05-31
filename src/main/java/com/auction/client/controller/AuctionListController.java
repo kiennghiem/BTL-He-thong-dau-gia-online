@@ -52,8 +52,8 @@ public class AuctionListController {
     }
 
     public void refreshAuctionList() {
-        // TODO: Send a network request to your server asking for all active auctions.
-        
+        // TODO: Send a network request to your server asking for all active auctions, then put them in allData.
+
         // --- TEMPORARY DUMMY DATA ---
         ObservableList<Auction> allData = FXCollections.observableArrayList();
 
