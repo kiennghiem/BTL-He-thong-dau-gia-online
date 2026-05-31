@@ -63,7 +63,7 @@ public class BidderMainController {
         if (currentUser != null) {
             LogoutRequest logoutRequest = new LogoutRequest(currentUser.getUsername());
             ClientManager.getInstance().sendRequest(logoutRequest);
-        } else {
+        } else if (mainBorderPane.getScene() != null && mainBorderPane.getScene().getWindow() != null) {
             // If session is already lost, just go to login
             Stage stage = (Stage) mainBorderPane.getScene().getWindow();
             ControllerUtils.changeScene(stage, "Login.fxml");
@@ -104,12 +104,15 @@ public class BidderMainController {
     }
 
     private void handleAuthResponse(AuthResponse response) {
-        if (response.isSuccess() && response.getMessage() != null && response.getMessage().contains("Đăng xuất")) {
+        // A success AuthResponse with a null user indicates a logout success
+        if (response.isSuccess() && response.getUser() == null) {
             ClientManager.getInstance().removeMessageListener(responseListener);
             SessionManager.getInstance().clearSession();
 
-            Stage stage = (Stage) mainBorderPane.getScene().getWindow();
-            ControllerUtils.changeScene(stage, "Login.fxml");
+            if (mainBorderPane.getScene() != null && mainBorderPane.getScene().getWindow() != null) {
+                Stage stage = (Stage) mainBorderPane.getScene().getWindow();
+                ControllerUtils.changeScene(stage, "Login.fxml");
+            }
         } else if (!response.isSuccess()) {
             ControllerUtils.showAlert(response.getMessage());
         }

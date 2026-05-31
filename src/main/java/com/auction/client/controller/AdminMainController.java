@@ -109,14 +109,17 @@ public class AdminMainController {
     }
 
     private void handleAuthResponse(AuthResponse response) {
-        if (response.isSuccess() && response.getMessage() != null && response.getMessage().contains("logout")) {
+        // A success AuthResponse with a null user indicates a logout success
+        if (response.isSuccess() && response.getUser() == null) {
             logger.info("[LOGOUT] Admin logout success: {}", response.getMessage());
 
             ClientManager.getInstance().removeMessageListener(responseListener);
             SessionManager.getInstance().clearSession();
 
-            Stage stage = (Stage) mainBorderPane.getScene().getWindow();
-            ControllerUtils.changeScene(stage, "Login.fxml");
+            if (mainBorderPane.getScene() != null && mainBorderPane.getScene().getWindow() != null) {
+                Stage stage = (Stage) mainBorderPane.getScene().getWindow();
+                ControllerUtils.changeScene(stage, "Login.fxml");
+            }
         } else if (!response.isSuccess()) {
             ControllerUtils.showAlert(response.getMessage());
         }
