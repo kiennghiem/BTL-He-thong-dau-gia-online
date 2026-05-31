@@ -8,6 +8,7 @@ import com.auction.server.database.dao.BidDAO;
 import com.auction.server.database.dao.DAOFactory;
 import com.auction.server.database.dao.ItemDAO;
 import com.auction.server.database.dao.AuctionDAO;
+import com.auction.server.database.dao.UserDAO;
 import com.auction.server.factory.ItemFactory;
 import com.auction.server.manager.AuctionManager;
 import com.auction.server.factory.ItemType;
@@ -30,16 +31,29 @@ public class AuctionService {
     private final ItemDAO itemDAO;
     private final BidDAO bidDAO;
     private final AuctionDAO auctionDAO;
+    private final UserDAO userDAO;
 
     // Background thread pool for non-blocking database persistence
     private final ExecutorService persistenceExecutor;
 
     public AuctionService() {
-        this.auctionManager = AuctionManager.getInstance();
-        this.itemDAO = DAOFactory.getItemDAO();
-        this.bidDAO = DAOFactory.getBidDAO();
-        this.auctionDAO = DAOFactory.getAuctionDAO();
-        this.persistenceExecutor = Executors.newFixedThreadPool(4); // Adjust based on load
+        this(AuctionManager.getInstance(),
+             DAOFactory.getItemDAO(),
+             DAOFactory.getBidDAO(),
+             DAOFactory.getAuctionDAO(),
+             DAOFactory.getUserDAO());
+    }
+
+    /**
+     * Constructor for dependency injection (used in tests).
+     */
+    public AuctionService(AuctionManager auctionManager, ItemDAO itemDAO, BidDAO bidDAO, AuctionDAO auctionDAO, UserDAO userDAO) {
+        this.auctionManager = auctionManager;
+        this.itemDAO = itemDAO;
+        this.bidDAO = bidDAO;
+        this.auctionDAO = auctionDAO;
+        this.userDAO = userDAO;
+        this.persistenceExecutor = Executors.newFixedThreadPool(4);
     }
 
     /**
@@ -67,7 +81,7 @@ public class AuctionService {
     public void placeBid(String auctionId, String bidderId, BigDecimal amount)
             throws InvalidBidException, AuctionNotFoundException {
 
-        User bidder = DAOFactory.getUserDAO().findById(bidderId);
+        User bidder = userDAO.findById(bidderId);
         String bidderName = (bidder != null) ? bidder.getUsername() : bidderId;
 
         BidTransaction bid = new BidTransaction(auctionId, bidderId, bidderName, amount);
@@ -89,7 +103,7 @@ public class AuctionService {
                                  String specAttr, String sellerUsername, LocalDateTime start,
                                  LocalDateTime end) {
 
-        User user = DAOFactory.getUserDAO().findByUsername(sellerUsername);
+        User user = userDAO.findByUsername(sellerUsername);
         if (user == null) {
             throw new RuntimeException("User not found: " + sellerUsername);
         }
@@ -231,7 +245,7 @@ public class AuctionService {
             throw new RuntimeException("User is not the winner of this auction.");
         }
 
-        User bidder = DAOFactory.getUserDAO().findById(bidderId);
+        User bidder = userDAO.findById(bidderId);
         if (bidder == null) {
             throw new RuntimeException("Bidder user not found.");
         }
@@ -244,14 +258,14 @@ public class AuctionService {
         try {
             // 1. Deduct from bidder
             bidder.withdraw(amount);
-            DAOFactory.getUserDAO().updateUser(bidder);
+            userDAO.updateUser(bidder);
 
             // 2. Add to seller (optional but good)
             if (auction.getSeller() != null) {
-                User seller = DAOFactory.getUserDAO().findById(auction.getSellerId());
+                User seller = userDAO.findById(auction.getSellerId());
                 if (seller != null) {
                     seller.deposit(amount);
-                    DAOFactory.getUserDAO().updateUser(seller);
+                    userDAO.updateUser(seller);
                 }
             }
 
@@ -263,7 +277,7 @@ public class AuctionService {
             Item item = auction.getItem();
             if (item != null) {
                 item.setBuyer((com.auction.models.Bidder) bidder);
-                DAOFactory.getItemDAO().updateItem(item);
+                itemDAO.updateItem(item);
             }
 
             // 5. Notify all observers about the status change

@@ -8,11 +8,13 @@ import com.auction.server.observer.AuctionStatus;
 import com.auction.server.service.AuctionService;
 import com.auction.models.dto.AppConstants;
 import com.auction.models.dto.AuctionUpdateDTO;
+import com.auction.models.Notification;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -92,13 +94,16 @@ public class AuctionManager {
         }
 
         synchronized (auction) {
-            if (auction.getStatus() != AuctionStatus.RUNNING) {
+            LocalDateTime now = LocalDateTime.now();
+            
+            // Critical Check: Status must be RUNNING AND time must not be up
+            if (auction.getStatus() != AuctionStatus.RUNNING || now.isAfter(auction.getEndTime())) {
                 throw new InvalidBidException(AppConstants.ERR_AUCTION_CLOSED);
             }
 
             // Anti-sniping logic
-            long remainingSeconds = Duration.between(LocalDateTime.now(), auction.getEndTime()).getSeconds();
-            if (remainingSeconds > 0 && remainingSeconds <= AppConstants.SNIPE_WINDOW_SECONDS) {
+            long remainingSeconds = Duration.between(now, auction.getEndTime()).getSeconds();
+            if (remainingSeconds >= 0 && remainingSeconds <= AppConstants.SNIPE_WINDOW_SECONDS) {
                 auction.setEndTime(auction.getEndTime().plusSeconds(AppConstants.EXTENSION_TIME_SECONDS));
                 logger.info("[INFO] Anti-sniping: Extended auction {}", auctionId);
                 

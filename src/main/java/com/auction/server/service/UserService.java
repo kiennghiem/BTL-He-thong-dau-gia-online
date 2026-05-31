@@ -31,7 +31,14 @@ public class UserService {
     private static final Set<String> onlineUsers = ConcurrentHashMap.newKeySet();
 
     public UserService() {
-        this.userDAO = DAOFactory.getUserDAO();
+        this(DAOFactory.getUserDAO());
+    }
+
+    /**
+     * Constructor for dependency injection (used in tests).
+     */
+    public UserService(UserDAO userDAO) {
+        this.userDAO = userDAO;
     }
 
     /**
