@@ -66,17 +66,16 @@ public class SignupController {
         if (response.isSuccess()) {
             System.out.println("[SIGNUP] Success: " + response.getMessage());
             
-            // Save user to session
-            SessionManager.getInstance().setCurrentUser(response.getUser());
+            // Show success message
+            Alert alert = new Alert(Alert.AlertType.INFORMATION);
+            alert.setTitle("Thành công");
+            alert.setHeaderText(null);
+            alert.setContentText("Đăng ký tài khoản thành công! Vui lòng đăng nhập.");
+            alert.showAndWait();
 
+            // Redirect back to Login screen
             Stage stage = (Stage) buttonSignUp.getScene().getWindow();
-            
-            if (response.getUser().getRole() == UserRole.SELLER) {
-                ControllerUtils.changeScene(stage, "SellerMainView.fxml");
-                // TODO: ADD OTHER SCENES FOR BIDDER AND ADMIN TO CHANGE TO
-            } else {
-                ControllerUtils.changeScene(stage, "AuctionList.fxml");
-            }
+            ControllerUtils.changeScene(stage, "Login.fxml");
 
             // Cleanup listener when leaving
             ClientManager.getInstance().removeMessageListener(responseListener);

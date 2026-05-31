@@ -114,6 +114,17 @@ public class Auction extends Entity {
 
     public void setBidHistory(List<BidTransaction> bidHistory) {
         this.bidHistory = bidHistory;
+        // Sync highest bid and current price from history if available
+        if (bidHistory != null && !bidHistory.isEmpty()) {
+            // Find bid with highest amount
+            BidTransaction maxBid = bidHistory.stream()
+                    .max(java.util.Comparator.comparing(BidTransaction::getBidAmount))
+                    .orElse(null);
+            if (maxBid != null) {
+                this.highestBid = maxBid;
+                this.currentPrice = maxBid.getBidAmount();
+            }
+        }
     }
 
     public String getHighestBidderId() {

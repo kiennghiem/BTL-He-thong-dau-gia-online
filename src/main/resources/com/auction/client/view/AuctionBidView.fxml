@@ -15,11 +15,11 @@
 
 <AnchorPane prefHeight="600.0" prefWidth="850.0" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.auction.client.controller.AuctionBidController">
    <children>
-      <VBox layoutX="20.0" layoutY="20.0" prefHeight="560.0" prefWidth="810.0" spacing="15.0">
+      <VBox layoutX="15.0" layoutY="15.0" prefHeight="570.0" prefWidth="820.0" spacing="15.0" AnchorPane.bottomAnchor="15.0" AnchorPane.leftAnchor="15.0" AnchorPane.rightAnchor="15.0" AnchorPane.topAnchor="15.0">
          <children>
             <HBox alignment="CENTER_LEFT" spacing="20.0">
                <children>
-                  <Button mnemonicParsing="false" onAction="#handleBack" style="-fx-background-color: #95a5a6; -fx-text-fill: white;" text="&lt; Back" />
+                  <Button mnemonicParsing="false" onAction="#handleBack" style="-fx-background-color: #95a5a6; -fx-text-fill: white; -fx-cursor: hand;" text="&lt; Back" />
                   <Label fx:id="lblItemName" text="Item Name">
                      <font>
                         <Font name="System Bold" size="24.0" />
@@ -29,26 +29,26 @@
                </children>
             </HBox>
             
-            <HBox spacing="40.0">
+            <HBox spacing="30.0">
                <children>
-                  <VBox spacing="10.0" prefWidth="300.0">
+                  <VBox spacing="10.0" prefWidth="280.0">
                      <children>
-                        <Label text="Current Price">
+                        <Label text="Current Price" textFill="#7f8c8d">
                            <font>
                               <Font size="14.0" />
                            </font>
                         </Label>
                         <Label fx:id="lblCurrentPrice" text="\$0.00" textFill="#c0392b">
                            <font>
-                              <Font name="System Bold" size="36.0" />
+                              <Font name="System Bold" size="32.0" />
                            </font>
                         </Label>
-                        <Label fx:id="lblHighestBidder" text="Highest Bidder: None" />
-                        <Label fx:id="lblTimeRemaining" text="Time Remaining: 00:00:00" />
+                        <Label fx:id="lblHighestBidder" text="Highest Bidder: None" style="-fx-font-weight: bold;" />
+                        <Label fx:id="lblTimeRemaining" text="End Time: 00:00:00" />
                      </children>
                   </VBox>
                   
-                  <VBox alignment="CENTER" spacing="10.0" style="-fx-border-color: #bdc3c7; -fx-border-width: 1; -fx-padding: 15; -fx-background-color: #f9f9f9;">
+                  <VBox fx:id="bidSection" alignment="CENTER" spacing="10.0" style="-fx-border-color: #bdc3c7; -fx-border-width: 1; -fx-padding: 15; -fx-background-color: #f9f9f9; -fx-background-radius: 5; -fx-border-radius: 5;">
                      <children>
                         <Label text="Place Your Bid">
                            <font>
@@ -57,14 +57,25 @@
                         </Label>
                         <HBox spacing="10.0">
                            <children>
-                              <TextField fx:id="tfBidAmount" prefWidth="150.0" promptText="Enter Amount" />
-                              <Button fx:id="btnPlaceBid" mnemonicParsing="false" onAction="#handlePlaceBid" prefWidth="100.0" style="-fx-background-color: #2980b9; -fx-text-fill: white;" text="Bid Now" />
+                              <TextField fx:id="tfBidAmount" prefWidth="120.0" promptText="Amount" />
+                              <Button fx:id="btnPlaceBid" mnemonicParsing="false" onAction="#handlePlaceBid" prefWidth="90.0" style="-fx-background-color: #2980b9; -fx-text-fill: white; -fx-cursor: hand;" text="Bid Now" />
                            </children>
                         </HBox>
-                        <Label text="Note: Bid must be higher than current price." textFill="#7f8c8d">
+                        <Label text="Must be higher than current price." textFill="#7f8c8d">
                            <font>
-                              <Font size="11.0" />
+                              <Font size="10.0" />
                            </font></Label>
+                     </children>
+                  </VBox>
+
+                  <VBox fx:id="paySection" alignment="CENTER" spacing="10.0" style="-fx-border-color: #27ae60; -fx-border-width: 2; -fx-padding: 15; -fx-background-color: #f0fff0; -fx-background-radius: 5; -fx-border-radius: 5;" visible="false" managed="false">
+                     <children>
+                        <Label fx:id="lblPayTitle" text="Congratulations! You Won." textFill="#27ae60">
+                           <font>
+                              <Font name="System Bold" size="16.0" />
+                           </font>
+                        </Label>
+                        <Button fx:id="btnPay" mnemonicParsing="false" onAction="#handlePay" prefWidth="180.0" prefHeight="35.0" style="-fx-background-color: #27ae60; -fx-text-fill: white; -fx-font-weight: bold; -fx-cursor: hand;" text="Pay for Item" />
                      </children>
                   </VBox>
                </children>
@@ -72,9 +83,9 @@
             
             <HBox spacing="20.0" VBox.vgrow="ALWAYS">
                <children>
-                  <LineChart fx:id="priceChart" prefHeight="300.0" prefWidth="450.0" title="Price Trend">
+                  <LineChart fx:id="priceChart" prefHeight="300.0" prefWidth="420.0" title="Price Trend">
                     <xAxis>
-                      <CategoryAxis label="Time" side="BOTTOM" fx:id="xAxis" />
+                      <CategoryAxis fx:id="xAxis" label="Time" side="BOTTOM" />
                     </xAxis>
                     <yAxis>
                       <NumberAxis fx:id="yAxis" label="Price ($)" side="LEFT" />
@@ -88,12 +99,15 @@
                               <Font name="System Bold" size="14.0" />
                            </font>
                         </Label>
-                        <TableView fx:id="bidTable" prefHeight="300.0" prefWidth="300.0">
+                        <TableView fx:id="bidTable" prefHeight="300.0" prefWidth="350.0">
                           <columns>
-                            <TableColumn fx:id="colBidder" prefWidth="120.0" text="Bidder" />
+                            <TableColumn fx:id="colBidder" prefWidth="130.0" text="Bidder" />
                             <TableColumn fx:id="colAmount" prefWidth="100.0" text="Amount ($)" />
                             <TableColumn fx:id="colTime" prefWidth="100.0" text="Time" />
                           </columns>
+                          <columnResizePolicy>
+                              <TableView fx:constant="CONSTRAINED_RESIZE_POLICY" />
+                          </columnResizePolicy>
                         </TableView>
                      </children>
                   </VBox>

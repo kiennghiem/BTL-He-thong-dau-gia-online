@@ -6,8 +6,7 @@ import com.auction.models.Auction;
 import com.auction.models.BidTransaction;
 import com.auction.models.Notification;
 import com.auction.models.User;
-import com.auction.models.dto.AuctionUpdateDTO;
-import com.auction.models.dto.BidRequest;
+import com.auction.models.dto.*;
 import com.auction.server.observer.AuctionStatus;
 import javafx.application.Platform;
 import javafx.collections.FXCollections;
@@ -21,6 +20,7 @@ import javafx.scene.chart.XYChart;
 import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.layout.BorderPane;
+import javafx.scene.layout.VBox;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -40,6 +40,11 @@ public class AuctionBidController {
     @FXML private CategoryAxis xAxis;
     @FXML private NumberAxis yAxis;
 
+    @FXML private VBox bidSection;
+    @FXML private VBox paySection;
+    @FXML private Label lblPayTitle;
+    @FXML private Button btnPay;
+
     @FXML private TableView<BidTransaction> bidTable;
     @FXML private TableColumn<BidTransaction, String> colBidder;
     @FXML private TableColumn<BidTransaction, BigDecimal> colAmount;
@@ -54,11 +59,13 @@ public class AuctionBidController {
     public void setAuction(Auction auction) {
         this.currentAuction = auction;
         if (auction.getBidHistory() != null) {
-            // Sort ascending for the chart, but Table uses bidHistory (descending usually handled by add(0, ...))
             bidHistory.setAll(auction.getBidHistory());
         }
         updateUI();
         setupChart();
+
+        // SUBSCRIBE: Tell the server we are now watching this auction
+        ClientManager.getInstance().sendRequest(new SubscribeRequest(auction.getId()));
     }
 
     @FXML
@@ -70,20 +77,29 @@ public class AuctionBidController {
         bidTable.setItems(bidHistory);
 
         // Optimize Chart Scaling
-        yAxis.setForceZeroInRange(false); // Don't force 0, zoom into the price range
-        yAxis.setAutoRanging(true);      // Let it adjust automatically
+        yAxis.setForceZeroInRange(false);
+        yAxis.setAutoRanging(true);
         
         priceSeries = new XYChart.Series<>();
         priceSeries.setName("Price Trend ($)");
         priceChart.getData().add(priceSeries);
-        priceChart.setCreateSymbols(true); // Show dots on points
-        priceChart.setAnimated(false);    // Disable animation for better stability with updates
+        priceChart.setCreateSymbols(true);
+        priceChart.setAnimated(false);
 
         messageListener = msg -> {
             if (msg instanceof Notification notification) {
-                // Logic updated to be more robust
                 if (currentAuction != null && notification.getAuctionId().equals(currentAuction.getId())) {
                     Platform.runLater(() -> handleNotification(notification));
+                }
+            } else if (msg instanceof GenericResponse resp) {
+                if (resp.getMessage().toLowerCase().contains("thanh toán") || resp.getMessage().toLowerCase().contains("pay")) {
+                    Platform.runLater(() -> {
+                        if (resp.isSuccess()) {
+                            ControllerUtils.showAlert("Success: " + resp.getMessage());
+                        } else {
+                            ControllerUtils.showAlert("Error: " + resp.getMessage());
+                        }
+                    });
                 }
             }
         };
@@ -98,151 +114,146 @@ public class AuctionBidController {
         
         User currentUser = SessionManager.getInstance().getCurrentUser();
         String currentUserId = (currentUser != null) ? currentUser.getId() : "";
+        BigDecimal currentBalance = (currentUser != null) ? currentUser.getBalance() : BigDecimal.ZERO;
         
         String bidderId = currentAuction.getHighestBidderId();
+        boolean isWinner = bidderId != null && bidderId.equals(currentUserId);
+        boolean isFinished = currentAuction.getStatus() == AuctionStatus.FINISHED;
+        boolean hasPaid = currentAuction.getStatus() == AuctionStatus.PAID;
         
+        if (hasPaid) {
+            bidSection.setVisible(false);
+            bidSection.setManaged(false);
+            paySection.setVisible(true);
+            paySection.setManaged(true);
+            paySection.setStyle("-fx-border-color: #3498db; -fx-background-color: #ebf5fb; -fx-padding: 15; -fx-border-width: 2;");
+            lblPayTitle.setText("This Item has been PAID.");
+            btnPay.setVisible(false);
+            btnPay.setManaged(false);
+        } else if (isFinished) {
+            bidSection.setVisible(false);
+            bidSection.setManaged(false);
+            if (isWinner) {
+                paySection.setVisible(true);
+                paySection.setManaged(true);
+                if (currentBalance.compareTo(currentAuction.getCurrentPrice()) >= 0) {
+                    btnPay.setDisable(false);
+                    btnPay.setText("Pay for Item ($" + currentAuction.getCurrentPrice() + ")");
+                } else {
+                    btnPay.setDisable(true);
+                    btnPay.setText("Insufficient Balance ($" + currentBalance + ")");
+                }
+            } else {
+                paySection.setVisible(false);
+                paySection.setManaged(false);
+            }
+        } else {
+            bidSection.setVisible(true);
+            bidSection.setManaged(true);
+            paySection.setVisible(false);
+            paySection.setManaged(false);
+        }
+
         if (bidderId == null || bidderId.equalsIgnoreCase("None")) {
             lblHighestBidder.setText("Highest Bidder: None");
-            lblCurrentPrice.setStyle("-fx-text-fill: black;"); // Neutral
+            lblCurrentPrice.setStyle("-fx-text-fill: black;");
         } else {
-            // Check if highest bid object exists to avoid NPE
             String name = (currentAuction.getHighestBid() != null) ? currentAuction.getHighestBid().getBidderName() : bidderId;
             lblHighestBidder.setText("Highest Bidder: " + name);
-            
             if (bidderId.equals(currentUserId)) {
-                lblCurrentPrice.setStyle("-fx-text-fill: #27ae60; -fx-font-weight: bold;"); // Green if leading
+                lblCurrentPrice.setStyle("-fx-text-fill: #27ae60; -fx-font-weight: bold;");
             } else {
-                lblCurrentPrice.setStyle("-fx-text-fill: #e74c3c; -fx-font-weight: bold;"); // Red if outbid
+                lblCurrentPrice.setStyle("-fx-text-fill: #e74c3c; -fx-font-weight: bold;");
             }
         }
-        
         lblTimeRemaining.setText("End Time: " + currentAuction.getEndTime().format(TIME_FORMATTER));
     }
 
     private void setupChart() {
         if (currentAuction == null) return;
         priceSeries.getData().clear();
-
-        // 1. Add Starting Price as first point
-        priceSeries.getData().add(new XYChart.Data<>(
-            currentAuction.getStartTime().format(TIME_FORMATTER), 
-            currentAuction.getStartingPrice()
-        ));
-
-        // 2. Add all bids from history (already sorted in chronological order from DB usually)
-        // If bidHistory is descending for the table, we need to sort it ascending here
-        java.util.List<BidTransaction> sortedHistory = new java.util.ArrayList<>(bidHistory);
-        sortedHistory.sort(java.util.Comparator.comparing(BidTransaction::getTimestamp));
-
-        for (BidTransaction bid : sortedHistory) {
-            priceSeries.getData().add(new XYChart.Data<>(
-                bid.getTimestamp().format(TIME_FORMATTER), 
-                bid.getBidAmount()
-            ));
-        }
-
-        // 3. Ensure current price is shown if it's different from last bid
-        if (priceSeries.getData().size() == 1) { // only starting price
-             // Initial state
+        priceSeries.getData().add(new XYChart.Data<>(currentAuction.getStartTime().format(TIME_FORMATTER), currentAuction.getStartingPrice()));
+        
+        java.util.List<BidTransaction> sorted = new java.util.ArrayList<>(bidHistory);
+        sorted.sort(java.util.Comparator.comparing(BidTransaction::getTimestamp));
+        for (BidTransaction bid : sorted) {
+            priceSeries.getData().add(new XYChart.Data<>(bid.getTimestamp().format(TIME_FORMATTER), bid.getBidAmount()));
         }
     }
 
     @FXML
     private void handlePlaceBid(ActionEvent event) {
         if (currentAuction == null) return;
-        
         if (currentAuction.getStatus() != AuctionStatus.RUNNING) {
-            ControllerUtils.showAlert("This auction is not active!");
+            ControllerUtils.showAlert("Auction not active!");
             return;
         }
-
         try {
-            String bidText = tfBidAmount.getText().trim();
-            if (bidText.isEmpty()) {
-                ControllerUtils.showAlert("Please enter a bid amount!");
-                return;
-            }
-
-            BigDecimal amount = new BigDecimal(bidText);
+            BigDecimal amount = new BigDecimal(tfBidAmount.getText().trim());
             if (amount.compareTo(currentAuction.getCurrentPrice()) <= 0) {
-                ControllerUtils.showAlert("Bid must be higher than current price ($" + currentAuction.getCurrentPrice() + ")!");
+                ControllerUtils.showAlert("Bid must be higher than current price!");
                 return;
             }
-
             User user = SessionManager.getInstance().getCurrentUser();
-            BidRequest bidRequest = new BidRequest(currentAuction.getId(), user.getId(), amount);
-            ClientManager.getInstance().sendRequest(bidRequest);
+            ClientManager.getInstance().sendRequest(new BidRequest(currentAuction.getId(), user.getId(), amount));
             
+            // Proactive local update
+            BidTransaction localBid = new BidTransaction(currentAuction.getId(), user.getId(), user.getUsername(), amount);
+            if (bidHistory.stream().noneMatch(b -> b.getBidAmount().equals(amount) && b.getBidderId().equals(user.getId()))) {
+                bidHistory.add(0, localBid);
+                currentAuction.setCurrentPrice(amount);
+                currentAuction.setHighestBid(localBid);
+                currentAuction.setHighestBidderId(user.getId());
+                updateUI();
+                priceSeries.getData().add(new XYChart.Data<>(LocalDateTime.now().format(TIME_FORMATTER), amount));
+            }
             tfBidAmount.clear();
-        } catch (NumberFormatException e) {
-            ControllerUtils.showAlert("Invalid amount! Please enter a numeric value.");
+        } catch (Exception e) {
+            ControllerUtils.showAlert("Invalid input!");
         }
     }
 
     private void handleNotification(Notification notification) {
         if (notification.getData() instanceof AuctionUpdateDTO update) {
             if (currentAuction == null) return;
-
-            // 1. Sync local auction model state
+            boolean isNewPrice = update.getCurrentHighestBid().compareTo(currentAuction.getCurrentPrice()) > 0;
             currentAuction.setCurrentPrice(update.getCurrentHighestBid());
             currentAuction.setHighestBidderId(update.getLeadingBidderId());
-            
-            // Re-create the highest bid object so updateUI can access leading username
-            BidTransaction latestBid = new BidTransaction(
-                update.getAuctionId(), 
-                update.getLeadingBidderId(), 
-                update.getLeadingBidderName(), 
-                update.getCurrentHighestBid()
-            );
-            currentAuction.setHighestBid(latestBid);
-            
-            try {
-                currentAuction.updateStatus(AuctionStatus.valueOf(update.getStatus()));
-            } catch (Exception ignored) {}
+            BidTransaction latest = new BidTransaction(update.getAuctionId(), update.getLeadingBidderId(), update.getLeadingBidderName(), update.getCurrentHighestBid());
+            currentAuction.setHighestBid(latest);
+            try { currentAuction.updateStatus(AuctionStatus.valueOf(update.getStatus())); } catch (Exception ignored) {}
+            updateUI();
 
-            // 2. Refresh UI labels and colors
-            updateUI(); 
-
-            // 3. Specifically handle NEW BID event
-            if (notification.getType() == Notification.Type.BID_PLACED) {
-                // Check if this bid is already in the table to prevent double-insert
-                boolean alreadyInList = bidHistory.stream().anyMatch(b -> 
-                    b.getBidAmount().compareTo(latestBid.getBidAmount()) == 0 && 
-                    b.getBidderId().equals(latestBid.getBidderId()));
-                
-                if (!alreadyInList) {
-                    // Add to UI history list (at the top)
-                    bidHistory.add(0, latestBid);
-
-                    // Update trend chart
-                    String time = LocalDateTime.now().format(TIME_FORMATTER);
-                    priceSeries.getData().add(new XYChart.Data<>(time, update.getCurrentHighestBid()));
-                    
-                    if (priceSeries.getData().size() > 15) {
-                        priceSeries.getData().remove(0);
-                    }
+            if (notification.getType() == Notification.Type.BID_PLACED || (isNewPrice && !"None".equals(update.getLeadingBidderId()))) {
+                if (bidHistory.stream().noneMatch(b -> b.getBidAmount().compareTo(latest.getBidAmount()) == 0 && b.getBidderId().equals(latest.getBidderId()))) {
+                    bidHistory.add(0, latest);
+                    priceSeries.getData().add(new XYChart.Data<>(LocalDateTime.now().format(TIME_FORMATTER), update.getCurrentHighestBid()));
+                    if (priceSeries.getData().size() > 15) priceSeries.getData().remove(0);
                 }
             }
         }
     }
 
     @FXML
+    private void handlePay(ActionEvent event) {
+        User user = SessionManager.getInstance().getCurrentUser();
+        if (currentAuction != null && user != null) {
+            ClientManager.getInstance().sendRequest(new PayRequest(currentAuction.getId(), user.getId(), currentAuction.getCurrentPrice()));
+        }
+    }
+
+    @FXML
     private void handleBack(ActionEvent event) {
+        if (currentAuction != null) ClientManager.getInstance().sendRequest(new UnsubscribeRequest(currentAuction.getId()));
         ClientManager.getInstance().removeMessageListener(messageListener);
         try {
             BorderPane mainPane = (BorderPane) lblItemName.getScene().lookup("#mainBorderPane");
             if (mainPane != null) {
                 Object controller = mainPane.getProperties().get("controller");
-                if (controller instanceof BidderMainController) {
-                    ((BidderMainController) controller).loadView("AuctionList.fxml", false);
-                } else if (controller instanceof SellerMainController) {
-                    ((SellerMainController) controller).loadView("AuctionList.fxml", false);
-                } else if (controller instanceof AdminMainController) {
-                    ((AdminMainController) controller).loadView("AuctionList.fxml");
-                }
+                if (controller instanceof BidderMainController) ((BidderMainController) controller).loadView("AuctionList.fxml", false);
+                else if (controller instanceof SellerMainController) ((SellerMainController) controller).loadView("AuctionList.fxml", false);
+                else if (controller instanceof AdminMainController) ((AdminMainController) controller).loadView("AuctionList.fxml");
             }
-        } catch (Exception e) {
-             e.printStackTrace();
-        }
+        } catch (Exception e) { e.printStackTrace(); }
     }
 }

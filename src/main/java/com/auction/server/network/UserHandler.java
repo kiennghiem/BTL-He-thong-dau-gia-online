@@ -10,6 +10,8 @@ import com.auction.models.dto.LogoutRequest;
 import com.auction.models.dto.RegisterRequest;
 import com.auction.models.dto.AuthResponse;
 import com.auction.models.dto.NetworkMessage;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.ObjectOutputStream;
@@ -19,6 +21,7 @@ import java.io.ObjectOutputStream;
  * Standardizes security checks and session tracking for each connection.
  */
 public class UserHandler {
+    private static final Logger logger = LoggerFactory.getLogger(UserHandler.class);
     private final ObjectOutputStream out;
     private final UserService userService;
     private String currentUsername;
@@ -53,8 +56,9 @@ public class UserHandler {
             AuthResponse response = new AuthResponse(true, "Đăng nhập thành công!", user);
             sendResponse(response);
             
-            System.out.println("[UserHandler] Login successful for: " + currentUsername);
+            logger.info("Login successful for: {}", currentUsername);
         } catch (AuthenticationException e) {
+            logger.warn("Login failed for {}: {}", req.getUsername(), e.getMessage());
             sendResponse(new AuthResponse(false, e.getMessage(), null));
         }
     }
@@ -65,6 +69,7 @@ public class UserHandler {
             currentUsername = null;
         }
         sendResponse(new AuthResponse(true, "Đăng xuất thành công", null));
+        logger.info("User logged out: {}", req.getUsername());
     }
 
     private void handleRegister(RegisterRequest req) {
@@ -83,12 +88,14 @@ public class UserHandler {
             // 3. Success response
             sendResponse(new AuthResponse(true, "Đăng ký tài khoản thành công!", newUser));
 
-            System.out.println("[UserHandler] Registration successful: " + newUser.getUsername());
+            logger.info("Registration successful: {}", newUser.getUsername());
         } catch (ValidationException e) {
             // User-friendly validation error
+            logger.warn("Registration failed for {}: {}", req.getUsername(), e.getMessage());
             sendResponse(new AuthResponse(false, e.getMessage(), null));
         } catch (Exception e) {
             // System error
+            logger.error("System error during registration for {}: {}", req.getUsername(), e.getMessage(), e);
             sendResponse(new AuthResponse(false, "Lỗi hệ thống: " + e.getMessage(), null));
         }
     }
@@ -111,7 +118,7 @@ public class UserHandler {
                 out.reset(); // Crucial: prevents object caching issues in persistent streams
             }
         } catch (IOException e) {
-            System.err.println("[UserHandler] Connection error while sending response: " + e.getMessage());
+            logger.error("Connection error while sending response: {}", e.getMessage(), e);
         }
     }
 }

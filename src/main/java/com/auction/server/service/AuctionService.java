@@ -154,6 +154,26 @@ public class AuctionService {
     }
 
     /**
+     * Cancels an auction (Admin functionality).
+     */
+    public void cancelAuction(String auctionId, String adminId) throws AuctionNotFoundException {
+        // 1. Update real-time state
+        auctionManager.cancelAuction(auctionId);
+
+        // 2. Persist status change to database
+        persistenceExecutor.submit(() -> {
+            try {
+                boolean updated = auctionDAO.updateStatus(auctionId, AuctionStatus.CANCELED);
+                if (updated) {
+                    System.out.println("[AuctionService-Async] Auction " + auctionId + " canceled in DB by admin " + adminId);
+                }
+            } catch (SQLException e) {
+                System.err.println("[AuctionService-Async] Error canceling auction in DB: " + e.getMessage());
+            }
+        });
+    }
+
+    /**
      * Initializes the AuctionManager with data from the Database.
      * Should be called when the Server starts.
      */
@@ -179,5 +199,67 @@ public class AuctionService {
 
     public List<Auction> getAllActiveAuctions() {
         return auctionManager.getAllAuctions();
+    }
+
+    /**
+     * Processes payment for a won auction.
+     */
+    public boolean processPayment(String auctionId, String bidderId, BigDecimal amount) {
+        Auction auction = auctionManager.getAuction(auctionId);
+        if (auction == null) {
+            throw new RuntimeException("Auction not found: " + auctionId);
+        }
+
+        if (auction.getStatus() != AuctionStatus.FINISHED) {
+            throw new RuntimeException("Auction is not in FINISHED state.");
+        }
+
+        if (auction.getHighestBidderId() == null || !auction.getHighestBidderId().equals(bidderId)) {
+            throw new RuntimeException("User is not the winner of this auction.");
+        }
+
+        User bidder = DAOFactory.getUserDAO().findById(bidderId);
+        if (bidder == null) {
+            throw new RuntimeException("Bidder user not found.");
+        }
+
+        if (bidder.getBalance().compareTo(amount) < 0) {
+            throw new RuntimeException("Insufficient balance to pay for item.");
+        }
+
+        // --- ATOMIC PAYMENT PROCESS ---
+        try {
+            // 1. Deduct from bidder
+            bidder.withdraw(amount);
+            DAOFactory.getUserDAO().updateUser(bidder);
+
+            // 2. Add to seller (optional but good)
+            if (auction.getSeller() != null) {
+                User seller = DAOFactory.getUserDAO().findById(auction.getSellerId());
+                if (seller != null) {
+                    seller.deposit(amount);
+                    DAOFactory.getUserDAO().updateUser(seller);
+                }
+            }
+
+            // 3. Update Auction Status to PAID
+            auction.updateStatus(AuctionStatus.PAID);
+            auctionDAO.updateStatus(auctionId, AuctionStatus.PAID);
+
+            // 4. Update Item ownership/status if needed
+            Item item = auction.getItem();
+            if (item != null) {
+                item.setBuyer((com.auction.models.Bidder) bidder);
+                DAOFactory.getItemDAO().updateItem(item);
+            }
+
+            // 5. Notify all observers about the status change
+            auctionManager.addAuction(auction); // Force update in manager map and notify
+            
+            System.out.println("[AuctionService] Payment successful for auction: " + auctionId);
+            return true;
+        } catch (Exception e) {
+            throw new RuntimeException("Payment processing failed: " + e.getMessage(), e);
+        }
     }
 }
