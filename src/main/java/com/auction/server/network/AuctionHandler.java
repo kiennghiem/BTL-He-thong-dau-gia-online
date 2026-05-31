@@ -9,27 +9,29 @@ import com.auction.server.observer.AuctionObserver;
 import com.auction.server.observer.AuctionStatus;
 import com.auction.server.service.AuctionService;
 import com.auction.models.dto.*;
-import com.auction.util.JsonUtil;
 
 import java.math.BigDecimal;
 import java.io.IOException;
-import java.io.PrintWriter;
+import java.io.ObjectOutputStream;
 import java.util.List;
 import java.util.stream.Collectors;
 
 /**
- * AuctionHandler manages auction-related communication for a specific client connection via JSON.
+ * AuctionHandler manages auction-related communication for a specific client connection.
+ * It implements AuctionObserver to push real-time updates directly to the client.
  */
 public class AuctionHandler implements AuctionObserver {
-    private final PrintWriter out;
+    private final ObjectOutputStream out;
     private final AuctionService auctionService;
     private final AuctionManager auctionManager;
     private com.auction.models.User currentUser;
 
-    public AuctionHandler(PrintWriter out) {
+    public AuctionHandler(ObjectOutputStream out) {
         this.out = out;
         this.auctionService = new AuctionService();
         this.auctionManager = AuctionManager.getInstance();
+        
+        // Register as a Global Observer immediately
         this.auctionManager.addObserver(this);
     }
 
@@ -37,6 +39,9 @@ public class AuctionHandler implements AuctionObserver {
         this.currentUser = user;
     }
 
+    /**
+     * Entry point for messages identified as auction-related.
+     */
     public boolean handleMessage(NetworkMessage message) {
         if (message instanceof BidRequest bidReq) {
             handleBid(bidReq);
@@ -51,6 +56,7 @@ public class AuctionHandler implements AuctionObserver {
             return true;
         }
         if (message instanceof UnsubscribeRequest unsubReq) {
+            // No-op in global mode, but kept for protocol compatibility
             return true;
         }
         if (message instanceof CancelAuctionRequest cancelReq) {
@@ -79,6 +85,7 @@ public class AuctionHandler implements AuctionObserver {
 
     private void handleApproveAuction(ApproveAuctionRequest req) {
         try {
+            // Check if user is admin
             if (currentUser == null || currentUser.getRole() != com.auction.server.factory.UserRole.ADMIN) {
                 sendResponse(new GenericResponse(false, "Bạn không có quyền duyệt phiên đấu giá!"));
                 return;
@@ -100,6 +107,7 @@ public class AuctionHandler implements AuctionObserver {
                 return;
             }
 
+            // Check if requester is the seller
             if (currentUser == null || !currentUser.getId().equals(auction.getSellerId())) {
                 sendResponse(new GenericResponse(false, "Bạn không có quyền kết thúc sớm phiên này!"));
                 return;
@@ -115,6 +123,7 @@ public class AuctionHandler implements AuctionObserver {
 
     private void handleBid(BidRequest req) {
         try {
+            // Server-side safety: Prevent sellers from bidding on anything (or their own items)
             if (currentUser != null && currentUser.getRole() == com.auction.server.factory.UserRole.SELLER) {
                 sendResponse(new GenericResponse(false, "Người bán không được phép đặt giá!"));
                 return;
@@ -132,6 +141,7 @@ public class AuctionHandler implements AuctionObserver {
         try {
             boolean success = auctionService.processPayment(req.getAuctionId(), req.getBidderId(), req.getAmount());
             if (success) {
+                // Fetch updated user to send back balance
                 com.auction.models.User updatedUser = com.auction.server.database.dao.DAOFactory.getUserDAO().findById(req.getBidderId());
                 this.currentUser = updatedUser;
                 sendResponse(new AuthResponse(true, "Thanh toán thành công! Chúc mừng bạn đã sở hữu món đồ.", updatedUser));
@@ -163,6 +173,7 @@ public class AuctionHandler implements AuctionObserver {
                 return;
             }
 
+            // Allow if Admin OR if Seller of the auction
             boolean isAdmin = currentUser != null && currentUser.getRole() == com.auction.server.factory.UserRole.ADMIN;
             boolean isOwner = currentUser != null && currentUser.getId().equals(auction.getSellerId());
 
@@ -174,6 +185,9 @@ public class AuctionHandler implements AuctionObserver {
             String reason = req.getReason();
             auctionService.cancelAuction(req.getAuctionId(), currentUser.getId(), reason);
             sendResponse(new GenericResponse(true, "Hủy phiên đấu giá thành công!"));
+            
+            // Broadcast a status change with reason in the status field if needed, 
+            // but the Notification object is general. AuctionUpdateDTO might need a status extension.
             System.out.println("[AuctionHandler] Auction canceled: " + req.getAuctionId() + " by " + currentUser.getId() + ". Reason: " + reason);
         } catch (Exception e) {
             sendResponse(new GenericResponse(false, "Lỗi hủy đấu giá: " + e.getMessage()));
@@ -218,20 +232,29 @@ public class AuctionHandler implements AuctionObserver {
 
     public void handleGetActiveAuctions(GetActiveAuctionsRequest req) {
         List<Auction> allAuctions = auctionService.getAllActiveAuctions();
+        
+        // ADMIN can see everything
         if (currentUser != null && currentUser.getRole() == com.auction.server.factory.UserRole.ADMIN) {
             sendResponse(allAuctions);
             return;
         }
 
         String currentUserId = (currentUser != null) ? currentUser.getId() : "";
+        
+        // VISIBILITY RULES:
+        // 1. OPEN / RUNNING: Visible to everyone
+        // 2. FINISHED / PAID / CANCELED: Only visible to Seller OR any Bidder who participated
         List<Auction> filtered = allAuctions.stream().filter(a -> {
             AuctionStatus status = a.getStatus();
             if (status == AuctionStatus.OPEN || status == AuctionStatus.RUNNING) {
                 return true;
             }
+            
+            // For completed/canceled auctions:
             boolean isSeller = (a.getSeller() != null && currentUserId.equals(a.getSeller().getId()));
             boolean isParticipant = (a.getBidHistory() != null && 
                                     a.getBidHistory().stream().anyMatch(b -> b.getBidderId().equals(currentUserId)));
+            
             return isSeller || isParticipant;
         }).collect(Collectors.toList());
 
@@ -249,11 +272,14 @@ public class AuctionHandler implements AuctionObserver {
     }
 
     private void sendResponse(Object response) {
-        String json = JsonUtil.toJson(response);
-        if (json != null) {
+        try {
             synchronized (out) {
-                out.println(json);
+                out.writeObject(response);
+                out.flush();
+                out.reset();
             }
+        } catch (IOException e) {
+            System.err.println("[AuctionHandler] Connection error: " + e.getMessage());
         }
     }
 }
