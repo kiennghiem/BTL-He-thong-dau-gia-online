@@ -32,7 +32,6 @@ public class AuctionDetailController {
     @FXML private Label lblEndTime;
     @FXML private Button btnCancel;
     @FXML private Button btnApprove;
-    @FXML private Button btnEndEarly;
 
     private Auction currentAuction;
     private static final DateTimeFormatter FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
@@ -60,58 +59,24 @@ public class AuctionDetailController {
             }
 
             User currentUser = SessionManager.getInstance().getCurrentUser();
-            if (currentUser != null) {
-                if (currentUser.getRole() == UserRole.ADMIN) {
-                    // Admin can Cancel any auction that is not already canceled/finished
-                    btnCancel.setVisible(true);
-                    btnCancel.setManaged(true);
-                    btnCancel.setDisable(auction.getStatus() == AuctionStatus.CANCELED || auction.getStatus() == AuctionStatus.FINISHED);
+            if (currentUser != null && currentUser.getRole() == UserRole.ADMIN) {
+                // Admin can Cancel any auction that is not already canceled/finished
+                btnCancel.setVisible(true);
+                btnCancel.setManaged(true);
+                btnCancel.setDisable(auction.getStatus() == AuctionStatus.CANCELED || auction.getStatus() == AuctionStatus.FINISHED);
 
-                    // Admin can Approve only PENDING auctions
-                    boolean isPending = auction.getStatus() == AuctionStatus.PENDING;
-                    btnApprove.setVisible(isPending);
-                    btnApprove.setManaged(isPending);
-                    
-                    btnEndEarly.setVisible(false);
-                    btnEndEarly.setManaged(false);
-                } else if (currentUser.getRole() == UserRole.SELLER && currentUser.getId().equals(auction.getSellerId())) {
-                    // Seller can end early if OPEN or RUNNING
-                    boolean canEnd = auction.getStatus() == AuctionStatus.OPEN || auction.getStatus() == AuctionStatus.RUNNING;
-                    btnEndEarly.setVisible(canEnd);
-                    btnEndEarly.setManaged(canEnd);
-                    
-                    btnApprove.setVisible(false);
-                    btnApprove.setManaged(false);
-                    btnCancel.setVisible(false);
-                    btnCancel.setManaged(false);
-                } else {
-                    btnCancel.setVisible(false);
-                    btnCancel.setManaged(false);
-                    btnApprove.setVisible(false);
-                    btnApprove.setManaged(false);
-                    btnEndEarly.setVisible(false);
-                    btnEndEarly.setManaged(false);
-                }
+                // Admin can Approve only PENDING auctions
+                boolean isPending = auction.getStatus() == AuctionStatus.PENDING;
+                btnApprove.setVisible(isPending);
+                btnApprove.setManaged(isPending);
+            } else {
+                btnCancel.setVisible(false);
+                btnCancel.setManaged(false);
+                btnApprove.setVisible(false);
+                btnApprove.setManaged(false);
             }
         } catch (Exception e) {
             logger.error("Error updating Detail UI", e);
-        }
-    }
-
-    @FXML
-    private void handleEndEarly(ActionEvent event) {
-        if (currentAuction == null) return;
-        
-        User currentUser = SessionManager.getInstance().getCurrentUser();
-        if (currentUser != null && currentUser.getRole() == UserRole.SELLER) {
-            com.auction.models.dto.EndAuctionEarlyRequest request = 
-                new com.auction.models.dto.EndAuctionEarlyRequest(currentAuction.getId(), currentUser.getId());
-            ClientManager.getInstance().sendRequest(request);
-            
-            // Immediate local feedback
-            lblStatus.setText("Status: FINISHED (Ending...)");
-            btnEndEarly.setDisable(true);
-            logger.info("Seller requested end early: {}", currentAuction.getId());
         }
     }
 
