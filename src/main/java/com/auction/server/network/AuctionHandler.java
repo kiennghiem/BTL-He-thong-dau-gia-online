@@ -1,14 +1,19 @@
 package com.auction.server.network;
 
 import com.auction.models.Notification;
+import com.auction.models.Seller;
+import com.auction.models.Auction;
+import com.auction.server.factory.ItemType;
 import com.auction.server.manager.AuctionManager;
 import com.auction.server.observer.AuctionObserver;
 import com.auction.server.service.AuctionService;
-import com.auction.models.dto.BidRequest;
-import com.auction.models.dto.NetworkMessage;
+import com.auction.models.dto.*;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 
 import java.io.IOException;
 import java.io.ObjectOutputStream;
+import java.util.List;
 
 /**
  * AuctionHandler manages auction-related communication for a specific client connection.
@@ -35,6 +40,15 @@ public class AuctionHandler implements AuctionObserver {
             handleBid(bidReq);
             return true;
         }
+        if (message instanceof CreateAuctionRequest req) {
+            handleCreateAuction(req);
+            return true;
+        }
+        if (message instanceof GetActiveAuctionsRequest req) {
+            handleGetActiveAuctions(req);
+            return true;
+        }
+
         return false;
     }
 
@@ -47,11 +61,34 @@ public class AuctionHandler implements AuctionObserver {
             if (subscribedAuctions.add(req.getAuctionId())) {
                 auctionManager.subscribe(req.getAuctionId(), this);
             }
-            
+            sendResponse(new GenericResponse(true, "Đặt giá thành công!"));
             System.out.println("[AuctionHandler] Bid successful: " + req.getBidderId() + " on " + req.getAuctionId());
         } catch (Exception e) {
-            sendResponse("ERROR: " + e.getMessage());
+            sendResponse(new GenericResponse(false, "Lỗi đặt giá: " + e.getMessage()));
         }
+    }
+
+    private void handleCreateAuction(CreateAuctionRequest req) {
+        try {
+            ItemType type = ItemType.valueOf(req.getItemType().toString());
+            boolean success = auctionService.createAuction(
+                type, req.getItemName(), req.getItemDescription(),
+                req.getStartingPrice(), req.getSpecificAttribute(),
+                new Seller(req.getSellerUsername(), ""),
+                req.getStartTime(), req.getEndTime());
+            if (success) {
+                sendResponse(new GenericResponse(true, "Tạo phiên đấu giá thành công!"));
+            } else {
+                sendResponse(new GenericResponse(false, "Lỗi khi tạo phiên đấu giá."));
+            }
+        } catch (Exception e) {
+            sendResponse(new GenericResponse(false, "Lỗi tạo đấu giá: " + e.getMessage()));
+        }
+    }
+
+    public void handleGetActiveAuctions(GetActiveAuctionsRequest req) {
+        List<Auction> activeAuctions = auctionService.getAllActiveAuctions();
+        sendResponse(activeAuctions);
     }
 
     /**

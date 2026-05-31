@@ -1,12 +1,9 @@
 package com.auction.server.network;
 
 import com.auction.server.service.AuctionService;
-import com.auction.models.dto.NetworkMessage;
 import com.auction.models.dto.AppConstants;
 
 import java.io.IOException;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
 import java.net.ServerSocket;
 import java.net.Socket;
 

@@ -1,12 +1,14 @@
 package com.auction.models;
 
+import com.auction.models.dto.NetworkMessage;
+
 import java.io.Serializable;
 
 /**
  * Carrier object for real-time updates sent to observers.
  * Standardizes communication between Server logic and Network handlers.
  */
-public class Notification implements Serializable {
+public class Notification implements NetworkMessage {
     private static final long serialVersionUID = 1L;
 
     public enum Type {

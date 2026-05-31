@@ -100,6 +100,10 @@ public class Auction extends Entity {
         return highestBid;
     }
 
+    public List<BidTransaction> getBidHistory() {
+        return bidHistory;
+    }
+
     public String getHighestBidderId() {
         return highestBid.getBidderId();
     }

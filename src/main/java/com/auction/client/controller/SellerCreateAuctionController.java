@@ -1,6 +1,8 @@
 package com.auction.client.controller;
 
 import com.auction.client.util.SessionManager;
+import com.auction.models.User;
+import com.auction.models.dto.CreateAuctionRequest;
 import com.auction.server.factory.UserRole;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
@@ -23,6 +25,8 @@ public class SellerCreateAuctionController {
     @FXML private ComboBox<String> cbEndHour;
     @FXML private Button btnCancel;
     @FXML private Button btnSubmit;
+
+    private User currentSeller = SessionManager.getInstance().getCurrentUser();
 
     @FXML
     public void initialize() {
@@ -77,6 +81,7 @@ public class SellerCreateAuctionController {
         }
 
         // TODO: Call your Client-Side Service or Network Manager here to send the request to the server
+
         System.out.println("Submitting Auction: " + title + " | $" + startingPrice);
 
         showAlert(Alert.AlertType.INFORMATION, "Success", "Auction created successfully!");

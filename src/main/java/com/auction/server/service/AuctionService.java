@@ -93,7 +93,7 @@ public class AuctionService {
      */
     public boolean createAuction(ItemType type, String name, String desc, BigDecimal startingPrice,
                                  String specAttr, Seller seller, LocalDateTime start,
-                                 LocalDateTime end, BigDecimal minIncrement) {
+                                 LocalDateTime end) {
 
         Item item = ItemFactory.createNewItem(type, name, desc, startingPrice, specAttr, seller);
 
