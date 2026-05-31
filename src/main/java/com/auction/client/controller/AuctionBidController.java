@@ -103,21 +103,45 @@ public class AuctionBidController {
 
     @FXML
     private void handlePlaceBid(ActionEvent event) {
+        if (currentAuction == null) return;
+        
+        if (currentAuction.getStatus() != AuctionStatus.RUNNING) {
+            ControllerUtils.showAlert("This auction is not active!");
+            return;
+        }
+
         try {
-            BigDecimal amount = new BigDecimal(tfBidAmount.getText().trim());
+            String bidText = tfBidAmount.getText().trim();
+            if (bidText.isEmpty()) {
+                ControllerUtils.showAlert("Please enter a bid amount!");
+                return;
+            }
+
+            BigDecimal amount = new BigDecimal(bidText);
+            if (amount.compareTo(currentAuction.getCurrentPrice()) <= 0) {
+                ControllerUtils.showAlert("Bid must be higher than current price ($" + currentAuction.getCurrentPrice() + ")!");
+                return;
+            }
+
             User user = SessionManager.getInstance().getCurrentUser();
-            
             BidRequest bidRequest = new BidRequest(currentAuction.getId(), user.getId(), amount);
             ClientManager.getInstance().sendRequest(bidRequest);
             
             tfBidAmount.clear();
+            // Feedback is handled via real-time Notification
         } catch (NumberFormatException e) {
-            ControllerUtils.showAlert("Invalid amount!");
+            ControllerUtils.showAlert("Invalid amount! Please enter a numeric value.");
         }
     }
 
     private void handleNotification(Notification notification) {
         if (notification.getData() instanceof AuctionUpdateDTO update) {
+            // Update the in-memory auction object
+            currentAuction.setCurrentPrice(update.getCurrentHighestBid());
+            try {
+                currentAuction.updateStatus(AuctionStatus.valueOf(update.getStatus()));
+            } catch (Exception ignored) {}
+
             String currentUserId = SessionManager.getInstance().getCurrentUser().getId();
             boolean isLead = update.getLeadingBidderName().equals(currentUserId);
 
@@ -132,15 +156,17 @@ public class AuctionBidController {
                 lblCurrentPrice.setStyle("-fx-text-fill: #27ae60; -fx-font-weight: bold;"); // Green if leading
             }
 
-            // Add new bid to table
-            BidTransaction newBid = new BidTransaction(update.getAuctionId(), update.getLeadingBidderName(), update.getCurrentHighestBid());
-            bidHistory.add(0, newBid);
+            // If it's a new bid, add to table and chart
+            if (notification.getType() == Notification.Type.BID_PLACED) {
+                BidTransaction newBid = new BidTransaction(update.getAuctionId(), update.getLeadingBidderName(), update.getCurrentHighestBid());
+                bidHistory.add(0, newBid);
 
-            String time = LocalDateTime.now().format(TIME_FORMATTER);
-            priceSeries.getData().add(new XYChart.Data<>(time, update.getCurrentHighestBid()));
-            
-            if (priceSeries.getData().size() > 15) {
-                priceSeries.getData().remove(0);
+                String time = LocalDateTime.now().format(TIME_FORMATTER);
+                priceSeries.getData().add(new XYChart.Data<>(time, update.getCurrentHighestBid()));
+                
+                if (priceSeries.getData().size() > 15) {
+                    priceSeries.getData().remove(0);
+                }
             }
         }
     }
