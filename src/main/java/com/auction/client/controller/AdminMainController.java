@@ -19,9 +19,9 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.util.function.Consumer;
 
-public class SellerMainController {
+public class AdminMainController {
 
-    private static final Logger logger = LoggerFactory.getLogger(SellerMainController.class);
+    private static final Logger logger = LoggerFactory.getLogger(AdminMainController.class);
 
     @FXML
     private BorderPane mainBorderPane;
@@ -47,16 +47,6 @@ public class SellerMainController {
     @FXML
     private void handleShowAvailableAuctions(ActionEvent event) {
         loadView("AuctionList.fxml", false);
-    }
-
-    @FXML
-    private void handleShowMyAuctions(ActionEvent event) {
-        loadView("AuctionList.fxml", true);
-    }
-
-    @FXML
-    private void handleShowCreateAuction(ActionEvent event) {
-        loadView("SellerCreateAuction.fxml", false);
     }
 
     @FXML
@@ -86,16 +76,16 @@ public class SellerMainController {
 
     private void handleAuctionSelected(Auction auction) {
         try {
-            FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/auction/client/view/AuctionBidView.fxml"));
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/auction/client/view/AuctionDetail.fxml"));
             Parent view = loader.load();
             
-            AuctionBidController controller = loader.getController();
+            AuctionDetailController controller = loader.getController();
             controller.setAuction(auction);
             
             mainBorderPane.setCenter(view);
         } catch (IOException e) {
-            e.printStackTrace();
-            ControllerUtils.showAlert("Error loading Bid View");
+            logger.error("Error loading Auction Detail View", e);
+            ControllerUtils.showAlert("Error loading Auction Detail View");
         }
     }
 

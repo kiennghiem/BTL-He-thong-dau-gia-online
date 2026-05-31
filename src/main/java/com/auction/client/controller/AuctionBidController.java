@@ -21,9 +21,12 @@ import javafx.scene.chart.XYChart;
 import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.layout.BorderPane;
+import javafx.scene.layout.VBox;
 
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.function.Consumer;
 
@@ -36,6 +39,7 @@ public class AuctionBidController {
     @FXML private Label lblTimeRemaining;
     @FXML private TextField tfBidAmount;
     @FXML private Button btnPlaceBid;
+    @FXML private VBox bidSection;
     @FXML private LineChart<String, Number> priceChart;
     @FXML private CategoryAxis xAxis;
     @FXML private NumberAxis yAxis;
@@ -94,6 +98,21 @@ public class AuctionBidController {
         if (currentAuction == null) return;
         lblItemName.setText(currentAuction.getTitle());
         lblStatus.setText(currentAuction.getStatusAsString());
+        
+        // Update Status Label Color
+        switch (currentAuction.getStatus()) {
+            case RUNNING -> lblStatus.setStyle("-fx-background-color: #27ae60; -fx-text-fill: white; -fx-padding: 2 10 2 10; -fx-background-radius: 5;");
+            case OPEN -> lblStatus.setStyle("-fx-background-color: #f39c12; -fx-text-fill: white; -fx-padding: 2 10 2 10; -fx-background-radius: 5;");
+            case FINISHED -> lblStatus.setStyle("-fx-background-color: #7f8c8d; -fx-text-fill: white; -fx-padding: 2 10 2 10; -fx-background-radius: 5;");
+            case CANCELED -> lblStatus.setStyle("-fx-background-color: #e74c3c; -fx-text-fill: white; -fx-padding: 2 10 2 10; -fx-background-radius: 5;");
+        }
+
+        // Hide bidding section if not active
+        if (bidSection != null) {
+            bidSection.setVisible(currentAuction.getStatus() == AuctionStatus.RUNNING);
+            bidSection.setManaged(currentAuction.getStatus() == AuctionStatus.RUNNING);
+        }
+
         lblCurrentPrice.setText("$" + currentAuction.getCurrentPrice().toString());
         
         User currentUser = SessionManager.getInstance().getCurrentUser();
@@ -116,7 +135,11 @@ public class AuctionBidController {
             }
         }
         
-        lblTimeRemaining.setText("End Time: " + currentAuction.getEndTime().format(TIME_FORMATTER));
+        if (currentAuction.getEndTime() != null) {
+            lblTimeRemaining.setText("End Time: " + currentAuction.getEndTime().format(TIME_FORMATTER));
+        } else {
+            lblTimeRemaining.setText("End Time: N/A");
+        }
     }
 
     private void setupChart() {
@@ -124,10 +147,12 @@ public class AuctionBidController {
         priceSeries.getData().clear();
 
         // 1. Add Starting Price as first point
-        priceSeries.getData().add(new XYChart.Data<>(
-            currentAuction.getStartTime().format(TIME_FORMATTER), 
-            currentAuction.getStartingPrice()
-        ));
+        if (currentAuction.getStartTime() != null) {
+            priceSeries.getData().add(new XYChart.Data<>(
+                currentAuction.getStartTime().format(TIME_FORMATTER), 
+                currentAuction.getStartingPrice()
+            ));
+        }
 
         // 2. Add all bids from history (already sorted in chronological order from DB usually)
         // If bidHistory is descending for the table, we need to sort it ascending here
@@ -170,6 +195,10 @@ public class AuctionBidController {
             }
 
             User user = SessionManager.getInstance().getCurrentUser();
+            if (user == null) {
+                ControllerUtils.showAlert("You must be logged in to place a bid!");
+                return;
+            }
             BidRequest bidRequest = new BidRequest(currentAuction.getId(), user.getId(), amount);
             ClientManager.getInstance().sendRequest(bidRequest);
             
@@ -186,6 +215,7 @@ public class AuctionBidController {
             // 1. Sync local auction model state
             currentAuction.setCurrentPrice(update.getCurrentHighestBid());
             currentAuction.setHighestBidderId(update.getLeadingBidderId());
+            currentAuction.setEndTime(LocalDateTime.ofInstant(Instant.ofEpochMilli(update.getEndTimeMillis()), ZoneId.systemDefault()));
             
             // Re-create the highest bid object so updateUI can access leading username
             BidTransaction latestBid = new BidTransaction(
@@ -238,7 +268,7 @@ public class AuctionBidController {
                 } else if (controller instanceof SellerMainController) {
                     ((SellerMainController) controller).loadView("AuctionList.fxml", false);
                 } else if (controller instanceof AdminMainController) {
-                    ((AdminMainController) controller).loadView("AuctionList.fxml");
+                    ((AdminMainController) controller).loadView("AuctionList.fxml", false);
                 }
             }
         } catch (Exception e) {

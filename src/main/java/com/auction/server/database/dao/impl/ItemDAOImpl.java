@@ -117,10 +117,12 @@ public class ItemDAOImpl extends BaseDAO implements ItemDAO {
         String buyerId = rs.getString("buyerId");
 
         User owner = userDAO.findById(ownerId);
+        Seller sellerOwner = (owner instanceof Seller) ? (Seller) owner : null;
 
         User buyer = userDAO.findById(buyerId);
+        Bidder bidderBuyer = (buyer instanceof Bidder) ? (Bidder) buyer : null;
 
         return ItemFactory.createItemFromDB(id, type, name, description, startingPrice, currentPrice,
-                specialAttribute, (Seller) owner, (Bidder) buyer);
+                specialAttribute, sellerOwner, bidderBuyer);
     }
 }

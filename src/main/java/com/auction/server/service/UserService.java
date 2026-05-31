@@ -12,6 +12,8 @@ import com.auction.server.database.dao.DAOFactory;
 import com.auction.server.database.dao.UserDAO;
 import com.auction.server.factory.UserFactory;
 import com.auction.server.factory.UserRole;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.math.BigDecimal;
 import java.util.Set;
@@ -22,6 +24,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * Implements the "Orchestrator" pattern to protect the DAO layer.
  */
 public class UserService {
+    private static final Logger logger = LoggerFactory.getLogger(UserService.class);
     private final UserDAO userDAO;
 
     // Set of usernames currently online
@@ -52,9 +55,10 @@ public class UserService {
             }
 
             onlineUsers.add(username);
-            System.out.println("[UserService] User logged in: " + username);
+            logger.info("User logged in: {}", username);
             return user;
         } catch (DatabaseException e) {
+            logger.error("Database access error during login for {}: {}", username, e.getMessage(), e);
             throw new AuthenticationException("Lỗi truy cập cơ sở dữ liệu khi đăng nhập.", e);
         }
     }
@@ -85,9 +89,10 @@ public class UserService {
             // 5. Execute registration via DAO
             userDAO.addUser(newUser);
             
-            System.out.println("[UserService] User registered successfully: " + username);
+            logger.info("User registered successfully: {}", username);
             return newUser;
         } catch (DatabaseException e) {
+            logger.error("Database error during registration for {}: {}", username, e.getMessage(), e);
             throw new ValidationException("Lỗi cơ sở dữ liệu khi đăng ký: " + e.getMessage(), e);
         }
     }
@@ -100,8 +105,9 @@ public class UserService {
         if (user != null) {
             user.deposit(amount);
             userDAO.updateUser(user);
-            System.out.println("[UserService] User " + username + " deposited: " + amount);
+            logger.info("User {} deposited: {}", username, amount);
         } else {
+            logger.warn("User not found for deposit: {}", username);
             throw new DatabaseException("User not found: " + username);
         }
     }
@@ -114,8 +120,9 @@ public class UserService {
         if (user != null) {
             user.withdraw(amount);
             userDAO.updateUser(user);
-            System.out.println("[UserService] User " + username + " withdrew: " + amount);
+            logger.info("User {} withdrew: {}", username, amount);
         } else {
+            logger.warn("User not found for withdraw: {}", username);
             throw new DatabaseException("User not found: " + username);
         }
     }
@@ -125,7 +132,7 @@ public class UserService {
      */
     public void logout(String username) {
         if (username != null && onlineUsers.remove(username)) {
-            System.out.println("[UserService] User logged out: " + username);
+            logger.info("User logged out: {}", username);
         }
     }
 

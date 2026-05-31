@@ -7,10 +7,14 @@ import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.stage.Stage;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 
 public class AuctionApp extends Application {
+
+    private static final Logger logger = LoggerFactory.getLogger(AuctionApp.class);
 
     public static void main(String[] args) {
         launch(args);
@@ -22,7 +26,7 @@ public class AuctionApp extends Application {
         try {
             ClientManager.getInstance().connect();
         } catch (IOException e) {
-            System.err.println("[CLIENT] Could not connect to server on startup: " + e.getMessage());
+            logger.error("[CLIENT] Could not connect to server on startup", e);
             // We can continue, ClientManager will try to reconnect when sending first request
         }
 
@@ -40,5 +44,6 @@ public class AuctionApp extends Application {
     public void stop() {
         ClientManager.getInstance().close();
         DatabaseManager.getInstance().shutdown();
+        System.exit(0);
     }
 }

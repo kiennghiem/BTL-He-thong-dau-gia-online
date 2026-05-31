@@ -79,15 +79,6 @@ public class AuctionService {
                 System.err.println("[AuctionService-Async] CRITICAL: Bid for " + bidderId +
                         " on " + auctionId + " failed to save to DB via BidDAO!");
             }
-
-            try {
-                boolean auctionUpdated = auctionDAO.placeBid(auctionId, bidderId, amount);
-                if (!auctionUpdated) {
-                    System.err.println("[AuctionService-Async] CRITICAL: Auction atomic bid constraints rejected the value for: " + auctionId);
-                }
-            } catch (SQLException e) {
-                System.err.println("[AuctionService-Async] CRITICAL: Database error updating auction current balance: " + e.getMessage());
-            }
         });
     }
 
@@ -151,6 +142,26 @@ public class AuctionService {
         }
 
         throw new RuntimeException("Auction DAO insert returned false without error.");
+    }
+
+    /**
+     * Cancels an auction (Admin functionality).
+     */
+    public void cancelAuction(String auctionId, String adminId) throws AuctionNotFoundException {
+        // 1. Update real-time state
+        auctionManager.cancelAuction(auctionId);
+
+        // 2. Persist status change to database
+        persistenceExecutor.submit(() -> {
+            try {
+                boolean updated = auctionDAO.updateStatus(auctionId, AuctionStatus.CANCELED);
+                if (updated) {
+                    System.out.println("[AuctionService-Async] Auction " + auctionId + " canceled in DB by admin " + adminId);
+                }
+            } catch (SQLException e) {
+                System.err.println("[AuctionService-Async] Error canceling auction in DB: " + e.getMessage());
+            }
+        });
     }
 
     /**

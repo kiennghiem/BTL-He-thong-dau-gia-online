@@ -8,6 +8,8 @@ import com.auction.server.observer.AuctionStatus;
 import com.auction.server.service.AuctionService;
 import com.auction.models.dto.AppConstants;
 import com.auction.models.dto.AuctionUpdateDTO;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
@@ -26,6 +28,7 @@ import java.time.Duration;
  * Acts as the "Real-time Engine" and "Mediator" for notifications.
  */
 public class AuctionManager {
+    private static final Logger logger = LoggerFactory.getLogger(AuctionManager.class);
     private static AuctionManager instance;
     private final Map<String, Auction> activeAuctions;
     private final Map<String, List<AuctionObserver>> observers;
@@ -91,7 +94,7 @@ public class AuctionManager {
             long remainingSeconds = Duration.between(LocalDateTime.now(), auction.getEndTime()).getSeconds();
             if (remainingSeconds > 0 && remainingSeconds <= AppConstants.SNIPE_WINDOW_SECONDS) {
                 auction.setEndTime(auction.getEndTime().plusSeconds(AppConstants.EXTENSION_TIME_SECONDS));
-                System.out.println("[INFO] Anti-sniping: Extended auction " + auctionId);
+                logger.info("[INFO] Anti-sniping: Extended auction {}", auctionId);
                 
                 // Notify about time extension immediately so UI can update timer
                 broadcastNotification(new Notification(
@@ -104,7 +107,7 @@ public class AuctionManager {
             // auction.addBid throws InvalidBidException if bid is too low
             auction.addBid(bid);
             
-            System.out.println("[INFO] Bid placed successfully on " + auctionId + ": " + bid.getBidAmount());
+            logger.info("[INFO] Bid placed successfully on {}: {}", auctionId, bid.getBidAmount());
 
             // Notify about new bid
             broadcastNotification(new Notification(
@@ -112,6 +115,32 @@ public class AuctionManager {
                     auctionId,
                     createUpdateDTO(auction)
             ));
+        }
+    }
+
+    public void cancelAuction(String auctionId) throws AuctionNotFoundException {
+        Auction auction = activeAuctions.get(auctionId);
+        if (auction == null) {
+            throw new AuctionNotFoundException("Auction with ID " + auctionId + " not found.");
+        }
+
+        synchronized (auction) {
+            try {
+                auction.setStatus(AuctionStatus.CANCELED);
+                logger.info("[INFO] Auction {} canceled by Admin.", auctionId);
+
+                // Notify about status change
+                broadcastNotification(new Notification(
+                        Notification.Type.STATUS_CHANGED,
+                        auctionId,
+                        createUpdateDTO(auction)
+                ));
+
+                // Optional: Remove from active auctions if you want to stop tracking it in memory
+                // activeAuctions.remove(auctionId);
+            } catch (Exception e) {
+                logger.error("[ERROR] Failed to cancel auction: {}", auctionId, e);
+            }
         }
     }
 
@@ -142,7 +171,7 @@ public class AuctionManager {
                         } 
                         else if (oldStatus == AuctionStatus.RUNNING && now.isAfter(auction.getEndTime())) {
                             auction.updateStatus(AuctionStatus.FINISHED);
-                            System.out.println("[INFO] Auction " + auction.getId() + " finished.");
+                            logger.info("[INFO] Auction {} finished.", auction.getId());
                             
                             // PERSISTENCE
                             if (auctionService != null) {
@@ -156,7 +185,7 @@ public class AuctionManager {
                             ));
                         }
                     } catch (Exception e) {
-                        System.err.println("[ERROR] Status checker error: " + e.getMessage());
+                        logger.error("[ERROR] Status checker error for auction {}: {}", auction.getId(), e.getMessage(), e);
                     }
                 }
             }
