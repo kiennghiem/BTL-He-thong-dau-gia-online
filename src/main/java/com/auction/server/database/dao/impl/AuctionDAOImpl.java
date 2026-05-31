@@ -1,6 +1,11 @@
 package com.auction.server.database.dao.impl;
+import com.auction.models.Item;
 import com.auction.server.database.dao.*;
 import com.auction.models.Auction;
+import com.auction.server.observer.AuctionStatus;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.math.BigDecimal;
 import java.sql.*;
 import java.time.LocalDateTime;
@@ -12,12 +17,14 @@ import java.util.List;
  * Tận dụng cơ chế Connection Pooling của BaseDAO và áp dụng kỹ thuật chặn Race Condition.
  */
 public class AuctionDAOImpl extends BaseDAO implements AuctionDAO {
+    private static final Logger logger = LoggerFactory.getLogger(AuctionDAOImpl.class);
 
     // =========================================================================
     // QUẢN LÝ TẬP TRUNG TẤT CẢ CÁC CÂU LỆNH SQL CONSTANTS
     // =========================================================================
     private static final String SELECT_BASE =
-            "SELECT id, item_id, title, description, starting_price, current_price, highest_bidder_id, start_time, end_time, status FROM auctions";
+            "SELECT id, status, title, description, starting_price, current_price, start_time, end_time," +
+            "item_id, highest_bidder_id FROM auctions";
 
     private static final String SELECT_BY_ID = SELECT_BASE + " WHERE id = ?;";
     private static final String SELECT_BY_ITEM_ID = SELECT_BASE + " WHERE item_id = ?;";
@@ -25,7 +32,8 @@ public class AuctionDAOImpl extends BaseDAO implements AuctionDAO {
     private static final String SELECT_BY_STATUS = SELECT_BASE + " WHERE status = ? ORDER BY end_time ASC;";
 
     private static final String INSERT_AUCTION =
-            "INSERT INTO auctions (id, item_id, title, description, starting_price, current_price, highest_bidder_id, start_time, end_time, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?);";
+            "INSERT INTO auctions (id, status, title, description, starting_price, current_price," +
+            "start_time, end_time, item_id, highest_bidder_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?);";
 
     private static final String UPDATE_AUCTION =
             "UPDATE auctions SET title = ?, description = ?, start_time = ?, end_time = ? WHERE id = ?;";
@@ -103,7 +111,7 @@ public class AuctionDAOImpl extends BaseDAO implements AuctionDAO {
     }
 
     @Override
-    public List<Auction> findByStatus(String status) throws SQLException {
+    public List<Auction> findByStatus(AuctionStatus status) throws SQLException {
         List<Auction> list = new ArrayList<>();
         Connection conn = null;
         PreparedStatement stmt = null;
@@ -111,7 +119,7 @@ public class AuctionDAOImpl extends BaseDAO implements AuctionDAO {
         try {
             conn = getConnection();
             stmt = conn.prepareStatement(SELECT_BY_STATUS);
-            stmt.setString(1, status);
+            stmt.setString(1, status.toString());
             rs = stmt.executeQuery();
             while (rs.next()) {
                 list.add(mapRowToAuction(rs));
@@ -130,15 +138,16 @@ public class AuctionDAOImpl extends BaseDAO implements AuctionDAO {
             conn = getConnection();
             stmt = conn.prepareStatement(INSERT_AUCTION);
             stmt.setString(1, auction.getId());
-            stmt.setString(2, auction.getItemId());
+            stmt.setString(2, auction.getStatusAsString());
             stmt.setString(3, auction.getTitle());
             stmt.setString(4, auction.getDescription());
             stmt.setBigDecimal(5, auction.getStartingPrice());
             stmt.setBigDecimal(6, auction.getCurrentPrice());
-            stmt.setString(7, auction.getHighestBidderId());
-            stmt.setTimestamp(8, Timestamp.valueOf(auction.getStartTime()));
-            stmt.setTimestamp(9, Timestamp.valueOf(auction.getEndTime()));
-            stmt.setString(10, auction.getStatus());
+            stmt.setTimestamp(7, Timestamp.valueOf(auction.getStartTime()));
+            stmt.setTimestamp(8, Timestamp.valueOf(auction.getEndTime()));
+            stmt.setString(9, auction.getItemId());
+            stmt.setString(10, auction.getHighestBidderId());
+
             return stmt.executeUpdate() > 0;
         } finally {
             closeResources(stmt, conn);
@@ -164,13 +173,13 @@ public class AuctionDAOImpl extends BaseDAO implements AuctionDAO {
     }
 
     @Override
-    public boolean updateStatus(String auctionId, String newStatus) throws SQLException {
+    public boolean updateStatus(String auctionId, AuctionStatus newStatus) throws SQLException {
         Connection conn = null;
         PreparedStatement stmt = null;
         try {
             conn = getConnection();
             stmt = conn.prepareStatement(UPDATE_STATUS);
-            stmt.setString(1, newStatus);
+            stmt.setString(1, newStatus.toString());
             stmt.setString(2, auctionId);
             return stmt.executeUpdate() > 0;
         } finally {
@@ -199,13 +208,12 @@ public class AuctionDAOImpl extends BaseDAO implements AuctionDAO {
 
             if (rowsAffected == 0) {
                 // Đưa ra cảnh báo hệ thống hoặc log chi tiết thay vì để lỗi nuốt chửng âm thầm
-                System.err.println("[AuctionDAO] Thao tác đặt giá thất bại cho AuctionID: " + auctionId
-                        + " do xung đột giá thấp hơn hiện tại hoặc phiên đấu giá đã kết thúc/đóng.");
+                logger.warn("[AuctionDAO] Thao tác đặt giá thất bại cho AuctionID: {} do xung đột giá thấp hơn hiện tại hoặc phiên đấu giá đã kết thúc/đóng.", auctionId);
                 return false;
             }
             return true;
         } catch (SQLException e) {
-            System.err.println("[AuctionDAO-Error] Lỗi nghiêm trọng xảy ra khi thực thi luồng đặt giá: " + e.getMessage());
+            logger.error("[AuctionDAO-Error] Lỗi nghiêm trọng xảy ra khi thực thi luồng đặt giá", e);
             throw e; // Ném ngược Exception ra ngoài để tầng dịch vụ (Service) thực hiện Rollback/Xử lý UI nếu cần
         } finally {
             closeResources(stmt, conn);
@@ -219,9 +227,14 @@ public class AuctionDAOImpl extends BaseDAO implements AuctionDAO {
      * Bản đồ ánh xạ dữ liệu chuyển dòng bản ghi dạng ResultSet của MySQL sang Object Java mô hình.
      */
     private Auction mapRowToAuction(ResultSet rs) throws SQLException {
+        ItemDAO itemDao = new ItemDAOImpl();
+
         Auction auction = new Auction();
         auction.setId(rs.getString("id"));
-        auction.setItemId(rs.getString("item_id"));
+        Item item = itemDao.findById(rs.getString("item_id"));
+        auction.setItem(item);
+        String statusStr = rs.getString("status");
+        auction.setStatus(AuctionStatus.valueOf(statusStr));
         auction.setTitle(rs.getString("title"));
         auction.setDescription(rs.getString("description"));
         auction.setStartingPrice(rs.getBigDecimal("starting_price"));
@@ -237,8 +250,6 @@ public class AuctionDAOImpl extends BaseDAO implements AuctionDAO {
         if (endTs != null) {
             auction.setEndTime(endTs.toLocalDateTime());
         }
-
-        auction.setStatus(rs.getString("status"));
         return auction;
     }
 }

@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.text.Font?>
+
+<VBox spacing="15.0" prefWidth="600.0" prefHeight="450.0" xmlns="http://javafx.com/javafx/26" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.auction.client.controller.SellerCreateAuctionController" style="-fx-background-color: #ffffff;">
+    <padding>
+        <Insets top="25.0" right="25.0" bottom="25.0" left="25.0"/>
+    </padding>
+
+    <VBox spacing="5.0">
+        <Label text="CREATE NEW AUCTION" textFill="#000000">
+            <font>
+                <Font name="System Bold" size="24.0" />
+            </font>
+        </Label>
+        <Label text="Enter the details of the item you want to sell." textFill="#666666" />
+        <Separator />
+    </VBox>
+
+    <GridPane vgap="15.0" hgap="10.0" VBox.vgrow="ALWAYS">
+        <columnConstraints>
+            <ColumnConstraints minWidth="120.0" prefWidth="130.0" halignment="LEFT" />
+            <ColumnConstraints hgrow="ALWAYS" minWidth="200.0" />
+        </columnConstraints>
+
+        <rowConstraints>
+            <RowConstraints minHeight="35.0" />
+            <RowConstraints minHeight="80.0" valignment="TOP" />
+            <RowConstraints minHeight="35.0" />
+            <RowConstraints minHeight="35.0" />
+            <RowConstraints minHeight="35.0" />
+        </rowConstraints>
+
+        <Label text="Item Name:" GridPane.rowIndex="0" GridPane.columnIndex="0">
+            <font><Font size="16.0"/></font>
+        </Label>
+        <TextField fx:id="txtTitle" promptText="e.g. Vintage Rolex Watch" GridPane.rowIndex="0" GridPane.columnIndex="1" prefHeight="35.0"/>
+
+        <Label text="Description:" GridPane.rowIndex="1" GridPane.columnIndex="0">
+            <font><Font size="16.0"/></font>
+            <GridPane.margin><Insets top="5.0" /></GridPane.margin>
+        </Label>
+        <TextArea fx:id="txtDescription" promptText="Condition, specs, etc." GridPane.rowIndex="1" GridPane.columnIndex="1" prefHeight="80.0" wrapText="true"/>
+
+        <Label text="Starting Price ($):" GridPane.rowIndex="2" GridPane.columnIndex="0">
+            <font><Font size="16.0"/></font>
+        </Label>
+        <TextField fx:id="txtStartingPrice" promptText="e.g. 500" GridPane.rowIndex="2" GridPane.columnIndex="1" prefHeight="35.0"/>
+
+        <Label text="Start Date:" GridPane.rowIndex="3" GridPane.columnIndex="0">
+            <font><Font size="16.0"/></font>
+        </Label>
+        <HBox spacing="10.0" GridPane.rowIndex="3" GridPane.columnIndex="1">
+            <DatePicker fx:id="dpStartDate" prefHeight="35.0" HBox.hgrow="ALWAYS" maxWidth="Infinity"/>
+            <ComboBox fx:id="cbStartHour" prefHeight="35.0" prefWidth="90.0" promptText="Hour"/>
+        </HBox>
+
+        <Label text="End Date:" GridPane.rowIndex="4" GridPane.columnIndex="0">
+            <font><Font size="16.0"/></font>
+        </Label>
+        <HBox spacing="10.0" GridPane.rowIndex="4" GridPane.columnIndex="1">
+            <DatePicker fx:id="dpEndDate" prefHeight="35.0" HBox.hgrow="ALWAYS" maxWidth="Infinity"/>
+            <ComboBox fx:id="cbEndHour" prefHeight="35.0" prefWidth="90.0" promptText="Hour"/>
+        </HBox>
+    </GridPane>
+
+    <HBox spacing="15.0" alignment="CENTER_RIGHT">
+        <Button fx:id="btnCancel" text="Cancel" onAction="#handleCancel" prefWidth="100.0" prefHeight="40.0" style="-fx-cursor: hand;"/>
+        <Button fx:id="btnSubmit" text="Create Auction" onAction="#handleSubmitAuction" prefWidth="150.0" prefHeight="40.0" style="-fx-background-color: #0095e0; -fx-text-fill: white; -fx-font-weight: bold; -fx-cursor: hand;"/>
+    </HBox>
+</VBox>

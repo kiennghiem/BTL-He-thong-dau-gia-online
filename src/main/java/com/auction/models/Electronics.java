@@ -1,21 +1,26 @@
 package com.auction.models;
 
+import com.auction.server.factory.ItemType;
+import java.math.BigDecimal;
+
 public class Electronics extends Item {
     private static final long serialVersionUID = 1L;
-    private String brand;
 
-    public Electronics(String itemName, String description, float startingPrice, String Brand){
-        super(itemName,description,startingPrice);
-        this.brand = Brand;
+    // Create a new Electronics instance
+    public Electronics(String itemName, String description, BigDecimal startingPrice, String specialAttribute, Seller owner){
+        super(ItemType.ELECTRONICS, itemName, description, startingPrice, specialAttribute, owner);
     }
 
-    public String getBrand(){return brand;}
-    public void setBrand(String brand){this.brand = brand;}
+    // Create an Electronics instance from the database
+    public Electronics(String id, String itemName, String description, BigDecimal startingPrice,
+                       BigDecimal currentPrice, String specialAttribute, Seller owner, Bidder buyer){
+        super(id, ItemType.ELECTRONICS, itemName, description, startingPrice, currentPrice, specialAttribute, owner, buyer);
+    }
 
     @Override
     public String getInfo(){
         return "Name: " + this.getItemName()
-             +"\nDescription: "+ this.getDescription()
-             +"\nBrand: " + this.getBrand();
+                +"\nDescription: "+ this.getDescription()
+                +"\nBrand: " + this.getSpecialAttribute();
     }
 }

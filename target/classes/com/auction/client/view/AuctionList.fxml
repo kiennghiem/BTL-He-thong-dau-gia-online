@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.TableColumn?>
+<?import javafx.scene.control.TableView?>
+<?import javafx.scene.layout.AnchorPane?>
+<?import javafx.scene.text.Font?>
+
+<AnchorPane prefHeight="500.0" prefWidth="700.0" xmlns="http://javafx.com/javafx/26" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.auction.client.controller.AuctionListController">
+   <children>
+      <Label layoutX="26.0" layoutY="28.0" text="Available Auctions">
+         <font>
+            <Font name="System Bold" size="24.0" />
+         </font>
+      </Label>
+
+      <Button fx:id="buttonLogout" layoutX="600.0" layoutY="33.0" mnemonicParsing="false" onAction="#handleLogout" text="Log out" style="-fx-cursor: hand;" />
+
+      <Button fx:id="btnCreateAuction" layoutX="460.0" layoutY="33.0" mnemonicParsing="false" onAction="#handleGoToSellerDashboard" style="-fx-background-color: #0095e0; -fx-text-fill: white; -fx-font-weight: bold; -fx-cursor: hand;" text="+ Create Auction" />
+
+      <TableView fx:id="auctionTable" layoutX="26.0" layoutY="80.0" prefHeight="390.0" prefWidth="640.0">
+         <columns>
+            <TableColumn fx:id="colTitle" prefWidth="250.0" text="Item Name" />
+            <TableColumn fx:id="colPrice" prefWidth="120.0" text="Current Price ($)" />
+            <TableColumn fx:id="colStatus" prefWidth="120.0" text="Status" />
+            <TableColumn fx:id="colEndTime" prefWidth="150.0" text="End Time" />
+         </columns>
+      </TableView>
+   </children>
+</AnchorPane>

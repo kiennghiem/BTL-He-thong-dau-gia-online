@@ -1,76 +1,47 @@
 package com.auction.models;
 
-import java.io.Serializable;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.Executors;
 
 import com.auction.exceptions.*;
-import com.auction.server.observer.*;
+import com.auction.server.observer.AuctionStatus;
 
-// Giả định Entity là lớp cha của bạn chứa phương thức getId()
 public class Auction extends Entity {
 
     private static final long serialVersionUID = 1L;
     private Item item;
-    private Seller seller;
     private AuctionStatus status;
-    private LocalDateTime startTime; // Sửa tên thành startTime để khớp DB
-    private LocalDateTime endTime;   // Sửa tên thành endTime để khớp DB
+    private Seller seller;
+    private String title;
+    private String description;
+    private LocalDateTime startTime;
+    private LocalDateTime endTime;
     private BidTransaction highestBid;
-    private BigDecimal startingPrice; // Bổ sung để khớp với trường thông tin trong DAO
-    private BigDecimal currentPrice; // Đổi sang BigDecimal tránh sai số tài chính
-    private String title;            // Bổ sung để khớp với trường thông tin trong DAO
-    private String description;      // Bổ sung để khớp với trường thông tin trong DAO
-    private String itemId;           // Bổ sung để lưu itemId khi item object chưa được load
+    private BigDecimal startingPrice;
+    private BigDecimal currentPrice;
 
     // History of all proper bids
     private List<BidTransaction> bidHistory;
-    // List of observers
-    private List<AuctionObserver> observers;
-    private ScheduledExecutorService scheduler;
 
     // Constructors trống dành cho DAO RowMapper khởi tạo thực thể
     public Auction() {
         this.bidHistory = new ArrayList<>();
-        this.observers = new CopyOnWriteArrayList<>();
     }
 
-    public Auction(Item item, Seller seller, LocalDateTime startTime, LocalDateTime endTime, String title, String description) {
+    public Auction(Item item, LocalDateTime startTime, LocalDateTime endTime) {
         this.item = item;
-        this.seller = seller;
-        this.status = AuctionStatus.PENDING;
+        this.status = AuctionStatus.OPEN;
+        this.seller = item.getOwner();
+        this.title = item.getItemName();
+        this.description = item.getDescription();
         this.startTime = startTime;
         this.endTime = endTime;
-        this.title = title;
-        this.description = description;
         // Khởi tạo giá hiện tại bằng giá khởi điểm của mặt hàng
-        this.startingPrice = BigDecimal.valueOf(item.getStartingPrice());
+        this.startingPrice = item.getStartingPrice();
         this.currentPrice = this.startingPrice;
         this.bidHistory = new ArrayList<>();
-        this.observers = new CopyOnWriteArrayList<>();
-        this.scheduler = Executors.newSingleThreadScheduledExecutor();
-    }
-
-    // --- Mẫu thiết kế Observer nâng cao ---
-    public void addObserver(AuctionObserver observer) {
-        if (!observers.contains(observer)) {
-            observers.add(observer);
-        }
-    }
-
-    public void removeObserver(AuctionObserver observer) {
-        observers.remove(observer);
-    }
-
-    private void notifyObservers() {
-        for (AuctionObserver observer : observers) {
-            observer.update(highestBid);
-        }
     }
 
     /**
@@ -81,10 +52,6 @@ public class Auction extends Entity {
             return;
         }
         switch(newStatus) {
-            case OPEN -> {
-                if(this.status != AuctionStatus.PENDING) { throw new InvalidStatusException("Cannot set this status to OPEN"); }
-                this.status = newStatus;
-            }
             case RUNNING -> {
                 if(this.status != AuctionStatus.OPEN) { throw new InvalidStatusException("Cannot set this status to RUNNING"); }
                 this.status = newStatus;
@@ -105,18 +72,36 @@ public class Auction extends Entity {
 
     // --- Getters & Setters hỗ trợ việc ánh xạ dữ liệu tầng DAO ---
 
-    public String getItemId() {
-        if (item != null) return item.getId();
-        return itemId;
+    public Item getItem() {
+        return item;
     }
 
-    public void setItemId(String itemId) {
-        this.itemId = itemId;
-        if (this.item != null) this.item.setId(itemId);
+    public String getItemId() {
+        return item.getId();
+    }
+
+    public void setItem(Item item) {
+        this.item = item;
+    }
+
+    public Seller getSeller() {
+        return seller;
+    }
+
+    public String getSellerId() {
+        return seller.getId();
+    }
+
+    public void setSeller(Seller seller) {
+        this.seller = seller;
+    }
+
+    public BidTransaction getHighestBid() {
+        return highestBid;
     }
 
     public String getHighestBidderId() {
-        return highestBid != null ? highestBid.getBidderId() : null;
+        return highestBid.getBidderId();
     }
 
     public String getTitle() {
@@ -137,7 +122,7 @@ public class Auction extends Entity {
 
     public BigDecimal getStartingPrice() {
         if (startingPrice != null) return startingPrice;
-        return item != null ? BigDecimal.valueOf(item.getStartingPrice()) : BigDecimal.ZERO;
+        return item != null ? item.getStartingPrice() : BigDecimal.ZERO;
     }
 
     public void setStartingPrice(BigDecimal startingPrice) {
@@ -168,24 +153,38 @@ public class Auction extends Entity {
         this.endTime = endTime;
     }
 
-    public String getStatus() {
-        return status != null ? status.name() : null;
+    public AuctionStatus getStatus() {
+        return status;
     }
 
-    public void setStatus(String statusStr) {
-        if (statusStr != null) {
-            try {
-                this.status = AuctionStatus.valueOf(statusStr.toUpperCase());
-            } catch (IllegalArgumentException e) {
-                // Fallback or log if status string is invalid
-            }
+    public String getStatusAsString() {
+        return status.toString();
+    }
+
+    public void setStatus(AuctionStatus status) {
+        if (status != null) {
+            this.status = status;
         }
+    }
+
+    public void addBid(BidTransaction bid) throws InvalidBidException {
+        if (bid.getBidAmount().compareTo(this.currentPrice) <= 0) {
+            throw new InvalidBidException("Bid must be higher than current price");
+        }
+        this.highestBid = bid;
+        this.currentPrice = bid.getBidAmount();
+        this.bidHistory.add(bid);
+    }
+
+    public long getClosingTimeMillis() {
+        if (endTime == null) return 0;
+        return endTime.atZone(java.time.ZoneId.systemDefault()).toInstant().toEpochMilli();
     }
 
     // Các hàm Setter bổ sung cho việc tái thiết lập Object từ DB
     public void setHighestBidderId(String bidderId) {
         if (bidderId != null) {
-            this.highestBid = new BidTransaction(this.getItemId(), bidderId, this.currentPrice != null ? this.currentPrice : getStartingPrice());
+            this.highestBid = new BidTransaction(this.getItemId(), bidderId, this.currentPrice);
         }
     }
 }

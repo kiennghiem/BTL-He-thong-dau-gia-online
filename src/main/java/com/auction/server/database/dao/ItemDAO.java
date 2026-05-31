@@ -1,6 +1,6 @@
 package com.auction.server.database.dao;
 
-import common.Item;
+import com.auction.models.Item;
 import java.util.List;
 
 /**
