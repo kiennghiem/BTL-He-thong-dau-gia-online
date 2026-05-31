@@ -29,9 +29,11 @@ public class CreateAuctionController {
     @FXML private TextArea txtDescription;
     @FXML private TextField txtStartingPrice;
     @FXML private DatePicker dpStartDate;
-    @FXML private ComboBox<String> cbStartHour;
+    @FXML private TextField txtStartHour;
+    @FXML private TextField txtStartMinute;
     @FXML private DatePicker dpEndDate;
-    @FXML private ComboBox<String> cbEndHour;
+    @FXML private TextField txtEndHour;
+    @FXML private TextField txtEndMinute;
     @FXML private Button btnCancel;
     @FXML private Button btnSubmit;
 
@@ -64,19 +66,22 @@ public class CreateAuctionController {
             }
         });
 
-        // Populate Hours into the combo boxes
-        ObservableList<String> hours = FXCollections.observableArrayList();
-        for (int i = 0; i < 24; i++) {
-            hours.add(String.format("%02d:00", i));
-        }
-        cbStartHour.setItems(hours);
-        cbEndHour.setItems(hours);
+        // Set default dates and times
+        LocalDateTime now = LocalDateTime.now();
+        dpStartDate.setValue(now.toLocalDate());
+        txtStartHour.setText(String.format("%02d", now.getHour()));
+        txtStartMinute.setText(String.format("%02d", now.getMinute()));
 
-        // Default selections
-        dpStartDate.setValue(LocalDate.now());
-        cbStartHour.getSelectionModel().select("12:00");
-        dpEndDate.setValue(LocalDate.now().plusDays(3));
-        cbEndHour.getSelectionModel().select("12:00");
+        LocalDateTime defaultEnd = now.plusDays(3);
+        dpEndDate.setValue(defaultEnd.toLocalDate());
+        txtEndHour.setText(String.format("%02d", defaultEnd.getHour()));
+        txtEndMinute.setText(String.format("%02d", defaultEnd.getMinute()));
+
+        // Auto-cap and validate time fields
+        setupTimeField(txtStartHour, 23);
+        setupTimeField(txtStartMinute, 59);
+        setupTimeField(txtEndHour, 23);
+        setupTimeField(txtEndMinute, 59);
 
         // Register listener for server responses
         responseListener = msg -> {
@@ -117,6 +122,31 @@ public class CreateAuctionController {
         }
     }
 
+    /**
+     * Helper to enforce numeric input and max value limits in real-time.
+     */
+    private void setupTimeField(TextField field, int maxValue) {
+        field.textProperty().addListener((observable, oldValue, newValue) -> {
+            if (newValue == null || newValue.isEmpty()) return;
+
+            // 1. Force numeric only
+            if (!newValue.matches("\\d*")) {
+                field.setText(newValue.replaceAll("[^\\d]", ""));
+                return;
+            }
+
+            // 2. Cap at max value
+            try {
+                int val = Integer.parseInt(newValue);
+                if (val > maxValue) {
+                    field.setText(String.valueOf(maxValue));
+                }
+            } catch (NumberFormatException ignored) {
+                field.setText(oldValue);
+            }
+        });
+    }
+
     @FXML
     public void handleSubmitAuction(ActionEvent event) {
         String title = txtTitle.getText().trim();
@@ -125,11 +155,14 @@ public class CreateAuctionController {
         String description = txtDescription.getText().trim();
         String priceRaw = txtStartingPrice.getText().trim();
         LocalDate startDate = dpStartDate.getValue();
-        String startHourRaw = cbStartHour.getValue();
+        String startHourStr = txtStartHour.getText().trim();
+        String startMinStr = txtStartMinute.getText().trim();
         LocalDate endDate = dpEndDate.getValue();
-        String endHourRaw = cbEndHour.getValue();
+        String endHourStr = txtEndHour.getText().trim();
+        String endMinStr = txtEndMinute.getText().trim();
 
-        if (title.isEmpty() || category == null || priceRaw.isEmpty() || startDate == null || endDate == null) {
+        if (title.isEmpty() || category == null || priceRaw.isEmpty() || startDate == null || endDate == null
+            || startHourStr.isEmpty() || startMinStr.isEmpty() || endHourStr.isEmpty() || endMinStr.isEmpty()) {
             ControllerUtils.showError("Thiếu thông tin", "Vui lòng điền đầy đủ các trường bắt buộc!");
             return;
         }
@@ -151,8 +184,28 @@ public class CreateAuctionController {
             return;
         }
 
-        LocalDateTime startDateTime = LocalDateTime.of(startDate, LocalTime.parse(startHourRaw));
-        LocalDateTime endDateTime = LocalDateTime.of(endDate, LocalTime.parse(endHourRaw));
+        int startH, startM, endH, endM;
+        try {
+            startH = Integer.parseInt(startHourStr);
+            startM = Integer.parseInt(startMinStr);
+            endH = Integer.parseInt(endHourStr);
+            endM = Integer.parseInt(endMinStr);
+
+            if (startH < 0 || startH > 23 || endH < 0 || endH > 23 ||
+                startM < 0 || startM > 59 || endM < 0 || endM > 59) {
+                ControllerUtils.showError("Dữ liệu không hợp lệ", "Giờ phải từ 0-23 và Phút phải từ 0-59!");
+                return;
+            }
+        } catch (NumberFormatException e) {
+            ControllerUtils.showError("Dữ liệu không hợp lệ", "Giờ và phút phải là số!");
+            return;
+        }
+
+        LocalTime startTime = LocalTime.of(startH, startM);
+        LocalTime endTime = LocalTime.of(endH, endM);
+
+        LocalDateTime startDateTime = LocalDateTime.of(startDate, startTime);
+        LocalDateTime endDateTime = LocalDateTime.of(endDate, endTime);
 
         if (endDateTime.isBefore(startDateTime) || endDateTime.isEqual(startDateTime)) {
             ControllerUtils.showError("Thời gian không hợp lệ", "Thời gian kết thúc phải sau thời gian bắt đầu!");

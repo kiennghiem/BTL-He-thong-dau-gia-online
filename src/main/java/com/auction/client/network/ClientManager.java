@@ -139,6 +139,17 @@ public class ClientManager {
     }
 
     private void notifyListeners(Object msg) {
+        if (msg instanceof com.auction.models.Notification notification) {
+            if (notification.getType() == com.auction.models.Notification.Type.STATUS_CHANGED) {
+                com.auction.models.dto.AuctionUpdateDTO update = (com.auction.models.dto.AuctionUpdateDTO) notification.getData();
+                if ("CANCELED".equalsIgnoreCase(update.getStatus())) {
+                    javafx.application.Platform.runLater(() -> {
+                        com.auction.client.controller.ControllerUtils.showWarning("Phiên đấu giá đã bị hủy", 
+                            "Phiên đấu giá '" + update.getAuctionTitle() + "' đã bị quản trị viên hủy.");
+                    });
+                }
+            }
+        }
         for (Consumer<Object> listener : messageListeners) {
             listener.accept(msg);
         }

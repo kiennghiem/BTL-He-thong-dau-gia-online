@@ -53,6 +53,10 @@ public class Auction extends Entity {
             return;
         }
         switch(newStatus) {
+            case OPEN -> {
+                if(this.status != AuctionStatus.PENDING) { throw new InvalidStatusException("Only pending auctions can be opened"); }
+                this.status = newStatus;
+            }
             case RUNNING -> {
                 if(this.status != AuctionStatus.OPEN) { throw new InvalidStatusException("Cannot set this status to RUNNING"); }
                 this.status = newStatus;
@@ -67,6 +71,9 @@ public class Auction extends Entity {
             }
             case CANCELED -> {
                 this.status = newStatus;
+            }
+            case PENDING -> {
+                throw new InvalidStatusException("Cannot set status back to PENDING");
             }
         }
     }

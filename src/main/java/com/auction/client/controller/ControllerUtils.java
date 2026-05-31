@@ -68,6 +68,17 @@ public final class ControllerUtils {
     }
 
     /**
+     * Shows a professional Warning alert.
+     */
+    public static void showWarning(String title, String message) {
+        Alert alert = new Alert(Alert.AlertType.WARNING);
+        alert.setTitle(title != null ? title : "Cảnh báo");
+        alert.setHeaderText(null);
+        alert.setContentText(message);
+        alert.showAndWait();
+    }
+
+    /**
      * Generic alert method (legacy support, defaults to error).
      */
     public static void showAlert(String message) {

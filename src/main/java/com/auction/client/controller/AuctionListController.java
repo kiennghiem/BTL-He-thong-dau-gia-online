@@ -93,10 +93,14 @@ public class AuctionListController {
                         setStyle("");
                     } else {
                         User currentUser = SessionManager.getInstance().getCurrentUser();
-                        if (currentUser != null && myAuctionsMode) {
+                        if (currentUser != null && currentUser.getRole() == UserRole.ADMIN && item.getStatus() == AuctionStatus.PENDING) {
+                            setStyle("-fx-background-color: #fff3cd; -fx-font-weight: bold; -fx-border-color: #ffeeba; -fx-border-width: 0 0 1 0;"); // Yellow highlight for Admin
+                        } else if (currentUser != null && myAuctionsMode) {
                             String currentUserId = currentUser.getId();
                             if (currentUser.getRole() == UserRole.SELLER) {
-                                if ("CANCELED".equalsIgnoreCase(item.getStatusAsString())) {
+                                if (item.getStatus() == AuctionStatus.PENDING) {
+                                    setStyle("-fx-background-color: #f8f9fa; -fx-opacity: 0.8;"); // Subtle look for pending own items
+                                } else if ("CANCELED".equalsIgnoreCase(item.getStatusAsString())) {
                                     setStyle("-fx-background-color: #e0e0e0; -fx-opacity: 0.6;");
                                 } else if (item.getHighestBidderId() != null && !"None".equalsIgnoreCase(item.getHighestBidderId())) {
                                     setStyle("-fx-background-color: #d4edda;");
@@ -190,10 +194,16 @@ public class AuctionListController {
                         .collect(Collectors.toList());
             }
         } else {
-            // Public mode: only show OPEN or RUNNING
+            // Public mode: show OPEN or RUNNING to everyone, and PENDING to Admin
             displayList = masterAuctionList.stream().filter(a -> {
                 AuctionStatus status = a.getStatus();
-                return status == AuctionStatus.OPEN || status == AuctionStatus.RUNNING;
+                if (status == AuctionStatus.OPEN || status == AuctionStatus.RUNNING) {
+                    return true;
+                }
+                if (status == AuctionStatus.PENDING && currentUser.getRole() == UserRole.ADMIN) {
+                    return true;
+                }
+                return false;
             }).collect(Collectors.toList());
         }
 
@@ -214,6 +224,19 @@ public class AuctionListController {
         }).collect(Collectors.toList());
         
         logger.info("Updating table with {} items after filtering", displayList.size());
+
+        // SORTING LOGIC:
+        // For ADMIN: PENDING at top
+        // For ALL: OPEN/RUNNING before FINISHED/CANCELED
+        displayList.sort((a1, a2) -> {
+            if (currentUser.getRole() == UserRole.ADMIN) {
+                if (a1.getStatus() == AuctionStatus.PENDING && a2.getStatus() != AuctionStatus.PENDING) return -1;
+                if (a1.getStatus() != AuctionStatus.PENDING && a2.getStatus() == AuctionStatus.PENDING) return 1;
+            }
+            // Secondary sort: alphabetical or by status order
+            return a1.getStatus().compareTo(a2.getStatus());
+        });
+
         auctionTable.setItems(FXCollections.observableArrayList(displayList));
     }
 }

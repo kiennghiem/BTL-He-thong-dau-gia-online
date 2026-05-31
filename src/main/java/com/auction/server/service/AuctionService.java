@@ -125,15 +125,8 @@ public class AuctionService {
         auction.setStartTime(start);
         auction.setEndTime(end);
         
-        // Decide status based on time
-        LocalDateTime now = LocalDateTime.now();
-        if (now.isAfter(start) && now.isBefore(end)) {
-            auction.setStatus(AuctionStatus.RUNNING);
-        } else if (now.isBefore(start)) {
-            auction.setStatus(AuctionStatus.OPEN);
-        } else {
-            auction.setStatus(AuctionStatus.FINISHED);
-        }
+        // ALL new auctions start as PENDING and require Admin approval
+        auction.setStatus(AuctionStatus.PENDING);
 
         // Persist both sequentially to Database
         boolean itemSaved = itemDAO.addItem(item);
@@ -156,6 +149,26 @@ public class AuctionService {
         }
 
         throw new RuntimeException("Auction DAO insert returned false without error.");
+    }
+
+    /**
+     * Approves a pending auction (Admin functionality).
+     */
+    public void approveAuction(String auctionId, String adminId) throws AuctionNotFoundException {
+        // 1. Update real-time state
+        auctionManager.approveAuction(auctionId);
+
+        // 2. Persist status change to database
+        persistenceExecutor.submit(() -> {
+            try {
+                boolean updated = auctionDAO.updateStatus(auctionId, AuctionStatus.OPEN);
+                if (updated) {
+                    System.out.println("[AuctionService-Async] Auction " + auctionId + " approved in DB by admin " + adminId);
+                }
+            } catch (SQLException e) {
+                System.err.println("[AuctionService-Async] Error approving auction in DB: " + e.getMessage());
+            }
+        });
     }
 
     /**
@@ -183,7 +196,7 @@ public class AuctionService {
     /**
      * Cancels an auction (Admin/Seller functionality).
      */
-    public void cancelAuction(String auctionId, String requesterId) throws AuctionNotFoundException {
+    public void cancelAuction(String auctionId, String requesterId, String reason) throws AuctionNotFoundException {
         // 1. Update real-time state
         auctionManager.cancelAuction(auctionId);
 
@@ -192,7 +205,7 @@ public class AuctionService {
             try {
                 boolean updated = auctionDAO.updateStatus(auctionId, AuctionStatus.CANCELED);
                 if (updated) {
-                    System.out.println("[AuctionService-Async] Auction " + auctionId + " canceled in DB by " + requesterId);
+                    System.out.println("[AuctionService-Async] Auction " + auctionId + " canceled in DB by " + requesterId + ". Reason: " + reason);
                 }
             } catch (SQLException e) {
                 System.err.println("[AuctionService-Async] Error canceling auction in DB: " + e.getMessage());

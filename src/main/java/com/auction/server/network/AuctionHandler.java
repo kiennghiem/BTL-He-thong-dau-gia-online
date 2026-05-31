@@ -71,12 +71,32 @@ public class AuctionHandler implements AuctionObserver {
             handleCreateAuction(req);
             return true;
         }
+        if (message instanceof ApproveAuctionRequest req) {
+            handleApproveAuction(req);
+            return true;
+        }
         if (message instanceof GetActiveAuctionsRequest req) {
             handleGetActiveAuctions(req);
             return true;
         }
 
         return false;
+    }
+
+    private void handleApproveAuction(ApproveAuctionRequest req) {
+        try {
+            // Check if user is admin
+            if (currentUser == null || currentUser.getRole() != com.auction.server.factory.UserRole.ADMIN) {
+                sendResponse(new GenericResponse(false, "Bạn không có quyền duyệt phiên đấu giá!"));
+                return;
+            }
+
+            auctionService.approveAuction(req.getAuctionId(), req.getAdminId());
+            sendResponse(new GenericResponse(true, "Duyệt phiên đấu giá thành công!"));
+            System.out.println("[AuctionHandler] Auction approved: " + req.getAuctionId() + " by admin " + req.getAdminId());
+        } catch (Exception e) {
+            sendResponse(new GenericResponse(false, "Lỗi duyệt đấu giá: " + e.getMessage()));
+        }
     }
 
     private void handleEndAuctionEarly(EndAuctionEarlyRequest req) {
@@ -162,9 +182,13 @@ public class AuctionHandler implements AuctionObserver {
                 return;
             }
 
-            auctionService.cancelAuction(req.getAuctionId(), currentUser.getId());
+            String reason = req.getReason();
+            auctionService.cancelAuction(req.getAuctionId(), currentUser.getId(), reason);
             sendResponse(new GenericResponse(true, "Hủy phiên đấu giá thành công!"));
-            System.out.println("[AuctionHandler] Auction canceled: " + req.getAuctionId() + " by " + currentUser.getId());
+            
+            // Broadcast a status change with reason in the status field if needed, 
+            // but the Notification object is general. AuctionUpdateDTO might need a status extension.
+            System.out.println("[AuctionHandler] Auction canceled: " + req.getAuctionId() + " by " + currentUser.getId() + ". Reason: " + reason);
         } catch (Exception e) {
             sendResponse(new GenericResponse(false, "Lỗi hủy đấu giá: " + e.getMessage()));
         }
@@ -198,7 +222,9 @@ public class AuctionHandler implements AuctionObserver {
         }
         BigDecimal currentPrice = (auction.getCurrentPrice() != null) ? auction.getCurrentPrice() : BigDecimal.ZERO;
         return new AuctionUpdateDTO(
-                auction.getId(), currentPrice, bidderId, bidderName,
+                auction.getId(),
+                auction.getTitle(),
+                currentPrice, bidderId, bidderName,
                 auction.getClosingTimeMillis(),
                 auction.getStatus() != null ? auction.getStatusAsString() : "OPEN"
         );

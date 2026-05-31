@@ -9,6 +9,7 @@ import java.math.BigDecimal;
 public class AuctionUpdateDTO implements NetworkMessage {
     // Encapsulation: Private fields for the updated auction state
     private final String auctionId;
+    private final String auctionTitle;
     private final BigDecimal currentHighestBid;
     private final String leadingBidderId;
     private final String leadingBidderName;
@@ -18,10 +19,11 @@ public class AuctionUpdateDTO implements NetworkMessage {
     /**
      * Constructor for the broadcast message.
      */
-    public AuctionUpdateDTO(String auctionId, BigDecimal currentHighestBid,
+    public AuctionUpdateDTO(String auctionId, String auctionTitle, BigDecimal currentHighestBid,
                             String leadingBidderId, String leadingBidderName,
                             long endTimeMillis, String status) {
         this.auctionId = auctionId;
+        this.auctionTitle = auctionTitle;
         this.currentHighestBid = currentHighestBid;
         this.leadingBidderId = leadingBidderId;
         this.leadingBidderName = leadingBidderName;
@@ -33,6 +35,10 @@ public class AuctionUpdateDTO implements NetworkMessage {
 
     public String getAuctionId() {
         return auctionId;
+    }
+
+    public String getAuctionTitle() {
+        return auctionTitle;
     }
 
     public BigDecimal getCurrentHighestBid() {

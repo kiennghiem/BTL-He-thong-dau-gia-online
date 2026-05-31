@@ -31,6 +31,7 @@ public class AuctionDetailController {
     @FXML private Label lblStatus;
     @FXML private Label lblEndTime;
     @FXML private Button btnCancel;
+    @FXML private Button btnApprove;
 
     private Auction currentAuction;
     private static final DateTimeFormatter FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
@@ -59,15 +60,41 @@ public class AuctionDetailController {
 
             User currentUser = SessionManager.getInstance().getCurrentUser();
             if (currentUser != null && currentUser.getRole() == UserRole.ADMIN) {
+                // Admin can Cancel any auction that is not already canceled/finished
                 btnCancel.setVisible(true);
                 btnCancel.setManaged(true);
-                btnCancel.setDisable(auction.getStatus() == AuctionStatus.CANCELED);
+                btnCancel.setDisable(auction.getStatus() == AuctionStatus.CANCELED || auction.getStatus() == AuctionStatus.FINISHED);
+
+                // Admin can Approve only PENDING auctions
+                boolean isPending = auction.getStatus() == AuctionStatus.PENDING;
+                btnApprove.setVisible(isPending);
+                btnApprove.setManaged(isPending);
             } else {
                 btnCancel.setVisible(false);
                 btnCancel.setManaged(false);
+                btnApprove.setVisible(false);
+                btnApprove.setManaged(false);
             }
         } catch (Exception e) {
             logger.error("Error updating Detail UI", e);
+        }
+    }
+
+    @FXML
+    private void handleApproveAuction(ActionEvent event) {
+        if (currentAuction == null) return;
+
+        User currentUser = SessionManager.getInstance().getCurrentUser();
+        if (currentUser != null && currentUser.getRole() == UserRole.ADMIN) {
+            com.auction.models.dto.ApproveAuctionRequest request = 
+                new com.auction.models.dto.ApproveAuctionRequest(currentAuction.getId(), currentUser.getId());
+            ClientManager.getInstance().sendRequest(request);
+
+            // Immediate local feedback
+            lblStatus.setText("Status: OPEN (Approved)");
+            btnApprove.setVisible(false);
+            btnApprove.setManaged(false);
+            logger.info("Admin approved auction: {}", currentAuction.getId());
         }
     }
 
@@ -77,13 +104,26 @@ public class AuctionDetailController {
         
         User currentUser = SessionManager.getInstance().getCurrentUser();
         if (currentUser != null && currentUser.getRole() == UserRole.ADMIN) {
-            CancelAuctionRequest request = new CancelAuctionRequest(currentAuction.getId(), currentUser.getId());
-            ClientManager.getInstance().sendRequest(request);
-            
-            // Immediate local feedback
-            lblStatus.setText("Status: CANCELED");
-            btnCancel.setDisable(true);
-            logger.info("Admin canceled auction: {}", currentAuction.getId());
+            // Show dialog to input reason
+            javafx.scene.control.TextInputDialog dialog = new javafx.scene.control.TextInputDialog();
+            dialog.setTitle("Hủy phiên đấu giá");
+            dialog.setHeaderText("Lý do hủy phiên đấu giá: " + currentAuction.getTitle());
+            dialog.setContentText("Vui lòng nhập lý do:");
+
+            dialog.showAndWait().ifPresent(reason -> {
+                if (reason.trim().isEmpty()) {
+                    ControllerUtils.showError("Lỗi", "Lý do không được để trống!");
+                    return;
+                }
+
+                CancelAuctionRequest request = new CancelAuctionRequest(currentAuction.getId(), currentUser.getId(), reason);
+                ClientManager.getInstance().sendRequest(request);
+                
+                // Immediate local feedback
+                lblStatus.setText("Status: CANCELED");
+                btnCancel.setDisable(true);
+                logger.info("Admin canceled auction: {} for reason: {}", currentAuction.getId(), reason);
+            });
         }
     }
 

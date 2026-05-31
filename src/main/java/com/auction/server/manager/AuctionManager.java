@@ -130,6 +130,32 @@ public class AuctionManager {
     }
 
     /**
+     * Approves a pending auction (Admin functionality).
+     */
+    public void approveAuction(String auctionId) throws AuctionNotFoundException {
+        Auction auction = activeAuctions.get(auctionId);
+        if (auction == null) {
+            throw new AuctionNotFoundException("Auction with ID " + auctionId + " not found.");
+        }
+
+        synchronized (auction) {
+            try {
+                auction.updateStatus(AuctionStatus.OPEN);
+                logger.info("[INFO] Auction {} approved by Admin.", auctionId);
+
+                // Notify about status change
+                broadcastNotification(new Notification(
+                        Notification.Type.STATUS_CHANGED,
+                        auctionId,
+                        createUpdateDTO(auction)
+                ));
+            } catch (Exception e) {
+                logger.error("[ERROR] Failed to approve auction {}: {}", auctionId, e.getMessage(), e);
+            }
+        }
+    }
+
+    /**
      * Ends an auction early (Seller functionality).
      */
     public void endAuctionEarly(String auctionId) throws AuctionNotFoundException {
@@ -192,10 +218,13 @@ public class AuctionManager {
         scheduler.scheduleAtFixedRate(() -> {
             LocalDateTime now = LocalDateTime.now();
             for (Auction auction : activeAuctions.values()) {
+                Notification notification = null;
                 synchronized (auction) {
                     try {
                         AuctionStatus oldStatus = auction.getStatus();
-                        
+                        if (oldStatus == AuctionStatus.PENDING) {
+                            continue; // Skip pending auctions until admin approval
+                        }
                         if (oldStatus == AuctionStatus.OPEN && now.isAfter(auction.getStartTime())) {
                             auction.updateStatus(AuctionStatus.RUNNING);
                             broadcastNotification(new Notification(
@@ -244,6 +273,7 @@ public class AuctionManager {
         
         return new AuctionUpdateDTO(
                 auction.getId(),
+                auction.getTitle(),
                 currentPrice,
                 bidderId,
                 bidderName,

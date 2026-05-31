@@ -65,17 +65,21 @@
         <Label text="Start Date:" GridPane.rowIndex="5" GridPane.columnIndex="0">
             <font><Font size="16.0"/></font>
         </Label>
-        <HBox spacing="10.0" GridPane.rowIndex="5" GridPane.columnIndex="1">
+        <HBox spacing="10.0" alignment="CENTER_LEFT" GridPane.rowIndex="5" GridPane.columnIndex="1">
             <DatePicker fx:id="dpStartDate" prefHeight="35.0" HBox.hgrow="ALWAYS" maxWidth="Infinity"/>
-            <ComboBox fx:id="cbStartHour" prefHeight="35.0" prefWidth="90.0" promptText="Hour"/>
+            <TextField fx:id="txtStartHour" prefHeight="35.0" prefWidth="50.0" promptText="HH"/>
+            <Label text=":"/>
+            <TextField fx:id="txtStartMinute" prefHeight="35.0" prefWidth="50.0" promptText="mm"/>
         </HBox>
 
         <Label text="End Date:" GridPane.rowIndex="6" GridPane.columnIndex="0">
             <font><Font size="16.0"/></font>
         </Label>
-        <HBox spacing="10.0" GridPane.rowIndex="6" GridPane.columnIndex="1">
+        <HBox spacing="10.0" alignment="CENTER_LEFT" GridPane.rowIndex="6" GridPane.columnIndex="1">
             <DatePicker fx:id="dpEndDate" prefHeight="35.0" HBox.hgrow="ALWAYS" maxWidth="Infinity"/>
-            <ComboBox fx:id="cbEndHour" prefHeight="35.0" prefWidth="90.0" promptText="Hour"/>
+            <TextField fx:id="txtEndHour" prefHeight="35.0" prefWidth="50.0" promptText="HH"/>
+            <Label text=":"/>
+            <TextField fx:id="txtEndMinute" prefHeight="35.0" prefWidth="50.0" promptText="mm"/>
         </HBox>
     </GridPane>
 
