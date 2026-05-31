@@ -231,6 +231,9 @@ public class AuctionDAOImpl extends BaseDAO implements AuctionDAO {
         auction.setId(rs.getString("id"));
         Item item = itemDao.findById(rs.getString("item_id"));
         auction.setItem(item);
+        if (item != null) {
+            auction.setSeller(item.getOwner());
+        }
         String statusStr = rs.getString("status");
         auction.setStatus(AuctionStatus.valueOf(statusStr));
         auction.setTitle(rs.getString("title"));

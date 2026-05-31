@@ -92,48 +92,62 @@ public class AuctionService {
      * Creates a new auction (Seller functionality).
      */
     public boolean createAuction(ItemType type, String name, String desc, BigDecimal startingPrice,
-                                 String specAttr, Seller seller, LocalDateTime start,
+                                 String specAttr, String sellerUsername, LocalDateTime start,
                                  LocalDateTime end) {
+
+        User user = DAOFactory.getUserDAO().findByUsername(sellerUsername);
+        if (user == null) {
+            throw new RuntimeException("User not found: " + sellerUsername);
+        }
+        if (!(user instanceof Seller seller)) {
+            throw new RuntimeException("User " + sellerUsername + " is not a seller (Role: " + user.getRoleAsString() + ")");
+        }
 
         Item item = ItemFactory.createNewItem(type, name, desc, startingPrice, specAttr, seller);
 
-        // 3. FIX: Simplified Seller initialization using imported classes
-        Seller commonSeller = new Seller();
-        commonSeller.setUsername(seller.getUsername());
-        item.setOwner(commonSeller);
-
-        // 4. Create Auction object
+        // Create Auction object
         Auction auction = new Auction();
         auction.setId(UUID.randomUUID().toString());
         auction.setItem(item);
+        auction.setSeller(seller);
         auction.setTitle(name);
         auction.setDescription(desc);
         auction.setStartingPrice(startingPrice);
         auction.setCurrentPrice(startingPrice);
         auction.setStartTime(start);
         auction.setEndTime(end);
-        auction.setStatus(AuctionStatus.RUNNING);
-
-        // 5. Persist both sequentially to Database
-        boolean itemSaved = itemDAO.addItem(item);
-        boolean auctionSaved = false;
-
-        if (itemSaved) {
-            try {
-                auctionSaved = auctionDAO.insert(auction);
-            } catch (SQLException e) {
-                System.err.println("[AuctionService] Failed to insert auction entity mapping: " + e.getMessage());
-            }
+        
+        // Decide status based on time
+        LocalDateTime now = LocalDateTime.now();
+        if (now.isAfter(start) && now.isBefore(end)) {
+            auction.setStatus(AuctionStatus.RUNNING);
+        } else if (now.isBefore(start)) {
+            auction.setStatus(AuctionStatus.OPEN);
+        } else {
+            auction.setStatus(AuctionStatus.FINISHED);
         }
 
-        if (itemSaved && auctionSaved) {
-            // 6. Add to Real-time Manager
+        // Persist both sequentially to Database
+        boolean itemSaved = itemDAO.addItem(item);
+        if (!itemSaved) {
+            throw new RuntimeException("Failed to save Item to database.");
+        }
+
+        boolean auctionSaved = false;
+        try {
+            auctionSaved = auctionDAO.insert(auction);
+        } catch (SQLException e) {
+            throw new RuntimeException("Failed to save Auction to database: " + e.getMessage(), e);
+        }
+
+        if (auctionSaved) {
+            // Add to Real-time Manager
             auctionManager.addAuction(auction);
             System.out.println("[AuctionService] New auction created: " + auction.getId());
             return true;
         }
 
-        return false;
+        throw new RuntimeException("Auction DAO insert returned false without error.");
     }
 
     /**
@@ -141,13 +155,20 @@ public class AuctionService {
      * Should be called when the Server starts.
      */
     public void loadActiveAuctions() {
-        System.out.println("[AuctionService] Loading active auctions from database...");
+        System.out.println("[AuctionService] Loading active and upcoming auctions from database...");
         try {
-            List<Auction> activeAuctions = auctionDAO.findByStatus(AuctionStatus.RUNNING);
-            for (Auction auction : activeAuctions) {
+            // Load both RUNNING and OPEN auctions
+            List<Auction> running = auctionDAO.findByStatus(AuctionStatus.RUNNING);
+            List<Auction> upcoming = auctionDAO.findByStatus(AuctionStatus.OPEN);
+            
+            for (Auction auction : running) {
                 auctionManager.addAuction(auction);
             }
-            System.out.println("[AuctionService] Successfully loaded " + activeAuctions.size() + " auctions into memory.");
+            for (Auction auction : upcoming) {
+                auctionManager.addAuction(auction);
+            }
+            
+            System.out.println("[AuctionService] Successfully loaded " + (running.size() + upcoming.size()) + " auctions into memory.");
         } catch (SQLException e) {
             System.err.println("[AuctionService] Failed to load active auctions from DB: " + e.getMessage());
         }

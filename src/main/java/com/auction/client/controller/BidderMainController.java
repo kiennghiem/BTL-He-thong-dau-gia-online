@@ -3,6 +3,7 @@ package com.auction.client.controller;
 import com.auction.client.network.ClientManager;
 import com.auction.client.util.SessionManager;
 import com.auction.models.Auction;
+import com.auction.models.Notification;
 import com.auction.models.User;
 import com.auction.models.dto.AuthResponse;
 import com.auction.models.dto.LogoutRequest;
@@ -17,7 +18,7 @@ import javafx.stage.Stage;
 import java.io.IOException;
 import java.util.function.Consumer;
 
-public class SellerMainController {
+public class BidderMainController {
 
     @FXML
     private BorderPane mainBorderPane;
@@ -46,30 +47,32 @@ public class SellerMainController {
     }
 
     @FXML
-    private void handleShowMyAuctions(ActionEvent event) {
-        loadView("AuctionList.fxml", true);
-    }
-
-    @FXML
-    private void handleShowCreateAuction(ActionEvent event) {
-        loadView("SellerCreateAuction.fxml", false);
+    private void handleShowMyBids(ActionEvent event) {
+        // For now, reuse AuctionList but maybe with a different filter
+        // In the future, "My Bids" could show auctions where user has active bids
+        loadView("AuctionList.fxml", true); 
     }
 
     @FXML
     private void handleLogout(ActionEvent event) {
-        LogoutRequest logoutRequest = new LogoutRequest(currentUser.getUsername());
-        ClientManager.getInstance().sendRequest(logoutRequest);
+        if (currentUser != null) {
+            LogoutRequest logoutRequest = new LogoutRequest(currentUser.getUsername());
+            ClientManager.getInstance().sendRequest(logoutRequest);
+        } else {
+            // If session is already lost, just go to login
+            Stage stage = (Stage) mainBorderPane.getScene().getWindow();
+            ControllerUtils.changeScene(stage, "Login.fxml");
+        }
     }
 
-    public void loadView(String fxmlFile, boolean myAuctionsMode) {
+    public void loadView(String fxmlFile, boolean myMode) {
         try {
             FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/auction/client/view/" + fxmlFile));
             Parent view = loader.load();
             
-            // If it's the AuctionList, set the mode
             if (fxmlFile.equals("AuctionList.fxml")) {
                 AuctionListController controller = loader.getController();
-                controller.setMyAuctionsMode(myAuctionsMode);
+                controller.setMyAuctionsMode(myMode);
                 controller.setOnAuctionSelected(this::handleAuctionSelected);
             }
             
@@ -97,9 +100,6 @@ public class SellerMainController {
 
     private void handleAuthResponse(AuthResponse response) {
         if (response.isSuccess()) {
-            System.out.println("[LOGOUT] Success: " + response.getMessage());
-
-            // Clean up listener and clear session with the current user
             ClientManager.getInstance().removeMessageListener(responseListener);
             SessionManager.getInstance().clearSession();
 

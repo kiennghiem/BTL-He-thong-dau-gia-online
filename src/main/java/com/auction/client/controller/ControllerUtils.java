@@ -32,6 +32,8 @@ public final class ControllerUtils {
             Parent root = loader.load();
             Scene scene = new Scene(root);
             stage.setScene(scene);
+            stage.sizeToScene();
+            stage.centerOnScreen();
             stage.show();
         }
         catch (IOException e) {

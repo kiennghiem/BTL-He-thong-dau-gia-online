@@ -26,7 +26,7 @@ public class AuctionApp extends Application {
             // We can continue, ClientManager will try to reconnect when sending first request
         }
 
-        Parent root = FXMLLoader.load(getClass().getResource("client/view/Login.fxml"));
+        Parent root = FXMLLoader.load(getClass().getResource("/com/auction/client/view/Login.fxml"));
         Scene scene = new Scene(root);
 
         stage.setTitle("Online Auction system!");

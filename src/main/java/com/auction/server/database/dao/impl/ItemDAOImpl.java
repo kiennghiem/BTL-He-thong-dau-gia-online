@@ -37,8 +37,8 @@ public class ItemDAOImpl extends BaseDAO implements ItemDAO {
 
     @Override
     public boolean addItem(Item item) {
-        String sql = "INSERT INTO items (id, item_type, item_name, description, startingPrice, currentPrice," +
-                     "special_attribute, owner_id, buyer_id" +
+        String sql = "INSERT INTO items (id, item_type, item_name, description, starting_price, current_price, " +
+                     "special_attribute, owner_id, buyer_id) " +
                      "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
         try (Connection conn = getConnection();
@@ -52,37 +52,35 @@ public class ItemDAOImpl extends BaseDAO implements ItemDAO {
             pstmt.setBigDecimal(6, item.getCurrentPrice());
             pstmt.setString(7, item.getSpecialAttribute());
             pstmt.setString(8, item.getOwner().getId());
-            pstmt.setString(9, item.getBuyer() != null? item.getBuyer().getId() : null);
+            pstmt.setString(9, item.getBuyer() != null ? item.getBuyer().getId() : null);
 
             return pstmt.executeUpdate() > 0;
         } catch (SQLException e) {
-            e.printStackTrace();
-            return false;
+            throw new com.auction.exceptions.DatabaseException("SQL Error adding Item: " + e.getMessage(), e);
         }
     }
 
     @Override
     public boolean updateItem(Item item) {
-        String sql = "UPDATE items SET item_name = ?, description = ?, startingPrice = ?, currentPrice = ?," +
-                     "special_attribute, owner_id = ?, buyer_id = ? WHERE id = ?";
+        String sql = "UPDATE items SET item_type = ?, item_name = ?, description = ?, starting_price = ?, current_price = ?, " +
+                     "special_attribute = ?, owner_id = ?, buyer_id = ? WHERE id = ?";
 
         try (Connection conn = getConnection();
              PreparedStatement pstmt = conn.prepareStatement(sql)) {
 
-            pstmt.setString(1, item.getItemName());
-            pstmt.setString(2, item.getDescription());
-            pstmt.setBigDecimal(3, item.getStartingPrice());
-            pstmt.setBigDecimal(4, item.getCurrentPrice());
-            pstmt.setString(5, item.getSpecialAttribute());
-            pstmt.setString(6, item.getOwner().getId());
-            pstmt.setString(7, item.getBuyer() != null? item.getBuyer().getId() : null);
-
-            pstmt.setString(8, item.getId());
+            pstmt.setString(1, item.getTypeAsString());
+            pstmt.setString(2, item.getItemName());
+            pstmt.setString(3, item.getDescription());
+            pstmt.setBigDecimal(4, item.getStartingPrice());
+            pstmt.setBigDecimal(5, item.getCurrentPrice());
+            pstmt.setString(6, item.getSpecialAttribute());
+            pstmt.setString(7, item.getOwner().getId());
+            pstmt.setString(8, item.getBuyer() != null ? item.getBuyer().getId() : null);
+            pstmt.setString(9, item.getId());
 
             return pstmt.executeUpdate() > 0;
         } catch (SQLException e) {
-            e.printStackTrace();
-            return false;
+            throw new com.auction.exceptions.DatabaseException("SQL Error updating Item: " + e.getMessage(), e);
         }
     }
 

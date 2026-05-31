@@ -85,11 +85,15 @@ public class Auction extends Entity {
     }
 
     public Seller getSeller() {
+        if (seller == null && item != null) {
+            return item.getOwner();
+        }
         return seller;
     }
 
     public String getSellerId() {
-        return seller.getId();
+        Seller s = getSeller();
+        return s != null ? s.getId() : null;
     }
 
     public void setSeller(Seller seller) {
@@ -105,7 +109,7 @@ public class Auction extends Entity {
     }
 
     public String getHighestBidderId() {
-        return highestBid.getBidderId();
+        return highestBid != null ? highestBid.getBidderId() : null;
     }
 
     public String getTitle() {
@@ -162,7 +166,7 @@ public class Auction extends Entity {
     }
 
     public String getStatusAsString() {
-        return status.toString();
+        return status != null ? status.toString() : "OPEN";
     }
 
     public void setStatus(AuctionStatus status) {

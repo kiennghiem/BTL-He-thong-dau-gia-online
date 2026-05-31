@@ -1,20 +1,26 @@
 package com.auction.client.controller;
 
+import com.auction.client.network.ClientManager;
 import com.auction.client.util.SessionManager;
 import com.auction.models.User;
 import com.auction.models.dto.CreateAuctionRequest;
-import com.auction.server.factory.UserRole;
+import com.auction.models.dto.GenericResponse;
+import com.auction.server.factory.ItemType;
+import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.scene.control.*;
+import javafx.stage.Stage;
+
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.util.function.Consumer;
 
-public class SellerCreateAuctionController {
+public class CreateAuctionController {
 
     @FXML private TextField txtTitle;
     @FXML private TextArea txtDescription;
@@ -26,7 +32,7 @@ public class SellerCreateAuctionController {
     @FXML private Button btnCancel;
     @FXML private Button btnSubmit;
 
-    private User currentSeller = SessionManager.getInstance().getCurrentUser();
+    private Consumer<Object> responseListener;
 
     @FXML
     public void initialize() {
@@ -43,6 +49,23 @@ public class SellerCreateAuctionController {
         cbStartHour.getSelectionModel().select("12:00");
         dpEndDate.setValue(LocalDate.now().plusDays(3));
         cbEndHour.getSelectionModel().select("12:00");
+
+        // Register listener for server responses
+        responseListener = msg -> {
+            if (msg instanceof GenericResponse response) {
+                Platform.runLater(() -> {
+                    if (response.isSuccess()) {
+                        showAlert(Alert.AlertType.INFORMATION, "Success", response.getMessage());
+                        // Cleanup listener and navigate back only on success
+                        ClientManager.getInstance().removeMessageListener(responseListener);
+                        navigateBack(null); 
+                    } else {
+                        showAlert(Alert.AlertType.ERROR, "Error", response.getMessage());
+                    }
+                });
+            }
+        };
+        ClientManager.getInstance().addMessageListener(responseListener);
     }
 
     @FXML
@@ -80,23 +103,37 @@ public class SellerCreateAuctionController {
             return;
         }
 
-        // TODO: Call your Client-Side Service or Network Manager here to send the request to the server
+        // Create the request
+        User currentUser = SessionManager.getInstance().getCurrentUser();
+        // Fix: Call constructor with 8 arguments (removed the extra BigDecimal)
+        CreateAuctionRequest request = new CreateAuctionRequest(
+                currentUser.getUsername(),
+                ItemType.ELECTRONICS, // Defaulting for now
+                title,
+                description,
+                startingPrice,
+                "General",      // specificAttribute
+                startDateTime,
+                endDateTime
+        );
 
-        System.out.println("Submitting Auction: " + title + " | $" + startingPrice);
-
-        showAlert(Alert.AlertType.INFORMATION, "Success", "Auction created successfully!");
-
-        // Go back to the correct view
-        navigateBack(event);
+        // Send to server
+        ClientManager.getInstance().sendRequest(request);
     }
 
     @FXML
     public void handleCancel(ActionEvent event) {
+        ClientManager.getInstance().removeMessageListener(responseListener);
         navigateBack(event);
     }
 
     private void navigateBack(ActionEvent event) {
-        ControllerUtils.changeScene(event, "SellerMainView.fxml");
+        if (event != null) {
+            ControllerUtils.changeScene(event, "SellerMainView.fxml");
+        } else {
+            Stage stage = (Stage) btnSubmit.getScene().getWindow();
+            ControllerUtils.changeScene(stage, "SellerMainView.fxml");
+        }
     }
 
     private void showAlert(Alert.AlertType type, String title, String content) {
