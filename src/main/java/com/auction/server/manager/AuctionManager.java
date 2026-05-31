@@ -167,12 +167,20 @@ public class AuctionManager {
      * Helper to create a standardized DTO for network transmission.
      */
     private AuctionUpdateDTO createUpdateDTO(Auction auction) {
-        String bidderName = (auction.getHighestBid() != null) ? auction.getHighestBid().getBidderId() : "None";
+        String bidderId = "None";
+        String bidderName = "None";
+        
+        if (auction.getHighestBid() != null) {
+            bidderId = auction.getHighestBid().getBidderId();
+            bidderName = auction.getHighestBid().getBidderName();
+        }
+        
         BigDecimal currentPrice = (auction.getCurrentPrice() != null) ? auction.getCurrentPrice() : BigDecimal.ZERO;
         
         return new AuctionUpdateDTO(
                 auction.getId(),
                 currentPrice,
+                bidderId,
                 bidderName,
                 auction.getClosingTimeMillis(),
                 auction.getStatus() != null ? auction.getStatusAsString() : AuctionStatus.OPEN.toString()

@@ -15,16 +15,18 @@ public class BidTransaction implements NetworkMessage {
     private final String id;
     private final String itemId;
     private final String bidderId;
-    private final BigDecimal bidAmount; // Đổi sang BigDecimal để đồng bộ với DAO
+    private final String bidderName; // Added for UI display
+    private final BigDecimal bidAmount;
     private final LocalDateTime timestamp;
 
     /**
      * Constructor used by the Server after a BidRequest is validated.
      */
-    public BidTransaction(String itemId, String bidderId, BigDecimal bidAmount) {
+    public BidTransaction(String itemId, String bidderId, String bidderName, BigDecimal bidAmount) {
         this.id = UUID.randomUUID().toString();
         this.itemId = itemId;
         this.bidderId = bidderId;
+        this.bidderName = bidderName;
         this.bidAmount = bidAmount;
         this.timestamp = LocalDateTime.now();
     }
@@ -32,12 +34,18 @@ public class BidTransaction implements NetworkMessage {
     /**
      * Overloaded constructor for the DAO when loading from the Database.
      */
-    public BidTransaction(String id, String itemId, String bidderId, BigDecimal bidAmount, LocalDateTime timestamp) {
+    public BidTransaction(String id, String itemId, String bidderId, String bidderName, BigDecimal bidAmount, LocalDateTime timestamp) {
         this.id = id;
         this.itemId = itemId;
         this.bidderId = bidderId;
+        this.bidderName = bidderName;
         this.bidAmount = bidAmount;
         this.timestamp = timestamp;
+    }
+
+    // Constructor backward compatibility (internal use only)
+    public BidTransaction(String itemId, String bidderId, BigDecimal bidAmount) {
+        this(itemId, bidderId, bidderId, bidAmount);
     }
 
     // --- Getters for DAO and JavaFX Charts ---
@@ -52,6 +60,10 @@ public class BidTransaction implements NetworkMessage {
 
     public String getBidderId() {
         return bidderId;
+    }
+
+    public String getBidderName() {
+        return bidderName;
     }
 
     public BigDecimal getBidAmount() {

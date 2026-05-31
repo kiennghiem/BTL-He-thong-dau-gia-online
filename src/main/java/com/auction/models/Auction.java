@@ -77,7 +77,7 @@ public class Auction extends Entity {
     }
 
     public String getItemId() {
-        return item.getId();
+        return item != null ? item.getId() : null;
     }
 
     public void setItem(Item item) {
@@ -104,8 +104,16 @@ public class Auction extends Entity {
         return highestBid;
     }
 
+    public void setHighestBid(BidTransaction highestBid) {
+        this.highestBid = highestBid;
+    }
+
     public List<BidTransaction> getBidHistory() {
         return bidHistory;
+    }
+
+    public void setBidHistory(List<BidTransaction> bidHistory) {
+        this.bidHistory = bidHistory;
     }
 
     public String getHighestBidderId() {

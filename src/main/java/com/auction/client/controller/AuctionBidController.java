@@ -54,6 +54,7 @@ public class AuctionBidController {
     public void setAuction(Auction auction) {
         this.currentAuction = auction;
         if (auction.getBidHistory() != null) {
+            // Sort ascending for the chart, but Table uses bidHistory (descending usually handled by add(0, ...))
             bidHistory.setAll(auction.getBidHistory());
         }
         updateUI();
@@ -63,18 +64,25 @@ public class AuctionBidController {
     @FXML
     public void initialize() {
         // Setup table columns
-        colBidder.setCellValueFactory(new PropertyValueFactory<>("bidderId"));
+        colBidder.setCellValueFactory(new PropertyValueFactory<>("bidderName"));
         colAmount.setCellValueFactory(new PropertyValueFactory<>("bidAmount"));
         colTime.setCellValueFactory(new PropertyValueFactory<>("timestamp"));
         bidTable.setItems(bidHistory);
 
+        // Optimize Chart Scaling
+        yAxis.setForceZeroInRange(false); // Don't force 0, zoom into the price range
+        yAxis.setAutoRanging(true);      // Let it adjust automatically
+        
         priceSeries = new XYChart.Series<>();
-        priceSeries.setName("Price Trend");
+        priceSeries.setName("Price Trend ($)");
         priceChart.getData().add(priceSeries);
+        priceChart.setCreateSymbols(true); // Show dots on points
+        priceChart.setAnimated(false);    // Disable animation for better stability with updates
 
         messageListener = msg -> {
             if (msg instanceof Notification notification) {
-                if (notification.getAuctionId().equals(currentAuction.getId())) {
+                // Logic updated to be more robust
+                if (currentAuction != null && notification.getAuctionId().equals(currentAuction.getId())) {
                     Platform.runLater(() -> handleNotification(notification));
                 }
             }
@@ -88,17 +96,55 @@ public class AuctionBidController {
         lblStatus.setText(currentAuction.getStatusAsString());
         lblCurrentPrice.setText("$" + currentAuction.getCurrentPrice().toString());
         
-        String bidder = (currentAuction.getHighestBid() != null) 
-                        ? currentAuction.getHighestBid().getBidderId() 
-                        : "None";
-        lblHighestBidder.setText("Highest Bidder: " + bidder);
+        User currentUser = SessionManager.getInstance().getCurrentUser();
+        String currentUserId = (currentUser != null) ? currentUser.getId() : "";
+        
+        String bidderId = currentAuction.getHighestBidderId();
+        
+        if (bidderId == null || bidderId.equalsIgnoreCase("None")) {
+            lblHighestBidder.setText("Highest Bidder: None");
+            lblCurrentPrice.setStyle("-fx-text-fill: black;"); // Neutral
+        } else {
+            // Check if highest bid object exists to avoid NPE
+            String name = (currentAuction.getHighestBid() != null) ? currentAuction.getHighestBid().getBidderName() : bidderId;
+            lblHighestBidder.setText("Highest Bidder: " + name);
+            
+            if (bidderId.equals(currentUserId)) {
+                lblCurrentPrice.setStyle("-fx-text-fill: #27ae60; -fx-font-weight: bold;"); // Green if leading
+            } else {
+                lblCurrentPrice.setStyle("-fx-text-fill: #e74c3c; -fx-font-weight: bold;"); // Red if outbid
+            }
+        }
         
         lblTimeRemaining.setText("End Time: " + currentAuction.getEndTime().format(TIME_FORMATTER));
     }
 
     private void setupChart() {
-        String now = LocalDateTime.now().format(TIME_FORMATTER);
-        priceSeries.getData().add(new XYChart.Data<>(now, currentAuction.getCurrentPrice()));
+        if (currentAuction == null) return;
+        priceSeries.getData().clear();
+
+        // 1. Add Starting Price as first point
+        priceSeries.getData().add(new XYChart.Data<>(
+            currentAuction.getStartTime().format(TIME_FORMATTER), 
+            currentAuction.getStartingPrice()
+        ));
+
+        // 2. Add all bids from history (already sorted in chronological order from DB usually)
+        // If bidHistory is descending for the table, we need to sort it ascending here
+        java.util.List<BidTransaction> sortedHistory = new java.util.ArrayList<>(bidHistory);
+        sortedHistory.sort(java.util.Comparator.comparing(BidTransaction::getTimestamp));
+
+        for (BidTransaction bid : sortedHistory) {
+            priceSeries.getData().add(new XYChart.Data<>(
+                bid.getTimestamp().format(TIME_FORMATTER), 
+                bid.getBidAmount()
+            ));
+        }
+
+        // 3. Ensure current price is shown if it's different from last bid
+        if (priceSeries.getData().size() == 1) { // only starting price
+             // Initial state
+        }
     }
 
     @FXML
@@ -128,7 +174,6 @@ public class AuctionBidController {
             ClientManager.getInstance().sendRequest(bidRequest);
             
             tfBidAmount.clear();
-            // Feedback is handled via real-time Notification
         } catch (NumberFormatException e) {
             ControllerUtils.showAlert("Invalid amount! Please enter a numeric value.");
         }
@@ -136,36 +181,46 @@ public class AuctionBidController {
 
     private void handleNotification(Notification notification) {
         if (notification.getData() instanceof AuctionUpdateDTO update) {
-            // Update the in-memory auction object
+            if (currentAuction == null) return;
+
+            // 1. Sync local auction model state
             currentAuction.setCurrentPrice(update.getCurrentHighestBid());
+            currentAuction.setHighestBidderId(update.getLeadingBidderId());
+            
+            // Re-create the highest bid object so updateUI can access leading username
+            BidTransaction latestBid = new BidTransaction(
+                update.getAuctionId(), 
+                update.getLeadingBidderId(), 
+                update.getLeadingBidderName(), 
+                update.getCurrentHighestBid()
+            );
+            currentAuction.setHighestBid(latestBid);
+            
             try {
                 currentAuction.updateStatus(AuctionStatus.valueOf(update.getStatus()));
             } catch (Exception ignored) {}
 
-            String currentUserId = SessionManager.getInstance().getCurrentUser().getId();
-            boolean isLead = update.getLeadingBidderName().equals(currentUserId);
+            // 2. Refresh UI labels and colors
+            updateUI(); 
 
-            lblCurrentPrice.setText("$" + update.getCurrentHighestBid());
-            lblHighestBidder.setText("Highest Bidder: " + update.getLeadingBidderName());
-            lblStatus.setText(update.getStatus());
-
-            // Visual indicator for outbidding
-            if (!isLead) {
-                lblCurrentPrice.setStyle("-fx-text-fill: #e74c3c; -fx-font-weight: bold;"); // Red if outbid
-            } else {
-                lblCurrentPrice.setStyle("-fx-text-fill: #27ae60; -fx-font-weight: bold;"); // Green if leading
-            }
-
-            // If it's a new bid, add to table and chart
+            // 3. Specifically handle NEW BID event
             if (notification.getType() == Notification.Type.BID_PLACED) {
-                BidTransaction newBid = new BidTransaction(update.getAuctionId(), update.getLeadingBidderName(), update.getCurrentHighestBid());
-                bidHistory.add(0, newBid);
-
-                String time = LocalDateTime.now().format(TIME_FORMATTER);
-                priceSeries.getData().add(new XYChart.Data<>(time, update.getCurrentHighestBid()));
+                // Check if this bid is already in the table to prevent double-insert
+                boolean alreadyInList = bidHistory.stream().anyMatch(b -> 
+                    b.getBidAmount().compareTo(latestBid.getBidAmount()) == 0 && 
+                    b.getBidderId().equals(latestBid.getBidderId()));
                 
-                if (priceSeries.getData().size() > 15) {
-                    priceSeries.getData().remove(0);
+                if (!alreadyInList) {
+                    // Add to UI history list (at the top)
+                    bidHistory.add(0, latestBid);
+
+                    // Update trend chart
+                    String time = LocalDateTime.now().format(TIME_FORMATTER);
+                    priceSeries.getData().add(new XYChart.Data<>(time, update.getCurrentHighestBid()));
+                    
+                    if (priceSeries.getData().size() > 15) {
+                        priceSeries.getData().remove(0);
+                    }
                 }
             }
         }

@@ -67,7 +67,10 @@ public class AuctionService {
     public void placeBid(String auctionId, String bidderId, BigDecimal amount)
             throws InvalidBidException, AuctionNotFoundException {
 
-        BidTransaction bid = new BidTransaction(auctionId, bidderId, amount);
+        User bidder = DAOFactory.getUserDAO().findById(bidderId);
+        String bidderName = (bidder != null) ? bidder.getUsername() : bidderId;
+
+        BidTransaction bid = new BidTransaction(auctionId, bidderId, bidderName, amount);
         auctionManager.processBid(auctionId, bid);
 
         persistenceExecutor.submit(() -> {

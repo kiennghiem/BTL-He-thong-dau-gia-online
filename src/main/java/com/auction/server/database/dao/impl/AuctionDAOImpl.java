@@ -20,20 +20,20 @@ public class AuctionDAOImpl extends BaseDAO implements AuctionDAO {
     // QUẢN LÝ TẬP TRUNG TẤT CẢ CÁC CÂU LỆNH SQL CONSTANTS
     // =========================================================================
     private static final String SELECT_BASE =
-            "SELECT id, status, title, description, starting_price, current_price, start_time, end_time," +
-            "item_id, highest_bidder_id FROM auctions";
+            "SELECT id, status, title, description, startingPrice, currentPrice, startTime, endTime," +
+            "itemId, highestBidderId FROM auctions";
 
     private static final String SELECT_BY_ID = SELECT_BASE + " WHERE id = ?;";
-    private static final String SELECT_BY_ITEM_ID = SELECT_BASE + " WHERE item_id = ?;";
+    private static final String SELECT_BY_ITEM_ID = SELECT_BASE + " WHERE itemId = ?;";
     private static final String SELECT_ALL = SELECT_BASE + ";";
-    private static final String SELECT_BY_STATUS = SELECT_BASE + " WHERE status = ? ORDER BY end_time ASC;";
+    private static final String SELECT_BY_STATUS = SELECT_BASE + " WHERE status = ? ORDER BY endTime ASC;";
 
     private static final String INSERT_AUCTION =
-            "INSERT INTO auctions (id, status, title, description, starting_price, current_price," +
-            "start_time, end_time, item_id, highest_bidder_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?);";
+            "INSERT INTO auctions (id, status, title, description, startingPrice, currentPrice," +
+            "startTime, endTime, itemId, highestBidderId) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?);";
 
     private static final String UPDATE_AUCTION =
-            "UPDATE auctions SET title = ?, description = ?, start_time = ?, end_time = ? WHERE id = ?;";
+            "UPDATE auctions SET title = ?, description = ?, startTime = ?, endTime = ? WHERE id = ?;";
 
     private static final String UPDATE_STATUS =
             "UPDATE auctions SET status = ? WHERE id = ?;";
@@ -44,7 +44,7 @@ public class AuctionDAOImpl extends BaseDAO implements AuctionDAO {
      * Chỉ chấp nhận cập nhật giá mới cao hơn giá hiện tại, trạng thái đang chạy và thời gian chưa kết thúc.
      */
     private static final String PLACE_BID_ATOMIC =
-            "UPDATE auctions SET current_price = ?, highest_bidder_id = ? WHERE id = ? AND status = 'RUNNING' AND end_time > ? AND ? > current_price;";
+            "UPDATE auctions SET currentPrice = ?, highestBidderId = ? WHERE id = ? AND status = 'RUNNING' AND endTime > ? AND ? > currentPrice;";
 
     // =========================================================================
     // IMPLEMENTATION METHODS
@@ -195,11 +195,11 @@ public class AuctionDAOImpl extends BaseDAO implements AuctionDAO {
             LocalDateTime now = LocalDateTime.now();
 
             // Tham số gán cho câu lệnh UPDATE ... SET ... WHERE ...
-            stmt.setBigDecimal(1, newBidPrice);     // SET current_price = ?
-            stmt.setString(2, bidderId);           // SET highest_bidder_id = ?
+            stmt.setBigDecimal(1, newBidPrice);     // SET currentPrice = ?
+            stmt.setString(2, bidderId);           // SET highestBidderId = ?
             stmt.setString(3, auctionId);          // WHERE id = ?
-            stmt.setTimestamp(4, Timestamp.valueOf(now)); // AND end_time > ? (Kiểm tra hết hạn thực tế)
-            stmt.setBigDecimal(5, newBidPrice);     // AND ? > current_price (Chặn đứng mức giá cũ lỗi thời)
+            stmt.setTimestamp(4, Timestamp.valueOf(now)); // AND endTime > ? (Kiểm tra hết hạn thực tế)
+            stmt.setBigDecimal(5, newBidPrice);     // AND ? > currentPrice (Chặn đứng mức giá cũ lỗi thời)
 
             int rowsAffected = stmt.executeUpdate();
 
@@ -226,10 +226,11 @@ public class AuctionDAOImpl extends BaseDAO implements AuctionDAO {
      */
     private Auction mapRowToAuction(ResultSet rs) throws SQLException {
         ItemDAO itemDao = new ItemDAOImpl();
+        BidDAO bidDao = new BidDAOImpl();
 
         Auction auction = new Auction();
         auction.setId(rs.getString("id"));
-        Item item = itemDao.findById(rs.getString("item_id"));
+        Item item = itemDao.findById(rs.getString("itemId"));
         auction.setItem(item);
         if (item != null) {
             auction.setSeller(item.getOwner());
@@ -238,16 +239,19 @@ public class AuctionDAOImpl extends BaseDAO implements AuctionDAO {
         auction.setStatus(AuctionStatus.valueOf(statusStr));
         auction.setTitle(rs.getString("title"));
         auction.setDescription(rs.getString("description"));
-        auction.setStartingPrice(rs.getBigDecimal("starting_price"));
-        auction.setCurrentPrice(rs.getBigDecimal("current_price"));
-        auction.setHighestBidderId(rs.getString("highest_bidder_id"));
+        auction.setStartingPrice(rs.getBigDecimal("startingPrice"));
+        auction.setCurrentPrice(rs.getBigDecimal("currentPrice"));
+        auction.setHighestBidderId(rs.getString("highestBidderId"));
+
+        // Load full bid history
+        auction.setBidHistory(bidDao.getHistoryByItem(auction.getId()));
 
         // Chuyển đổi dữ liệu an toàn từ SQL Timestamp sang LocalDateTime của Java 8+
-        Timestamp startTs = rs.getTimestamp("start_time");
+        Timestamp startTs = rs.getTimestamp("startTime");
         if (startTs != null) {
             auction.setStartTime(startTs.toLocalDateTime());
         }
-        Timestamp endTs = rs.getTimestamp("end_time");
+        Timestamp endTs = rs.getTimestamp("endTime");
         if (endTs != null) {
             auction.setEndTime(endTs.toLocalDateTime());
         }
