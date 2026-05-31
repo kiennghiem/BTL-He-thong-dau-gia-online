@@ -13,7 +13,7 @@ public final class AppConstants {
      * 2. The friend changes "localhost" to the Host's IP address.
      * 3. The friend runs 'ClientLauncher.java'.
      */
-    public static final String SERVER_HOST = "localhost"; 
+    public static final String SERVER_HOST = "26.202.211.20";
     public static final int SERVER_PORT = 8080;           // Port for Socket communication
     // --- Auction Statuses (Lifecycle Management) ---
     // Matches the states: OPEN -> RUNNING -> FINISHED -> PAID/CANCELED

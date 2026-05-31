@@ -56,7 +56,7 @@ public class DepositController {
         try {
             BigDecimal amount = new BigDecimal(tfAmount.getText().trim());
             if (amount.compareTo(BigDecimal.ZERO) <= 0) {
-                ControllerUtils.showAlert("Amount must be positive.");
+                ControllerUtils.showAlert("Số tiền phải là số dương.");
                 return;
             }
 
@@ -64,7 +64,7 @@ public class DepositController {
             ClientManager.getInstance().sendRequest(request);
             logger.info("Sending virtual deposit request for {}: ${}", tfUsername.getText(), amount);
         } catch (NumberFormatException e) {
-            ControllerUtils.showAlert("Invalid amount. Please enter a valid number.");
+            ControllerUtils.showAlert("Số tiền không hợp lệ. Vui lòng nhập một con số hợp lệ.");
         }
     }
 

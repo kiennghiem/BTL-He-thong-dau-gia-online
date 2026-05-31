@@ -90,7 +90,7 @@ public class AuctionBidController {
         yAxis.setAutoRanging(true);
         
         priceSeries = new XYChart.Series<>();
-        priceSeries.setName("Price Trend ($)");
+        priceSeries.setName("Xu hướng giá ($)");
         priceChart.getData().add(priceSeries);
         priceChart.setCreateSymbols(true);
         priceChart.setAnimated(false);
@@ -184,7 +184,7 @@ public class AuctionBidController {
             paySection.setVisible(true);
             paySection.setManaged(true);
             paySection.setStyle("-fx-border-color: #3498db; -fx-background-color: #ebf5fb; -fx-padding: 15; -fx-border-width: 2; -fx-background-radius: 5; -fx-border-radius: 5;");
-            lblPayTitle.setText("This Item has been PAID.");
+            lblPayTitle.setText("Mặt hàng này đã được THANH TOÁN.");
             btnPay.setVisible(false);
             btnPay.setManaged(false);
         } else if (isFinished) {
@@ -200,18 +200,18 @@ public class AuctionBidController {
 
                 if (!within24h) {
                     btnPay.setDisable(true);
-                    btnPay.setText("Payment Expired (24h Passed)");
-                    lblPayTitle.setText("Time for payment has expired.");
+                    btnPay.setText("Thanh toán hết hạn (Đã quá 24h)");
+                    lblPayTitle.setText("Thời gian thanh toán đã hết hạn.");
                     lblPayTitle.setStyle("-fx-text-fill: #e74c3c;");
                 } else if (currentBalance.compareTo(currentAuction.getCurrentPrice()) >= 0) {
                     btnPay.setDisable(false);
-                    btnPay.setText("Pay for Item ($" + currentAuction.getCurrentPrice() + ")");
-                    lblPayTitle.setText("Congratulations! You Won.");
+                    btnPay.setText("Thanh toán mặt hàng ($" + currentAuction.getCurrentPrice() + ")");
+                    lblPayTitle.setText("Chúc mừng! Bạn đã thắng cuộc.");
                     lblPayTitle.setStyle("-fx-text-fill: #27ae60;");
                 } else {
                     btnPay.setDisable(true);
-                    btnPay.setText("Insufficient Balance ($" + currentBalance + ")");
-                    lblPayTitle.setText("Congratulations! You Won.");
+                    btnPay.setText("Số dư không đủ ($" + currentBalance + ")");
+                    lblPayTitle.setText("Chúc mừng! Bạn đã thắng cuộc.");
                     lblPayTitle.setStyle("-fx-text-fill: #27ae60;");
                 }
             } else {
@@ -229,11 +229,11 @@ public class AuctionBidController {
 
         // Leader Color Logic
         if (bidderId == null || bidderId.equalsIgnoreCase("None")) {
-            lblHighestBidder.setText("Highest Bidder: None");
+            lblHighestBidder.setText("Người đặt giá cao nhất: Trống");
             lblCurrentPrice.setStyle("-fx-text-fill: black;");
         } else {
             String name = (currentAuction.getHighestBid() != null) ? currentAuction.getHighestBid().getBidderName() : bidderId;
-            lblHighestBidder.setText("Highest Bidder: " + name);
+            lblHighestBidder.setText("Người đặt giá cao nhất: " + name);
             if (bidderId.equals(currentUserId)) {
                 lblCurrentPrice.setStyle("-fx-text-fill: #27ae60; -fx-font-weight: bold;");
             } else {
@@ -242,9 +242,9 @@ public class AuctionBidController {
         }
 
         if (currentAuction.getEndTime() != null) {
-            lblTimeRemaining.setText("End Time: " + currentAuction.getEndTime().format(TIME_FORMATTER));
+            lblTimeRemaining.setText("Thời gian kết thúc: " + currentAuction.getEndTime().format(TIME_FORMATTER));
         } else {
-            lblTimeRemaining.setText("End Time: N/A");
+            lblTimeRemaining.setText("Thời gian kết thúc: N/A");
         }
     }
 
@@ -267,7 +267,7 @@ public class AuctionBidController {
     private void handlePlaceBid(ActionEvent event) {
         if (currentAuction == null) return;
         if (currentAuction.getStatus() != AuctionStatus.RUNNING) {
-            ControllerUtils.showAlert("Auction not active!");
+            ControllerUtils.showAlert("Phiên đấu giá không hoạt động!");
             return;
         }
         try {
@@ -276,13 +276,13 @@ public class AuctionBidController {
             
             BigDecimal amount = new BigDecimal(input);
             if (amount.compareTo(currentAuction.getCurrentPrice()) <= 0) {
-                ControllerUtils.showAlert("Bid must be higher than current price!");
+                ControllerUtils.showAlert("Giá đặt phải cao hơn giá hiện tại!");
                 return;
             }
             
             User user = SessionManager.getInstance().getCurrentUser();
             if (user == null) {
-                ControllerUtils.showAlert("You must be logged in to place a bid!");
+                ControllerUtils.showAlert("Bạn phải đăng nhập để đặt giá!");
                 return;
             }
 
@@ -300,9 +300,9 @@ public class AuctionBidController {
             ClientManager.getInstance().sendRequest(new BidRequest(currentAuction.getId(), user.getId(), amount));
             tfBidAmount.clear();
         } catch (NumberFormatException e) {
-            ControllerUtils.showAlert("Invalid input! Please enter a number.");
+            ControllerUtils.showAlert("Đầu vào không hợp lệ! Vui lòng nhập một con số.");
         } catch (Exception e) {
-            ControllerUtils.showAlert("Error: " + e.getMessage());
+            ControllerUtils.showAlert("Lỗi: " + e.getMessage());
         }
     }
 

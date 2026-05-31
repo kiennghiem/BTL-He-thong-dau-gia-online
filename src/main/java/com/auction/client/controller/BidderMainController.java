@@ -76,7 +76,7 @@ public class BidderMainController {
     public void updateBalanceDisplay() {
         User user = SessionManager.getInstance().getCurrentUser();
         if (user != null && lblBalance != null) {
-            lblBalance.setText(String.format("Balance: $%.2f", user.getBalance()));
+            lblBalance.setText(String.format("Số dư: $%.2f", user.getBalance()));
         }
     }
 
@@ -124,7 +124,7 @@ public class BidderMainController {
             mainBorderPane.setCenter(view);
         } catch (IOException e) {
             e.printStackTrace();
-            ControllerUtils.showAlert("Error loading view: " + fxmlFile);
+            ControllerUtils.showAlert("Lỗi khi tải giao diện: " + fxmlFile);
         }
     }
 
@@ -139,7 +139,7 @@ public class BidderMainController {
             mainBorderPane.setCenter(view);
         } catch (IOException e) {
             e.printStackTrace();
-            ControllerUtils.showAlert("Error loading Bid View");
+            ControllerUtils.showAlert("Lỗi khi tải giao diện đặt giá");
         }
     }
 

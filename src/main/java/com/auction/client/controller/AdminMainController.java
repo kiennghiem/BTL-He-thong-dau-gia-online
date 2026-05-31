@@ -86,7 +86,7 @@ public class AdminMainController {
             mainBorderPane.setCenter(view);
         } catch (IOException e) {
             logger.error("Error loading view: {}", fxmlFile, e);
-            ControllerUtils.showAlert("Error loading view: " + fxmlFile);
+            ControllerUtils.showAlert("Lỗi khi tải giao diện: " + fxmlFile);
         }
     }
 
@@ -104,7 +104,7 @@ public class AdminMainController {
             }
         } catch (IOException e) {
             logger.error("Error loading Auction Detail View", e);
-            ControllerUtils.showAlert("Error loading Auction Detail View");
+            ControllerUtils.showAlert("Lỗi khi tải Chi tiết phiên đấu giá");
         }
     }
 
