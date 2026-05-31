@@ -1,51 +1,54 @@
+-- 1. Create Database if not exists
+CREATE DATABASE IF NOT EXISTS auction_db CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 USE auction_db;
--- 1. BẢNG USERS (Phải tạo đầu tiên và PHẢI CÓ CỘT id)
+
+-- 2. TABLE: users
 CREATE TABLE IF NOT EXISTS users (
-    id VARCHAR(50) PRIMARY KEY, -- Bắt buộc phải có dòng này để tự sinh chuỗi ID
+    id VARCHAR(50) PRIMARY KEY,
     role VARCHAR(30) NOT NULL,
     username VARCHAR(100) NOT NULL UNIQUE,
     password VARCHAR(255) NOT NULL,
     balance DECIMAL(15, 2) DEFAULT 0.0
-    );
+);
 
--- 2. BẢNG ITEMS (Tạo thứ hai)
+-- 3. TABLE: items
 CREATE TABLE IF NOT EXISTS items (
     id VARCHAR(50) PRIMARY KEY,
-    item_type VARCHAR(20),
-    item_name VARCHAR(100) NOT NULL,
-    description TEXT NULL,
-    starting_price DECIMAL(15, 2) DEFAULT 0.0,
-    current_price DECIMAL(15, 2) DEFAULT 0.0,
-    special_attribute VARCHAR(45),
-    owner_id VARCHAR(50),
-    buyer_id VARCHAR(50) NULL,
-    FOREIGN KEY (owner_id) REFERENCES users(id),
-    FOREIGN KEY (buyer_id) REFERENCES users(id)
+    itemType VARCHAR(50) NOT NULL,
+    itemName VARCHAR(255) NOT NULL,
+    description TEXT,
+    startingPrice DECIMAL(15, 2) DEFAULT 0.0,
+    currentPrice DECIMAL(15, 2) DEFAULT 0.0,
+    specialAttribute VARCHAR(255),
+    ownerId VARCHAR(50) NOT NULL,
+    buyerId VARCHAR(50) NULL,
+    FOREIGN KEY (ownerId) REFERENCES users(id),
+    FOREIGN KEY (buyerId) REFERENCES users(id)
 );
 
--- 3. BẢNG AUCTIONS (Tạo cuối cùng)
+-- 4. TABLE: auctions
 CREATE TABLE IF NOT EXISTS auctions (
     id VARCHAR(50) PRIMARY KEY,
-    status VARCHAR(20),
-    title VARCHAR(100),
+    status VARCHAR(20) NOT NULL,
+    title VARCHAR(255) NOT NULL,
     description TEXT,
-    starting_price DECIMAL(15, 2),
-    current_price DECIMAL(15, 2),
-    start_time TIMESTAMP NULL DEFAULT NULL,
-    end_time TIMESTAMP NULL DEFAULT NULL,
-    item_id VARCHAR(50),
-    highest_bidder_id VARCHAR(50) NULL,
-    FOREIGN KEY (item_id) REFERENCES items(id),
-    FOREIGN KEY (highest_bidder_id) REFERENCES users(id)
+    startingPrice DECIMAL(15, 2) DEFAULT 0.0,
+    currentPrice DECIMAL(15, 2) DEFAULT 0.0,
+    startTime TIMESTAMP NULL DEFAULT NULL,
+    endTime TIMESTAMP NULL DEFAULT NULL,
+    itemId VARCHAR(50) NOT NULL,
+    highestBidderId VARCHAR(50) NULL,
+    FOREIGN KEY (itemId) REFERENCES items(id),
+    FOREIGN KEY (highestBidderId) REFERENCES users(id)
 );
 
--- 4. BẢNG BIDS (Lịch sử đặt giá)
+-- 5. TABLE: bids (Bid history)
 CREATE TABLE IF NOT EXISTS bids (
     id VARCHAR(50) PRIMARY KEY,
-    auction_id VARCHAR(50),
-    bidder_id VARCHAR(50),
-    amount DECIMAL(15, 2),
+    auctionId VARCHAR(50) NOT NULL,
+    bidderId VARCHAR(50) NOT NULL,
+    bidAmount DECIMAL(15, 2) NOT NULL,
     timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (auction_id) REFERENCES auctions(id),
-    FOREIGN KEY (bidder_id) REFERENCES users(id)
+    FOREIGN KEY (auctionId) REFERENCES auctions(id),
+    FOREIGN KEY (bidderId) REFERENCES users(id)
 );

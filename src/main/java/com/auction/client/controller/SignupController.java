@@ -10,10 +10,14 @@ import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.scene.control.*;
 import javafx.stage.Stage;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.function.Consumer;
 
 public class SignupController {
+
+    private static final Logger logger = LoggerFactory.getLogger(SignupController.class);
 
     @FXML
     TextField tfUsername;
@@ -64,7 +68,7 @@ public class SignupController {
 
     private void handleAuthResponse(AuthResponse response) {
         if (response.isSuccess()) {
-            System.out.println("[SIGNUP] Success: " + response.getMessage());
+            logger.info("[SIGNUP] Success: " + response.getMessage());
             
             // Save user to session
             SessionManager.getInstance().setCurrentUser(response.getUser());
@@ -73,7 +77,10 @@ public class SignupController {
             
             if (response.getUser().getRole() == UserRole.SELLER) {
                 ControllerUtils.changeScene(stage, "SellerMainView.fxml");
-                // TODO: ADD OTHER SCENES FOR BIDDER AND ADMIN TO CHANGE TO
+            } else if (response.getUser().getRole() == UserRole.BIDDER) {
+                ControllerUtils.changeScene(stage, "BidderMainView.fxml");
+            } else if (response.getUser().getRole() == UserRole.ADMIN) {
+                ControllerUtils.changeScene(stage, "AdminMainView.fxml");
             } else {
                 ControllerUtils.changeScene(stage, "AuctionList.fxml");
             }

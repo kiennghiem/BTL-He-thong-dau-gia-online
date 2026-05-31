@@ -2,6 +2,8 @@ package com.auction.util;
 
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -22,6 +24,7 @@ import java.util.regex.Pattern;
  * Được cải tiến sử dụng HikariCP để quản lý kết nối an toàn và hiệu năng cao.
  */
 public class DatabaseSetup {
+    private static final Logger logger = LoggerFactory.getLogger(DatabaseSetup.class);
 
     private String dbUrl;
     private String dbUser;
@@ -36,7 +39,7 @@ public class DatabaseSetup {
      * 1. Khởi tạo database nếu chưa có và chạy toàn bộ cấu trúc schema.sql sử dụng HikariCP.
      */
     public void initDatabase() {
-        System.out.println("[DB-Setup] Đang khởi động quá trình bootstrap database bằng HikariCP...");
+        logger.info("[DB-Setup] Đang khởi động quá trình bootstrap database bằng HikariCP...");
 
         String adminUrl = buildAdminUrl(this.dbUrl);
 
@@ -60,10 +63,10 @@ public class DatabaseSetup {
              Statement stmt = adminConn.createStatement()) {
 
             stmt.executeUpdate(createDbQuery);
-            System.out.println("[DB-Setup] Kiểm tra/Tạo database thành công: " + dbName);
+            logger.info("[DB-Setup] Kiểm tra/Tạo database thành công: {}", dbName);
 
         } catch (SQLException e) {
-            System.err.println("[DB-Setup] Lỗi khi tạo database ở cấp Server: " + e.getMessage());
+            logger.error("[DB-Setup] Lỗi khi tạo database ở cấp Server", e);
             return;
         }
 
@@ -72,7 +75,7 @@ public class DatabaseSetup {
         // =========================================================================
         String schemaSql = readSchemaSQL();
         if (schemaSql == null || schemaSql.trim().isEmpty()) {
-            System.err.println("[DB-Setup] Bỏ qua thực thi schema do nội dung file trống hoặc không tìm thấy.");
+            logger.error("[DB-Setup] Bỏ qua thực thi schema do nội dung file trống hoặc không tìm thấy.");
             return;
         }
 
@@ -103,17 +106,17 @@ public class DatabaseSetup {
                     successCount++;
                 } catch (SQLException e) {
                     if (isIgnorableSchemaError(e)) {
-                        System.out.println("[DB-Setup] Bỏ qua trạng thái bảng/cột đã tồn tại (Idempotent): " + e.getMessage());
+                        logger.info("[DB-Setup] Bỏ qua trạng thái bảng/cột đã tồn tại (Idempotent): {}", e.getMessage());
                     } else {
-                        System.err.println("[DB-Setup] Lỗi thực thi câu lệnh SQL: " + sql);
-                        System.err.println("[DB-Setup] Chi tiết lỗi: " + e.getMessage());
+                        logger.error("[DB-Setup] Lỗi thực thi câu lệnh SQL: {}", sql);
+                        logger.error("[DB-Setup] Chi tiết lỗi", e);
                     }
                 }
             }
-            System.out.println("[DB-Setup] Hoàn thành chạy schema.sql. Thực thi thành công: " + successCount + " câu lệnh.");
+            logger.info("[DB-Setup] Hoàn thành chạy schema.sql. Thực thi thành công: {} câu lệnh.", successCount);
 
         } catch (SQLException e) {
-            System.err.println("[DB-Setup] Lỗi kết nối HikariCP tới database '" + dbName + "' để chạy schema: " + e.getMessage());
+            logger.error("[DB-Setup] Lỗi kết nối HikariCP tới database '{}' để chạy schema", dbName, e);
         }
     }
 
@@ -124,7 +127,7 @@ public class DatabaseSetup {
         Properties properties = new Properties();
         try (InputStream input = getClass().getClassLoader().getResourceAsStream("database.properties")) {
             if (input == null) {
-                System.err.println("[DB-Setup] CẢNH BÁO: Không tìm thấy database.properties. Sử dụng cấu hình dự phòng.");
+                logger.warn("[DB-Setup] CẢNH BÁO: Không tìm thấy database.properties. Sử dụng cấu hình dự phòng.");
                 this.dbUrl = "jdbc:mysql://localhost:3306/auction_db?useSSL=false&allowPublicKeyRetrieval=true";
                 this.dbUser = "root";
                 this.dbPassword = "Seductivemonke";
@@ -138,7 +141,7 @@ public class DatabaseSetup {
             this.dbName = extractDatabaseName(this.dbUrl);
 
         } catch (IOException e) {
-            System.err.println("[DB-Setup] Lỗi nghiêm trọng khi đọc file cấu hình: " + e.getMessage());
+            logger.error("[DB-Setup] Lỗi nghiêm trọng khi đọc file cấu hình", e);
         }
     }
 
@@ -149,7 +152,7 @@ public class DatabaseSetup {
         StringBuilder sb = new StringBuilder();
         try (InputStream is = getClass().getClassLoader().getResourceAsStream("schema.sql")) {
             if (is == null) {
-                System.err.println("[DB-Setup] Lỗi: Không tìm thấy file schema.sql trong thư mục resources.");
+                logger.error("[DB-Setup] Lỗi: Không tìm thấy file schema.sql trong thư mục resources.");
                 return null;
             }
 
@@ -163,7 +166,7 @@ public class DatabaseSetup {
                 }
             }
         } catch (IOException e) {
-            System.err.println("[DB-Setup] Lỗi IO khi đọc file schema.sql: " + e.getMessage());
+            logger.error("[DB-Setup] Lỗi IO khi đọc file schema.sql", e);
         }
         return sb.toString();
     }
@@ -202,7 +205,7 @@ public class DatabaseSetup {
                 return matcher.group(1);
             }
         } catch (Exception e) {
-            System.err.println("[DB-Setup] Không thể phân tách tên database từ URL. Sử dụng tên mặc định.");
+            logger.error("[DB-Setup] Không thể phân tách tên database từ URL: {}. Sử dụng tên mặc định.", url, e);
         }
         return "auction_db";
     }

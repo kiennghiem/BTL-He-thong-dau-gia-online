@@ -65,9 +65,10 @@ public class LoginController {
             
             if (response.getUser().getRole() == UserRole.SELLER) {
                 ControllerUtils.changeScene(stage, "SellerMainView.fxml");
-                // TODO: ADD OTHER SCENES FOR BIDDER AND ADMIN TO CHANGE TO
-            } else {
-                ControllerUtils.changeScene(stage, "AuctionList.fxml");
+            } else if (response.getUser().getRole() == UserRole.BIDDER) {
+                ControllerUtils.changeScene(stage, "BidderMainView.fxml");
+            } else if (response.getUser().getRole() == UserRole.ADMIN) {
+                ControllerUtils.changeScene(stage, "AdminMainView.fxml");
             }
 
             // Cleanup listener when leaving

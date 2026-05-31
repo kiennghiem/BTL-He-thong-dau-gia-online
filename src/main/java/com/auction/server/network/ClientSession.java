@@ -1,6 +1,8 @@
 package com.auction.server.network;
 
 import com.auction.models.dto.NetworkMessage;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.ObjectInputStream;
@@ -11,6 +13,7 @@ import java.net.Socket;
  * Manages a persistent session with one specific client.
  */
 public class ClientSession implements Runnable {
+    private static final Logger logger = LoggerFactory.getLogger(ClientSession.class);
     private final Socket socket;
 
     public ClientSession(Socket socket) {
@@ -30,7 +33,7 @@ public class ClientSession implements Runnable {
             userHandler = new UserHandler(out);
             auctionHandler = new AuctionHandler(out);
 
-            System.out.println("[SESSION] Handlers initialized for " + socket.getInetAddress());
+            logger.info("Handlers initialized for {}", socket.getInetAddress());
 
             // Continuous listening loop
             while (true) {
@@ -45,11 +48,11 @@ public class ClientSession implements Runnable {
                         }
                         
                         if (!handled) {
-                            System.out.println("[SESSION] Unhandled message: " + msg.getClass().getSimpleName());
+                            logger.warn("Unhandled message: {}", msg.getClass().getSimpleName());
                         }
                     }
                 } catch (ClassNotFoundException e) {
-                    System.err.println("[SESSION] Unknown data received: " + e.getMessage());
+                    logger.error("Unknown data received: {}", e.getMessage(), e);
                 } catch (IOException e) {
                     // Connection closed by client
                     break;
@@ -57,8 +60,9 @@ public class ClientSession implements Runnable {
             }
         } catch (IOException e) {
             // IO Error (e.g. broken pipe)
+            logger.error("IO Error in client session: {}", e.getMessage());
         } finally {
-            System.out.println("[SESSION] Client disconnected: " + socket.getInetAddress());
+            logger.info("Client disconnected: {}", socket.getInetAddress());
             // Mandatory cleanup to prevent memory leaks and ghost users
             if (userHandler != null) {
                 userHandler.cleanUp();
@@ -69,7 +73,7 @@ public class ClientSession implements Runnable {
             try {
                 socket.close();
             } catch (IOException e) {
-                e.printStackTrace();
+                logger.error("Error closing socket: {}", e.getMessage(), e);
             }
         }
     }

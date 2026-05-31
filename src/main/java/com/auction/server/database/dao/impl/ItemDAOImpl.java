@@ -37,8 +37,8 @@ public class ItemDAOImpl extends BaseDAO implements ItemDAO {
 
     @Override
     public boolean addItem(Item item) {
-        String sql = "INSERT INTO items (id, item_type, item_name, description, starting_price, current_price, " +
-                     "special_attribute, owner_id, buyer_id) " +
+        String sql = "INSERT INTO items (id, itemType, itemName, description, startingPrice, currentPrice, " +
+                     "specialAttribute, ownerId, buyerId) " +
                      "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
         try (Connection conn = getConnection();
@@ -52,37 +52,35 @@ public class ItemDAOImpl extends BaseDAO implements ItemDAO {
             pstmt.setBigDecimal(6, item.getCurrentPrice());
             pstmt.setString(7, item.getSpecialAttribute());
             pstmt.setString(8, item.getOwner().getId());
-            pstmt.setString(9, item.getBuyer() != null? item.getBuyer().getId() : null);
+            pstmt.setString(9, item.getBuyer() != null ? item.getBuyer().getId() : null);
 
             return pstmt.executeUpdate() > 0;
         } catch (SQLException e) {
-            e.printStackTrace();
-            return false;
+            throw new com.auction.exceptions.DatabaseException("SQL Error adding Item: " + e.getMessage(), e);
         }
     }
 
     @Override
     public boolean updateItem(Item item) {
-        String sql = "UPDATE items SET item_name = ?, description = ?, starting_price = ?, current_price = ?, " +
-                     "special_attribute = ?, owner_id = ?, buyer_id = ? WHERE id = ?";
+        String sql = "UPDATE items SET itemType = ?, itemName = ?, description = ?, startingPrice = ?, currentPrice = ?, " +
+                     "specialAttribute = ?, ownerId = ?, buyerId = ? WHERE id = ?";
 
         try (Connection conn = getConnection();
              PreparedStatement pstmt = conn.prepareStatement(sql)) {
 
-            pstmt.setString(1, item.getItemName());
-            pstmt.setString(2, item.getDescription());
-            pstmt.setBigDecimal(3, item.getStartingPrice());
-            pstmt.setBigDecimal(4, item.getCurrentPrice());
-            pstmt.setString(5, item.getSpecialAttribute());
-            pstmt.setString(6, item.getOwner().getId());
-            pstmt.setString(7, item.getBuyer() != null? item.getBuyer().getId() : null);
-
-            pstmt.setString(8, item.getId());
+            pstmt.setString(1, item.getTypeAsString());
+            pstmt.setString(2, item.getItemName());
+            pstmt.setString(3, item.getDescription());
+            pstmt.setBigDecimal(4, item.getStartingPrice());
+            pstmt.setBigDecimal(5, item.getCurrentPrice());
+            pstmt.setString(6, item.getSpecialAttribute());
+            pstmt.setString(7, item.getOwner().getId());
+            pstmt.setString(8, item.getBuyer() != null ? item.getBuyer().getId() : null);
+            pstmt.setString(9, item.getId());
 
             return pstmt.executeUpdate() > 0;
         } catch (SQLException e) {
-            e.printStackTrace();
-            return false;
+            throw new com.auction.exceptions.DatabaseException("SQL Error updating Item: " + e.getMessage(), e);
         }
     }
 
@@ -108,21 +106,23 @@ public class ItemDAOImpl extends BaseDAO implements ItemDAO {
 
     private Item mapRowToItem(ResultSet rs) throws SQLException {
         String id = rs.getString("id");
-        String typeStr = rs.getString("item_type");
+        String typeStr = rs.getString("itemType");
         ItemType type = ItemType.valueOf(typeStr.toUpperCase());
-        String name = rs.getString("item_name");
+        String name = rs.getString("itemName");
         String description = rs.getString("description");
-        BigDecimal startingPrice = rs.getBigDecimal("starting_price");
-        BigDecimal currentPrice = rs.getBigDecimal("current_price");
-        String specialAttribute = rs.getString("special_attribute");
-        String ownerId = rs.getString("owner_id");
-        String buyerId = rs.getString("buyer_id");
+        BigDecimal startingPrice = rs.getBigDecimal("startingPrice");
+        BigDecimal currentPrice = rs.getBigDecimal("currentPrice");
+        String specialAttribute = rs.getString("specialAttribute");
+        String ownerId = rs.getString("ownerId");
+        String buyerId = rs.getString("buyerId");
 
         User owner = userDAO.findById(ownerId);
+        Seller sellerOwner = (owner instanceof Seller) ? (Seller) owner : null;
 
         User buyer = userDAO.findById(buyerId);
+        Bidder bidderBuyer = (buyer instanceof Bidder) ? (Bidder) buyer : null;
 
         return ItemFactory.createItemFromDB(id, type, name, description, startingPrice, currentPrice,
-                specialAttribute, (Seller) owner, (Bidder) buyer);
+                specialAttribute, sellerOwner, bidderBuyer);
     }
 }

@@ -2,6 +2,9 @@ package com.auction.server.database; // Khớp gói hệ thống của Server
 
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.sql.Connection;
@@ -14,6 +17,8 @@ import java.util.Properties;
  * để khớp hoàn toàn với cấu trúc gọi tài nguyên của BaseDAO.
  */
 public final class DatabaseManager {
+
+    private static final Logger logger = LoggerFactory.getLogger(DatabaseManager.class);
 
     private static DatabaseManager instance;
     private HikariDataSource dataSource;
@@ -54,7 +59,7 @@ public final class DatabaseManager {
         Properties properties = new Properties();
         try (InputStream input = getClass().getClassLoader().getResourceAsStream("database.properties")) {
             if (input == null) {
-                System.err.println("[DB-Manager] Không tìm thấy database.properties. Sử dụng cấu hình mặc định.");
+                logger.error("[DB-Manager] Không tìm thấy database.properties. Sử dụng cấu hình mặc định.");
                 return;
             }
             properties.load(input);
@@ -64,9 +69,9 @@ public final class DatabaseManager {
             this.password = properties.getProperty("db.password", this.password);
             this.poolSize = Integer.parseInt(properties.getProperty("db.pool.size", String.valueOf(this.poolSize)));
 
-            System.out.println("[DB-Manager] Tải file cấu hình database.properties thành công.");
+            logger.info("[DB-Manager] Tải file cấu hình database.properties thành công.");
         } catch (IOException | NumberFormatException e) {
-            System.err.println("[DB-Manager] Lỗi đọc file cấu hình, chuyển sang cấu hình dự phòng: " + e.getMessage());
+            logger.error("[DB-Manager] Lỗi đọc file cấu hình, chuyển sang cấu hình dự phòng", e);
         }
     }
 
@@ -96,9 +101,9 @@ public final class DatabaseManager {
             config.addDataSourceProperty("useServerPrepStmts", "true");
 
             this.dataSource = new HikariDataSource(config);
-            System.out.println("[DB-Manager] Khởi tạo HikariCP Connection Pool thành công.");
+            logger.info("[DB-Manager] Khởi tạo HikariCP Connection Pool thành công.");
         } catch (Exception e) {
-            System.err.println("[DB-Manager] Lỗi nghiêm trọng khi tạo DataSource: " + e.getMessage());
+            logger.error("[DB-Manager] Lỗi nghiêm trọng khi tạo DataSource", e);
             throw new RuntimeException(e);
         }
     }
@@ -137,7 +142,7 @@ public final class DatabaseManager {
                 conn.rollback();
                 conn.setAutoCommit(true);
             } catch (SQLException e) {
-                System.err.println("[DB-Manager] Rollback thất bại: " + e.getMessage());
+                logger.error("[DB-Manager] Rollback thất bại", e);
             }
         }
     }
@@ -160,7 +165,7 @@ public final class DatabaseManager {
     public void shutdown() {
         if (dataSource != null && !dataSource.isClosed()) {
             dataSource.close();
-            System.out.println("[DB-Manager] Đã đóng Connection Pool an toàn.");
+            logger.info("[DB-Manager] Đã đóng Connection Pool an toàn.");
         }
     }
 }

@@ -8,6 +8,8 @@ import com.auction.server.manager.AuctionManager;
 import com.auction.server.observer.AuctionObserver;
 import com.auction.server.service.AuctionService;
 import com.auction.models.dto.*;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 
 import java.io.IOException;
 import java.io.ObjectOutputStream;
@@ -46,8 +48,22 @@ public class AuctionHandler implements AuctionObserver {
             handleGetActiveAuctions(req);
             return true;
         }
+        if (message instanceof CancelAuctionRequest req) {
+            handleCancelAuction(req);
+            return true;
+        }
 
         return false;
+    }
+
+    private void handleCancelAuction(CancelAuctionRequest req) {
+        try {
+            auctionService.cancelAuction(req.getAuctionId(), req.getAdminId());
+            sendResponse(new GenericResponse(true, "Hủy phiên đấu giá thành công!"));
+            System.out.println("[AuctionHandler] Auction canceled: " + req.getAuctionId() + " by " + req.getAdminId());
+        } catch (Exception e) {
+            sendResponse(new GenericResponse(false, "Lỗi hủy đấu giá: " + e.getMessage()));
+        }
     }
 
     private void handleBid(BidRequest req) {
@@ -68,19 +84,19 @@ public class AuctionHandler implements AuctionObserver {
 
     private void handleCreateAuction(CreateAuctionRequest req) {
         try {
-            ItemType type = req.getItemType();
-            boolean success = auctionService.createAuction(
+            System.out.println("[AuctionHandler] Creating auction for user: " + req.getSellerUsername());
+            ItemType type = ItemType.valueOf(req.getItemType().toString());
+            
+            auctionService.createAuction(
                 type, req.getItemName(), req.getItemDescription(),
                 req.getStartingPrice(), req.getSpecificAttribute(),
-                (Seller) req.getSeller(),
+                req.getSellerUsername(),
                 req.getStartTime(), req.getEndTime());
-            if (success) {
-                sendResponse(new GenericResponse(true, "Tạo phiên đấu giá thành công!"));
-            } else {
-                sendResponse(new GenericResponse(false, "Lỗi khi tạo phiên đấu giá."));
-            }
+            
+            sendResponse(new GenericResponse(true, "Tạo phiên đấu giá thành công!"));
+            System.out.println("[AuctionHandler] Auction created successfully.");
         } catch (Exception e) {
-            e.printStackTrace();
+            e.printStackTrace(); // Log the full stack trace on server
             sendResponse(new GenericResponse(false, "Lỗi tạo đấu giá: " + e.getMessage()));
         }
     }

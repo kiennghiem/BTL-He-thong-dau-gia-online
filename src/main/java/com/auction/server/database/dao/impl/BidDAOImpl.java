@@ -19,55 +19,90 @@ public class BidDAOImpl extends BaseDAO implements BidDAO {
 
     @Override
     public boolean placeBid(BidTransaction bid) {
-        String insertBidSQL = "INSERT INTO bids (id, auction_id, bidder_id, amount, timestamp) VALUES (?, ?, ?, ?, ?)";
-        String updateItemSQL = "UPDATE items SET current_price = ? WHERE id = ?";
+        // Corrected SQL: Use camelCase column names and target 'auctions' table for price verification
+        String checkPriceSQL = "SELECT currentPrice, status FROM auctions WHERE id = ? FOR UPDATE";
+        String updateAuctionSQL = "UPDATE auctions SET currentPrice = ?, highestBidderId = ? WHERE id = ?";
+        String insertBidSQL = "INSERT INTO bids (id, auctionId, bidderId, bidAmount, timestamp) VALUES (?, ?, ?, ?, ?)";
 
-        try (Connection conn = getConnection();
-             PreparedStatement inStmt = conn.prepareStatement(insertBidSQL);
-             PreparedStatement upStmt = conn.prepareStatement(updateItemSQL)) {
+        try (Connection conn = getConnection()) {
+            conn.setAutoCommit(false);
+            try (PreparedStatement checkStmt = conn.prepareStatement(checkPriceSQL);
+                 PreparedStatement upStmt = conn.prepareStatement(updateAuctionSQL);
+                 PreparedStatement inStmt = conn.prepareStatement(insertBidSQL)) {
 
-            // Update the item's live price tracking and current bidder
-            upStmt.setBigDecimal(1, bid.getBidAmount());
-            upStmt.setString(2, bid.getBidderId());
-            upStmt.setString(3, bid.getItemId());
-            upStmt.executeUpdate();
+                // 1. Atomic verification stage
+                checkStmt.setString(1, bid.getItemId()); // Note: bid.getItemId() returns the auction ID in this context
+                try (ResultSet rs = checkStmt.executeQuery()) {
+                    if (rs.next()) {
+                        BigDecimal currentPrice = rs.getBigDecimal("currentPrice");
+                        String status = rs.getString("status");
 
-            // Log the history record transaction
-            inStmt.setString(1, bid.getId());
-            inStmt.setString(2, bid.getItemId()); // BidTransaction uses itemId to store auctionId
-            inStmt.setString(3, bid.getBidderId());
-            inStmt.setBigDecimal(4, bid.getBidAmount());
-            inStmt.setTimestamp(5, Timestamp.valueOf(bid.getTimestamp()));
-            
-            return inStmt.executeUpdate() > 0;
+                        // Validate bid amount and auction status
+                        if (bid.getBidAmount().compareTo(currentPrice) <= 0 || 
+                            !"RUNNING".equalsIgnoreCase(status)) {
+                            conn.rollback();
+                            return false;
+                        }
+                    } else {
+                        conn.rollback();
+                        return false;
+                    }
+                }
+
+                // 2. Update the auction's live price and highest bidder
+                upStmt.setBigDecimal(1, bid.getBidAmount());
+                upStmt.setString(2, bid.getBidderId());
+                upStmt.setString(3, bid.getItemId());
+                upStmt.executeUpdate();
+
+                // 3. Log the bid in the bids history table
+                inStmt.setString(1, bid.getId());
+                inStmt.setString(2, bid.getItemId());
+                inStmt.setString(3, bid.getBidderId());
+                inStmt.setBigDecimal(4, bid.getBidAmount());
+                inStmt.setTimestamp(5, Timestamp.valueOf(bid.getTimestamp()));
+                inStmt.executeUpdate();
+
+                conn.commit();
+                return true;
+            } catch (SQLException e) {
+                conn.rollback();
+                e.printStackTrace();
+                return false;
+            } finally {
+                conn.setAutoCommit(true);
+            }
         } catch (SQLException e) {
-            System.err.println("[BidDAO] Failed to record bid history: " + e.getMessage());
+            e.printStackTrace();
             return false;
         }
     }
 
     @Override
-    public List<BidTransaction> getHistoryByItem(String auctionId) {
+    public List<BidTransaction> getHistoryByItem(String itemId) {
         List<BidTransaction> history = new ArrayList<>();
-        String sql = "SELECT * FROM bids WHERE auction_id = ? ORDER BY timestamp ASC";
+        String sql = "SELECT b.*, u.username as bidderName FROM bids b " +
+                     "JOIN users u ON b.bidderId = u.id " +
+                     "WHERE b.auctionId = ? ORDER BY b.timestamp DESC"; // DESC as requested
 
         try (Connection conn = getConnection();
              PreparedStatement pstmt = conn.prepareStatement(sql)) {
 
-            pstmt.setString(1, auctionId);
+            pstmt.setString(1, itemId);
             try (ResultSet rs = pstmt.executeQuery()) {
                 while (rs.next()) {
                     history.add(new BidTransaction(
                             rs.getString("id"), 
-                            rs.getString("auction_id"),
-                            rs.getString("bidder_id"), 
-                            rs.getBigDecimal("amount"),
+                            rs.getString("auctionId"),
+                            rs.getString("bidderId"), 
+                            rs.getString("bidderName"),
+                            rs.getBigDecimal("bidAmount"),
                             rs.getTimestamp("timestamp").toLocalDateTime()
                     ));
                 }
             }
         } catch (SQLException e) {
-            System.err.println("[BidDAO] Failed to retrieve bid history for auction: " + auctionId);
+            e.printStackTrace();
         }
         return history;
     }
