@@ -7,10 +7,14 @@ import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.Alert;
 import javafx.stage.Stage;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 
 public final class ControllerUtils {
+
+    private static final Logger logger = LoggerFactory.getLogger(ControllerUtils.class);
 
     // Private constructor to prevent instantiation of this utility class.
     private ControllerUtils() {}
@@ -37,8 +41,7 @@ public final class ControllerUtils {
             stage.show();
         }
         catch (IOException e) {
-            System.err.println("Error changing scene to " + fxmlFile + ": " + e.getMessage());
-            e.printStackTrace();
+            logger.error("Error changing scene to " + fxmlFile, e);
         }
     }
 

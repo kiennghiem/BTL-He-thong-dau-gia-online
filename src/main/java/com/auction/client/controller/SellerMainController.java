@@ -13,11 +13,15 @@ import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
 import javafx.scene.layout.BorderPane;
 import javafx.stage.Stage;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.function.Consumer;
 
 public class SellerMainController {
+
+    private static final Logger logger = LoggerFactory.getLogger(SellerMainController.class);
 
     @FXML
     private BorderPane mainBorderPane;
@@ -75,7 +79,7 @@ public class SellerMainController {
             
             mainBorderPane.setCenter(view);
         } catch (IOException e) {
-            e.printStackTrace();
+            logger.error("Error loading view: " + fxmlFile, e);
             ControllerUtils.showAlert("Error loading view: " + fxmlFile);
         }
     }
@@ -97,7 +101,7 @@ public class SellerMainController {
 
     private void handleAuthResponse(AuthResponse response) {
         if (response.isSuccess()) {
-            System.out.println("[LOGOUT] Success: " + response.getMessage());
+            logger.info("[LOGOUT] Success: " + response.getMessage());
 
             // Clean up listener and clear session with the current user
             ClientManager.getInstance().removeMessageListener(responseListener);

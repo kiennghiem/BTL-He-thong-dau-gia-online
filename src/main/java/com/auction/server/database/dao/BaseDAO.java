@@ -1,6 +1,8 @@
 package com.auction.server.database.dao;
 
 import com.auction.server.database.DatabaseManager;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.sql.Connection;
 import java.sql.SQLException;
@@ -10,6 +12,7 @@ import java.sql.SQLException;
  * Routes directly through the centralized HikariCP pool.
  */
 public abstract class BaseDAO {
+    private static final Logger logger = LoggerFactory.getLogger(BaseDAO.class);
 
     /**
      * Obtains an active connection from the HikariCP pool.
@@ -30,7 +33,7 @@ public abstract class BaseDAO {
                 try {
                     res.close();
                 } catch (Exception e) {
-                    System.err.println("Error returning resource to pool: " + e.getMessage());
+                    logger.error("Error returning resource to pool", e);
                 }
             }
         }

@@ -28,6 +28,9 @@ public class AuctionDetailController {
         this.currentAuction = auction;
         lblTitle.setText(auction.getTitle());
         lblDescription.setText(auction.getDescription());
+        lblPrice.setText(auction.getCurrentPrice().toString());
+        lblStatus.setText(auction.getStatusAsString());
+        lblEndTime.setText(auction.getEndTime().toString());
         lblPrice.setText("Current Price: $" + auction.getCurrentPrice().toString());
         lblStatus.setText("Status: " + auction.getStatusAsString());
         lblEndTime.setText("End Time: " + auction.getEndTime().toString());
@@ -47,6 +50,8 @@ public class AuctionDetailController {
             CancelAuctionRequest request = new CancelAuctionRequest(currentAuction.getId(), currentUser.getId());
             ClientManager.getInstance().sendRequest(request);
             
+            // Optionally update UI immediately or wait for broadcast
+            lblStatus.setText(AuctionStatus.CANCELED.toString());
             // UI Feedback
             lblStatus.setText("Status: CANCELED");
             btnCancel.setDisable(true);
@@ -69,6 +74,17 @@ public class AuctionDetailController {
             }
         } catch (Exception e) {
             e.printStackTrace();
+        Stage stage = (Stage) lblTitle.getScene().getWindow();
+        User currentUser = SessionManager.getInstance().getCurrentUser();
+
+        if (currentUser != null) {
+            if (currentUser.getRole() == UserRole.ADMIN) {
+                ControllerUtils.changeScene(stage, "AdminMainView.fxml");
+            } else if (currentUser.getRole() == UserRole.SELLER) {
+                ControllerUtils.changeScene(stage, "SellerMainView.fxml");
+            } else {
+                ControllerUtils.changeScene(stage, "AuctionList.fxml");
+            }
         }
     }
 }

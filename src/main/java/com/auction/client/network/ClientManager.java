@@ -2,6 +2,8 @@ package com.auction.client.network;
 
 import com.auction.models.dto.NetworkMessage;
 import com.auction.models.dto.AppConstants;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.*;
 import java.net.Socket;
@@ -14,6 +16,9 @@ import java.util.function.Consumer;
  * It handles connecting, sending requests, and receiving messages from the server.
  */
 public class ClientManager {
+
+    private static final Logger logger = LoggerFactory.getLogger(ClientManager.class);
+
     private static ClientManager instance;
     private Socket socket;
     private ObjectOutputStream out;
@@ -52,7 +57,7 @@ public class ClientManager {
         Thread listenerThread = new Thread(() -> listen(), "ClientListenerThread");
         listenerThread.setDaemon(true); // Allow app to exit if this thread is still running
         listenerThread.start();
-        System.out.println("[CLIENT] Connected to server at " + AppConstants.SERVER_HOST + ":" + AppConstants.SERVER_PORT);
+        logger.info("[CLIENT] Connected to server at " + AppConstants.SERVER_HOST + ":" + AppConstants.SERVER_PORT);
     }
 
     /**
@@ -68,7 +73,7 @@ public class ClientManager {
             }
         } catch (IOException | ClassNotFoundException e) {
             if (running) {
-                System.err.println("[CLIENT] Connection lost or error: " + e.getMessage());
+                logger.error("[CLIENT] Connection lost or error", e);
                 running = false;
             }
         } finally {
@@ -90,7 +95,7 @@ public class ClientManager {
                 out.reset(); // Clear cache for stateful objects
             }
         } catch (IOException e) {
-            System.err.println("[CLIENT] Failed to send request: " + e.getMessage());
+            logger.error("[CLIENT] Failed to send request", e);
         }
     }
 
@@ -125,7 +130,7 @@ public class ClientManager {
             }
             // Streams are closed by closing the socket
         } catch (IOException e) {
-            System.err.println("[CLIENT] Error closing connection: " + e.getMessage());
+            logger.error("[CLIENT] Error closing connection", e);
         }
     }
 

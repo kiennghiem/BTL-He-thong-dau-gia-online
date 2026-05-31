@@ -13,11 +13,15 @@ import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
 import javafx.scene.layout.BorderPane;
 import javafx.stage.Stage;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.function.Consumer;
 
 public class AdminMainController {
+
+    private static final Logger logger = LoggerFactory.getLogger(AdminMainController.class);
 
     @FXML
     private BorderPane mainBorderPane;
@@ -28,8 +32,6 @@ public class AdminMainController {
     @FXML
     public void initialize() {
         mainBorderPane.getProperties().put("controller", this);
-        // Show Auctions by default
-        handleShowAuctions(null);
 
         // Register listener for server responses
         responseListener = msg -> {
@@ -41,8 +43,8 @@ public class AdminMainController {
     }
 
     @FXML
-    private void handleShowAuctions(ActionEvent event) {
-        loadView("AuctionList.fxml");
+    private void handleShowAvailableAuctions(ActionEvent event) {
+        loadView("AuctionList.fxml", false);
     }
 
     @FXML
@@ -51,20 +53,20 @@ public class AdminMainController {
         ClientManager.getInstance().sendRequest(logoutRequest);
     }
 
-    public void loadView(String fxmlFile) {
+    public void loadView(String fxmlFile, boolean myAuctionsMode) {
         try {
             FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/auction/client/view/" + fxmlFile));
             Parent view = loader.load();
             
             if (fxmlFile.equals("AuctionList.fxml")) {
                 AuctionListController controller = loader.getController();
-                controller.setMyAuctionsMode(false);
+                controller.setMyAuctionsMode(myAuctionsMode);
                 controller.setOnAuctionSelected(this::handleAuctionSelected);
             }
             
             mainBorderPane.setCenter(view);
         } catch (IOException e) {
-            e.printStackTrace();
+            logger.error("Error loading view: " + fxmlFile, e);
             ControllerUtils.showAlert("Error loading view: " + fxmlFile);
         }
     }
@@ -79,13 +81,16 @@ public class AdminMainController {
             
             mainBorderPane.setCenter(view);
         } catch (IOException e) {
-            e.printStackTrace();
-            ControllerUtils.showAlert("Error loading Detail View");
+            logger.error("Error loading Auction Detail View", e);
+            ControllerUtils.showAlert("Error loading Auction Detail View");
         }
     }
 
     private void handleAuthResponse(AuthResponse response) {
         if (response.isSuccess()) {
+            logger.info("[LOGOUT] Success: " + response.getMessage());
+
+            // Clean up listener and clear session with the current user
             ClientManager.getInstance().removeMessageListener(responseListener);
             SessionManager.getInstance().clearSession();
 

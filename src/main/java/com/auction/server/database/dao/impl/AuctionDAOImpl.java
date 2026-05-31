@@ -3,6 +3,8 @@ import com.auction.models.Item;
 import com.auction.server.database.dao.*;
 import com.auction.models.Auction;
 import com.auction.server.observer.AuctionStatus;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.math.BigDecimal;
 import java.sql.*;
@@ -15,6 +17,7 @@ import java.util.List;
  * Tận dụng cơ chế Connection Pooling của BaseDAO và áp dụng kỹ thuật chặn Race Condition.
  */
 public class AuctionDAOImpl extends BaseDAO implements AuctionDAO {
+    private static final Logger logger = LoggerFactory.getLogger(AuctionDAOImpl.class);
 
     // =========================================================================
     // QUẢN LÝ TẬP TRUNG TẤT CẢ CÁC CÂU LỆNH SQL CONSTANTS
@@ -205,13 +208,12 @@ public class AuctionDAOImpl extends BaseDAO implements AuctionDAO {
 
             if (rowsAffected == 0) {
                 // Đưa ra cảnh báo hệ thống hoặc log chi tiết thay vì để lỗi nuốt chửng âm thầm
-                System.err.println("[AuctionDAO] Thao tác đặt giá thất bại cho AuctionID: " + auctionId
-                        + " do xung đột giá thấp hơn hiện tại hoặc phiên đấu giá đã kết thúc/đóng.");
+                logger.warn("[AuctionDAO] Thao tác đặt giá thất bại cho AuctionID: {} do xung đột giá thấp hơn hiện tại hoặc phiên đấu giá đã kết thúc/đóng.", auctionId);
                 return false;
             }
             return true;
         } catch (SQLException e) {
-            System.err.println("[AuctionDAO-Error] Lỗi nghiêm trọng xảy ra khi thực thi luồng đặt giá: " + e.getMessage());
+            logger.error("[AuctionDAO-Error] Lỗi nghiêm trọng xảy ra khi thực thi luồng đặt giá", e);
             throw e; // Ném ngược Exception ra ngoài để tầng dịch vụ (Service) thực hiện Rollback/Xử lý UI nếu cần
         } finally {
             closeResources(stmt, conn);

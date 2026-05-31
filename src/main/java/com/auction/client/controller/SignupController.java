@@ -10,10 +10,14 @@ import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.scene.control.*;
 import javafx.stage.Stage;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.function.Consumer;
 
 public class SignupController {
+
+    private static final Logger logger = LoggerFactory.getLogger(SignupController.class);
 
     @FXML
     TextField tfUsername;
@@ -64,7 +68,7 @@ public class SignupController {
 
     private void handleAuthResponse(AuthResponse response) {
         if (response.isSuccess()) {
-            System.out.println("[SIGNUP] Success: " + response.getMessage());
+            logger.info("[SIGNUP] Success: " + response.getMessage());
             
             // Show success message
             Alert alert = new Alert(Alert.AlertType.INFORMATION);
@@ -76,6 +80,16 @@ public class SignupController {
             // Redirect back to Login screen
             Stage stage = (Stage) buttonSignUp.getScene().getWindow();
             ControllerUtils.changeScene(stage, "Login.fxml");
+
+            if (response.getUser().getRole() == UserRole.SELLER) {
+                ControllerUtils.changeScene(stage, "SellerMainView.fxml");
+            } else if (response.getUser().getRole() == UserRole.BIDDER) {
+                ControllerUtils.changeScene(stage, "BidderMainView.fxml");
+            } else if (response.getUser().getRole() == UserRole.ADMIN) {
+                ControllerUtils.changeScene(stage, "AdminMainView.fxml");
+            } else {
+                ControllerUtils.changeScene(stage, "AuctionList.fxml");
+            }
 
             // Cleanup listener when leaving
             ClientManager.getInstance().removeMessageListener(responseListener);

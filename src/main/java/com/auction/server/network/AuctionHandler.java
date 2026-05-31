@@ -66,8 +66,22 @@ public class AuctionHandler implements AuctionObserver {
             handleGetActiveAuctions(req);
             return true;
         }
+        if (message instanceof CancelAuctionRequest req) {
+            handleCancelAuction(req);
+            return true;
+        }
 
         return false;
+    }
+
+    private void handleCancelAuction(CancelAuctionRequest req) {
+        try {
+            auctionService.cancelAuction(req.getAuctionId(), req.getAdminId());
+            sendResponse(new GenericResponse(true, "Hủy phiên đấu giá thành công!"));
+            System.out.println("[AuctionHandler] Auction canceled: " + req.getAuctionId() + " by " + req.getAdminId());
+        } catch (Exception e) {
+            sendResponse(new GenericResponse(false, "Lỗi hủy đấu giá: " + e.getMessage()));
+        }
     }
 
     private void handleBid(BidRequest req) {

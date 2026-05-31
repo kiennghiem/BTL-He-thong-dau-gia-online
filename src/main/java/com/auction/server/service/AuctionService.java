@@ -79,15 +79,6 @@ public class AuctionService {
                 System.err.println("[AuctionService-Async] CRITICAL: Bid for " + bidderId +
                         " on " + auctionId + " failed to save to DB via BidDAO!");
             }
-
-            try {
-                boolean auctionUpdated = auctionDAO.placeBid(auctionId, bidderId, amount);
-                if (!auctionUpdated) {
-                    System.err.println("[AuctionService-Async] CRITICAL: Auction atomic bid constraints rejected the value for: " + auctionId);
-                }
-            } catch (SQLException e) {
-                System.err.println("[AuctionService-Async] CRITICAL: Database error updating auction current balance: " + e.getMessage());
-            }
         });
     }
 

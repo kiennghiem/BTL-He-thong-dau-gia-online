@@ -57,7 +57,7 @@ public class AuctionManager {
         activeAuctions.put(auction.getId(), auction);
         // Notify observers about NEW auction
         broadcastNotification(new Notification(
-                Notification.Type.STATUS_CHANGED, 
+                Notification.Type.STATUS_CHANGED,
                 auction.getId(),
                 createUpdateDTO(auction)
         ));
@@ -141,6 +141,32 @@ public class AuctionManager {
                         auctionId,
                         createUpdateDTO(auction)
                 ));
+
+                // Optional: Remove from active auctions if you want to stop tracking it in memory
+                // activeAuctions.remove(auctionId);
+            } catch (Exception e) {
+                logger.error("[ERROR] Failed to cancel auction: {}", auctionId, e);
+            }
+        }
+    }
+
+    public void cancelAuction(String auctionId) throws AuctionNotFoundException {
+        Auction auction = activeAuctions.get(auctionId);
+        if (auction == null) {
+            throw new AuctionNotFoundException("Auction with ID " + auctionId + " not found.");
+        }
+
+        synchronized (auction) {
+            try {
+                auction.setStatus(AuctionStatus.CANCELED);
+                logger.info("[INFO] Auction {} canceled by Admin.", auctionId);
+
+                // Notify about status change
+                broadcastNotification(new Notification(
+                        Notification.Type.STATUS_CHANGED,
+                        auctionId,
+                        createUpdateDTO(auction)
+                ));
             } catch (Exception e) {
                 logger.error("[ERROR] Failed to cancel auction: {}", auctionId, e);
             }
@@ -186,6 +212,7 @@ public class AuctionManager {
                         }
                     } catch (Exception e) {
                         logger.error("[ERROR] Status checker error: {}", e.getMessage(), e);
+                        logger.error("[ERROR] Status checker error for auction {}: {}", auction.getId(), e.getMessage(), e);
                     }
                 }
             }
