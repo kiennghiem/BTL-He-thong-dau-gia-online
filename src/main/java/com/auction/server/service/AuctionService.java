@@ -97,24 +97,19 @@ public class AuctionService {
 
         Item item = ItemFactory.createNewItem(type, name, desc, startingPrice, specAttr, seller);
 
-        // 3. FIX: Simplified Seller initialization using imported classes
-        Seller commonSeller = new Seller();
-        commonSeller.setUsername(seller.getUsername());
-        item.setOwner(commonSeller);
-
-        // 4. Create Auction object
+        // Create Auction object
         Auction auction = new Auction();
-        auction.setId(UUID.randomUUID().toString());
         auction.setItem(item);
+        auction.setStatus(AuctionStatus.OPEN);
+        auction.setSeller(seller);
         auction.setTitle(name);
         auction.setDescription(desc);
-        auction.setStartingPrice(startingPrice);
-        auction.setCurrentPrice(startingPrice);
         auction.setStartTime(start);
         auction.setEndTime(end);
-        auction.setStatus(AuctionStatus.RUNNING);
+        auction.setStartingPrice(startingPrice);
+        auction.setCurrentPrice(startingPrice);
 
-        // 5. Persist both sequentially to Database
+        // Persist both sequentially to Database
         boolean itemSaved = itemDAO.addItem(item);
         boolean auctionSaved = false;
 

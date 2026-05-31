@@ -1,12 +1,17 @@
 package com.auction.client.controller;
 
+import com.auction.client.network.ClientManager;
 import com.auction.client.util.SessionManager;
 import com.auction.models.Auction;
 import com.auction.models.Seller;
 import com.auction.models.User;
+import com.auction.models.dto.AuthResponse;
+import com.auction.models.dto.GenericResponse;
+import com.auction.models.dto.GetActiveAuctionsRequest;
 import com.auction.server.factory.UserFactory;
 import com.auction.server.factory.UserRole;
 import com.auction.server.observer.AuctionStatus;
+import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.event.ActionEvent;
@@ -19,6 +24,7 @@ import javafx.scene.control.cell.PropertyValueFactory;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 public class AuctionListController {
@@ -30,7 +36,7 @@ public class AuctionListController {
     @FXML private TableColumn<Auction, String> colStatus;
     @FXML private TableColumn<Auction, LocalDateTime> colEndTime;
 
-    // Used to check if
+    private Consumer<Object> responseListener;
     private boolean myAuctionsMode = false;
 
     public void setMyAuctionsMode(boolean myAuctionsMode) {
@@ -41,6 +47,7 @@ public class AuctionListController {
     // This method runs automatically when the screen loads
     @FXML
     public void initialize() {
+
         // 1. Tell the columns which variables to look for in your Auction model
         colTitle.setCellValueFactory(new PropertyValueFactory<>("title"));
         colPrice.setCellValueFactory(new PropertyValueFactory<>("currentPrice"));
@@ -52,39 +59,32 @@ public class AuctionListController {
     }
 
     public void refreshAuctionList() {
-        // TODO: Send a network request to your server asking for all active auctions, then put them in allData.
+        if (responseListener == null) {
+            responseListener = msg -> {
+                if (msg instanceof List<?> list) {
+                    try {
+                        // Attempt to cast to List<Auction>
+                        @SuppressWarnings("unchecked")
+                        List<Auction> auctions = (List<Auction>) list;
+                        Platform.runLater(() -> updateTableData(auctions));
+                    } catch (ClassCastException e) {
+                        System.err.println("[AuctionList] Received list was not a List<Auction>");
+                    }
+                }
+            };
+            ClientManager.getInstance().addMessageListener(responseListener);
+        }
 
-        // --- TEMPORARY DUMMY DATA ---
-        ObservableList<Auction> allData = FXCollections.observableArrayList();
+        // Send a network request to your server asking for all active auctions
+        ClientManager.getInstance().sendRequest(new GetActiveAuctionsRequest());
+    }
 
-        Auction dummy1 = new Auction();
-        dummy1.setTitle("Vintage Rolex Watch");
-        dummy1.setCurrentPrice(new BigDecimal("1500.00"));
-        dummy1.setStatus(AuctionStatus.RUNNING);
-        dummy1.setEndTime(LocalDateTime.now().plusDays(2));
-        Seller dummySeller1 = (Seller) UserFactory.createNewUser(UserRole.SELLER, "guy1", "111111");
-        dummySeller1.setId("dummy-seller-id-1");
-        dummy1.setSeller(dummySeller1);
-
-        Auction dummy2 = new Auction();
-        dummy2.setTitle("MacBook Pro 2023");
-        dummy2.setCurrentPrice(new BigDecimal("2200.00"));
-        dummy2.setStatus(AuctionStatus.OPEN);
-        dummy2.setEndTime(LocalDateTime.now().plusDays(5));
+    private void updateTableData(List<Auction> auctions) {
+        ObservableList<Auction> allData = FXCollections.observableArrayList(auctions);
 
         // Use SessionManager to get current user's ID
         User currentUser = SessionManager.getInstance().getCurrentUser();
         String currentUserId = (currentUser != null) ? currentUser.getId() : "unknown";
-
-        if (currentUser instanceof Seller) {
-            dummy2.setSeller((Seller) currentUser);
-        } else {
-            Seller dummySeller2 = (Seller) UserFactory.createNewUser(UserRole.SELLER, "guy2", "222222");
-            dummySeller2.setId("dummy-seller-id-2");
-            dummy2.setSeller(dummySeller2);
-        }
-
-        allData.addAll(dummy1, dummy2);
 
         // Filter auctions to be shown from allData based on myAuctionsMode
         if (myAuctionsMode && currentUser != null) {

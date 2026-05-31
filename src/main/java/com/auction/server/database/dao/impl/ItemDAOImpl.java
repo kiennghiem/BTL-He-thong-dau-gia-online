@@ -37,8 +37,8 @@ public class ItemDAOImpl extends BaseDAO implements ItemDAO {
 
     @Override
     public boolean addItem(Item item) {
-        String sql = "INSERT INTO items (id, item_type, item_name, description, startingPrice, currentPrice," +
-                     "special_attribute, owner_id, buyer_id" +
+        String sql = "INSERT INTO items (id, item_type, item_name, description, starting_price, current_price, " +
+                     "special_attribute, owner_id, buyer_id) " +
                      "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
         try (Connection conn = getConnection();
@@ -63,8 +63,8 @@ public class ItemDAOImpl extends BaseDAO implements ItemDAO {
 
     @Override
     public boolean updateItem(Item item) {
-        String sql = "UPDATE items SET item_name = ?, description = ?, startingPrice = ?, currentPrice = ?," +
-                     "special_attribute, owner_id = ?, buyer_id = ? WHERE id = ?";
+        String sql = "UPDATE items SET item_name = ?, description = ?, starting_price = ?, current_price = ?, " +
+                     "special_attribute = ?, owner_id = ?, buyer_id = ? WHERE id = ?";
 
         try (Connection conn = getConnection();
              PreparedStatement pstmt = conn.prepareStatement(sql)) {

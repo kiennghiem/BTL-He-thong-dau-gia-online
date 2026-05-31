@@ -8,8 +8,6 @@ import com.auction.server.manager.AuctionManager;
 import com.auction.server.observer.AuctionObserver;
 import com.auction.server.service.AuctionService;
 import com.auction.models.dto.*;
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
 
 import java.io.IOException;
 import java.io.ObjectOutputStream;
@@ -70,11 +68,11 @@ public class AuctionHandler implements AuctionObserver {
 
     private void handleCreateAuction(CreateAuctionRequest req) {
         try {
-            ItemType type = ItemType.valueOf(req.getItemType().toString());
+            ItemType type = req.getItemType();
             boolean success = auctionService.createAuction(
                 type, req.getItemName(), req.getItemDescription(),
                 req.getStartingPrice(), req.getSpecificAttribute(),
-                new Seller(req.getSellerUsername(), ""),
+                (Seller) req.getSeller(),
                 req.getStartTime(), req.getEndTime());
             if (success) {
                 sendResponse(new GenericResponse(true, "Tạo phiên đấu giá thành công!"));
@@ -82,6 +80,7 @@ public class AuctionHandler implements AuctionObserver {
                 sendResponse(new GenericResponse(false, "Lỗi khi tạo phiên đấu giá."));
             }
         } catch (Exception e) {
+            e.printStackTrace();
             sendResponse(new GenericResponse(false, "Lỗi tạo đấu giá: " + e.getMessage()));
         }
     }

@@ -1,9 +1,13 @@
 package com.auction.client.controller;
 
+import com.auction.client.network.ClientManager;
 import com.auction.client.util.SessionManager;
 import com.auction.models.User;
+import com.auction.models.dto.AuthResponse;
 import com.auction.models.dto.CreateAuctionRequest;
-import com.auction.server.factory.UserRole;
+import com.auction.models.dto.GenericResponse;
+import com.auction.server.factory.ItemType;
+import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.event.ActionEvent;
@@ -13,11 +17,15 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.util.function.Consumer;
 
 public class SellerCreateAuctionController {
 
     @FXML private TextField txtTitle;
     @FXML private TextArea txtDescription;
+    @FXML private ComboBox<ItemType> cbItemType;
+    @FXML private Label lblSpecificAttribute;
+    @FXML private TextField txtSpecificAttribute;
     @FXML private TextField txtStartingPrice;
     @FXML private DatePicker dpStartDate;
     @FXML private ComboBox<String> cbStartHour;
@@ -27,9 +35,17 @@ public class SellerCreateAuctionController {
     @FXML private Button btnSubmit;
 
     private User currentSeller = SessionManager.getInstance().getCurrentUser();
+    private Consumer<Object> responseListener;
 
     @FXML
     public void initialize() {
+        responseListener = msg -> {
+            if (msg instanceof GenericResponse response) {
+                Platform.runLater(() -> handleCreateAuctionResponse(response));
+            }
+        };
+        ClientManager.getInstance().addMessageListener(responseListener);
+
         // Populate Hours into the combo boxes
         ObservableList<String> hours = FXCollections.observableArrayList();
         for (int i = 0; i < 24; i++) {
@@ -37,6 +53,10 @@ public class SellerCreateAuctionController {
         }
         cbStartHour.setItems(hours);
         cbEndHour.setItems(hours);
+
+        // Populate Item Types
+        cbItemType.setItems(FXCollections.observableArrayList(ItemType.values()));
+        cbItemType.getSelectionModel().select(ItemType.ELECTRONICS);
 
         // Default selections
         dpStartDate.setValue(LocalDate.now());
@@ -49,13 +69,16 @@ public class SellerCreateAuctionController {
     public void handleSubmitAuction(ActionEvent event) {
         String title = txtTitle.getText().trim();
         String description = txtDescription.getText().trim();
+        ItemType itemType = cbItemType.getValue();
+        String specificAttribute = txtSpecificAttribute.getText().trim();
         String priceRaw = txtStartingPrice.getText().trim();
         LocalDate startDate = dpStartDate.getValue();
         String startHourRaw = cbStartHour.getValue();
         LocalDate endDate = dpEndDate.getValue();
         String endHourRaw = cbEndHour.getValue();
 
-        if (title.isEmpty() || priceRaw.isEmpty() || startDate == null || endDate == null) {
+        if (title.isEmpty() || description.isEmpty() || itemType == null || specificAttribute.isEmpty() ||
+            priceRaw.isEmpty() || startDate == null || endDate == null) {
             showAlert(Alert.AlertType.WARNING, "Missing Info", "Please fill out all required fields!");
             return;
         }
@@ -80,11 +103,22 @@ public class SellerCreateAuctionController {
             return;
         }
 
-        // TODO: Call your Client-Side Service or Network Manager here to send the request to the server
+        // Send request to server via ClientManager
+        CreateAuctionRequest request = new CreateAuctionRequest(
+                currentSeller,
+                itemType,
+                title,
+                description,
+                startingPrice,
+                specificAttribute,
+                startDateTime,
+                endDateTime
+        );
 
-        System.out.println("Submitting Auction: " + title + " | $" + startingPrice);
+        ClientManager.getInstance().sendRequest(request);
+        System.out.println("Submitting Auction: " + title + " | $" + startingPrice + " | Type: " + itemType);
 
-        showAlert(Alert.AlertType.INFORMATION, "Success", "Auction created successfully!");
+        showAlert(Alert.AlertType.INFORMATION, "Success", "Auction creation request submitted!");
 
         // Go back to the correct view
         navigateBack(event);
@@ -105,5 +139,16 @@ public class SellerCreateAuctionController {
         alert.setHeaderText(null);
         alert.setContentText(content);
         alert.showAndWait();
+    }
+
+    private void handleCreateAuctionResponse(GenericResponse response) {
+        if (response.isSuccess()) {
+            System.out.println("[CREATEAUCTION] Success: " + response.getMessage());
+            showAlert(Alert.AlertType.CONFIRMATION, "Success", "New auction has been created");
+
+            ClientManager.getInstance().removeMessageListener(responseListener);
+        } else {
+            ControllerUtils.showAlert(response.getMessage());
+        }
     }
 }

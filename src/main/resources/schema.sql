@@ -14,8 +14,8 @@ CREATE TABLE IF NOT EXISTS items (
     item_type VARCHAR(20),
     item_name VARCHAR(100) NOT NULL,
     description TEXT NULL,
-    starting_price DECIMAL(15, 2) 0.0,
-    current_price DECIMAL(15, 2) 0.0,
+    starting_price DECIMAL(15, 2) DEFAULT 0.0,
+    current_price DECIMAL(15, 2) DEFAULT 0.0,
     special_attribute VARCHAR(45),
     owner_id VARCHAR(50),
     buyer_id VARCHAR(50) NULL,
@@ -37,4 +37,15 @@ CREATE TABLE IF NOT EXISTS auctions (
     highest_bidder_id VARCHAR(50) NULL,
     FOREIGN KEY (item_id) REFERENCES items(id),
     FOREIGN KEY (highest_bidder_id) REFERENCES users(id)
+);
+
+-- 4. BẢNG BIDS (Lịch sử đặt giá)
+CREATE TABLE IF NOT EXISTS bids (
+    id VARCHAR(50) PRIMARY KEY,
+    auction_id VARCHAR(50),
+    bidder_id VARCHAR(50),
+    amount DECIMAL(15, 2),
+    timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (auction_id) REFERENCES auctions(id),
+    FOREIGN KEY (bidder_id) REFERENCES users(id)
 );
