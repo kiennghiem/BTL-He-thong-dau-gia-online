@@ -19,6 +19,10 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.util.function.Consumer;
 
+/**
+ * Main Controller for the Admin Dashboard.
+ * Manages view switching and session for administrator users.
+ */
 public class AdminMainController {
 
     private static final Logger logger = LoggerFactory.getLogger(AdminMainController.class);
@@ -33,13 +37,16 @@ public class AdminMainController {
     public void initialize() {
         mainBorderPane.getProperties().put("controller", this);
 
-        // Register listener for server responses
+        // Register listener for server responses (Logout, etc.)
         responseListener = msg -> {
             if (msg instanceof AuthResponse response) {
                 Platform.runLater(() -> handleAuthResponse(response));
             }
         };
         ClientManager.getInstance().addMessageListener(responseListener);
+
+        // Initial view load
+        handleShowAvailableAuctions(null);
     }
 
     @FXML
@@ -49,37 +56,52 @@ public class AdminMainController {
 
     @FXML
     private void handleLogout(ActionEvent event) {
-        LogoutRequest logoutRequest = new LogoutRequest(currentUser.getUsername());
-        ClientManager.getInstance().sendRequest(logoutRequest);
+        if (currentUser != null) {
+            LogoutRequest logoutRequest = new LogoutRequest(currentUser.getUsername());
+            ClientManager.getInstance().sendRequest(logoutRequest);
+        } else {
+            // Safe fallback if session is lost
+            SessionManager.getInstance().clearSession();
+            Stage stage = (Stage) mainBorderPane.getScene().getWindow();
+            ControllerUtils.changeScene(stage, "Login.fxml");
+        }
     }
 
     public void loadView(String fxmlFile, boolean myAuctionsMode) {
         try {
+            logger.info("Admin loading view: {}", fxmlFile);
             FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/auction/client/view/" + fxmlFile));
             Parent view = loader.load();
             
             if (fxmlFile.equals("AuctionList.fxml")) {
                 AuctionListController controller = loader.getController();
-                controller.setMyAuctionsMode(myAuctionsMode);
-                controller.setOnAuctionSelected(this::handleAuctionSelected);
+                if (controller != null) {
+                    controller.setMyAuctionsMode(myAuctionsMode);
+                    // CRUCIAL: Pass the Admin's selection handler to the list
+                    controller.setOnAuctionSelected(this::handleAuctionSelected);
+                    logger.info("Admin selection handler attached to AuctionListController");
+                }
             }
             
             mainBorderPane.setCenter(view);
         } catch (IOException e) {
-            logger.error("Error loading view: " + fxmlFile, e);
+            logger.error("Error loading view: {}", fxmlFile, e);
             ControllerUtils.showAlert("Error loading view: " + fxmlFile);
         }
     }
 
     private void handleAuctionSelected(Auction auction) {
+        logger.info("Admin selected auction: {}", auction.getId());
         try {
             FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/auction/client/view/AuctionDetail.fxml"));
             Parent view = loader.load();
             
             AuctionDetailController controller = loader.getController();
-            controller.setAuction(auction);
-            
-            mainBorderPane.setCenter(view);
+            if (controller != null) {
+                controller.setAuction(auction);
+                mainBorderPane.setCenter(view);
+                logger.info("Admin navigating to AuctionDetail for auction: {}", auction.getId());
+            }
         } catch (IOException e) {
             logger.error("Error loading Auction Detail View", e);
             ControllerUtils.showAlert("Error loading Auction Detail View");
@@ -87,16 +109,15 @@ public class AdminMainController {
     }
 
     private void handleAuthResponse(AuthResponse response) {
-        if (response.isSuccess()) {
-            logger.info("[LOGOUT] Success: " + response.getMessage());
+        if (response.isSuccess() && response.getMessage() != null && response.getMessage().contains("logout")) {
+            logger.info("[LOGOUT] Admin logout success: {}", response.getMessage());
 
-            // Clean up listener and clear session with the current user
             ClientManager.getInstance().removeMessageListener(responseListener);
             SessionManager.getInstance().clearSession();
 
             Stage stage = (Stage) mainBorderPane.getScene().getWindow();
             ControllerUtils.changeScene(stage, "Login.fxml");
-        } else {
+        } else if (!response.isSuccess()) {
             ControllerUtils.showAlert(response.getMessage());
         }
     }

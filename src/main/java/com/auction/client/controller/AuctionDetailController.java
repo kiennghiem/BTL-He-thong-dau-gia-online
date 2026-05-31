@@ -11,9 +11,19 @@ import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
-import javafx.stage.Stage;
+import javafx.scene.layout.BorderPane;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
+import java.math.BigDecimal;
+import java.time.format.DateTimeFormatter;
+
+/**
+ * Controller for the Auction Detail View (primarily for Admins).
+ * Provides information and management tools like cancellation.
+ */
 public class AuctionDetailController {
+    private static final Logger logger = LoggerFactory.getLogger(AuctionDetailController.class);
 
     @FXML private Label lblTitle;
     @FXML private Label lblDescription;
@@ -23,21 +33,41 @@ public class AuctionDetailController {
     @FXML private Button btnCancel;
 
     private Auction currentAuction;
+    private static final DateTimeFormatter FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
     public void setAuction(Auction auction) {
+        if (auction == null) {
+            logger.warn("setAuction called with null auction object.");
+            return;
+        }
         this.currentAuction = auction;
-        lblTitle.setText(auction.getTitle());
-        lblDescription.setText(auction.getDescription());
-        lblPrice.setText(auction.getCurrentPrice().toString());
-        lblStatus.setText(auction.getStatusAsString());
-        lblEndTime.setText(auction.getEndTime().toString());
-        lblPrice.setText("Current Price: $" + auction.getCurrentPrice().toString());
-        lblStatus.setText("Status: " + auction.getStatusAsString());
-        lblEndTime.setText("End Time: " + auction.getEndTime().toString());
+        
+        try {
+            lblTitle.setText(auction.getTitle() != null ? auction.getTitle() : "N/A");
+            lblDescription.setText(auction.getDescription() != null ? auction.getDescription() : "No description.");
+            
+            BigDecimal price = auction.getCurrentPrice() != null ? auction.getCurrentPrice() : BigDecimal.ZERO;
+            lblPrice.setText("Current Price: $" + price);
+            
+            lblStatus.setText("Status: " + auction.getStatusAsString());
+            
+            if (auction.getEndTime() != null) {
+                lblEndTime.setText("End Time: " + auction.getEndTime().format(FORMATTER));
+            } else {
+                lblEndTime.setText("End Time: N/A");
+            }
 
-        User currentUser = SessionManager.getInstance().getCurrentUser();
-        if (currentUser != null && currentUser.getRole() == UserRole.ADMIN) {
-            btnCancel.setVisible(true);
+            User currentUser = SessionManager.getInstance().getCurrentUser();
+            if (currentUser != null && currentUser.getRole() == UserRole.ADMIN) {
+                btnCancel.setVisible(true);
+                btnCancel.setManaged(true);
+                btnCancel.setDisable(auction.getStatus() == AuctionStatus.CANCELED);
+            } else {
+                btnCancel.setVisible(false);
+                btnCancel.setManaged(false);
+            }
+        } catch (Exception e) {
+            logger.error("Error updating Detail UI", e);
         }
     }
 
@@ -50,41 +80,32 @@ public class AuctionDetailController {
             CancelAuctionRequest request = new CancelAuctionRequest(currentAuction.getId(), currentUser.getId());
             ClientManager.getInstance().sendRequest(request);
             
-            // Optionally update UI immediately or wait for broadcast
-            lblStatus.setText(AuctionStatus.CANCELED.toString());
-            // UI Feedback
+            // Immediate local feedback
             lblStatus.setText("Status: CANCELED");
             btnCancel.setDisable(true);
+            logger.info("Admin canceled auction: {}", currentAuction.getId());
         }
     }
 
     @FXML
     private void handleBack(ActionEvent event) {
         try {
-            javafx.scene.layout.BorderPane mainPane = (javafx.scene.layout.BorderPane) lblTitle.getScene().lookup("#mainBorderPane");
+            // Find the main dashboard container using CSS ID
+            BorderPane mainPane = (BorderPane) lblTitle.getScene().lookup("#mainBorderPane");
             if (mainPane != null) {
                 Object controller = mainPane.getProperties().get("controller");
                 if (controller instanceof AdminMainController) {
-                    ((AdminMainController) controller).loadView("AuctionList.fxml");
+                    ((AdminMainController) controller).loadView("AuctionList.fxml", false);
                 } else if (controller instanceof SellerMainController) {
                     ((SellerMainController) controller).loadView("AuctionList.fxml", false);
                 } else if (controller instanceof BidderMainController) {
                     ((BidderMainController) controller).loadView("AuctionList.fxml", false);
                 }
+            } else {
+                logger.warn("Navigation back failed: #mainBorderPane not found.");
             }
         } catch (Exception e) {
-            e.printStackTrace();
-        Stage stage = (Stage) lblTitle.getScene().getWindow();
-        User currentUser = SessionManager.getInstance().getCurrentUser();
-
-        if (currentUser != null) {
-            if (currentUser.getRole() == UserRole.ADMIN) {
-                ControllerUtils.changeScene(stage, "AdminMainView.fxml");
-            } else if (currentUser.getRole() == UserRole.SELLER) {
-                ControllerUtils.changeScene(stage, "SellerMainView.fxml");
-            } else {
-                ControllerUtils.changeScene(stage, "AuctionList.fxml");
-            }
+            logger.error("Error during back navigation", e);
         }
     }
 }

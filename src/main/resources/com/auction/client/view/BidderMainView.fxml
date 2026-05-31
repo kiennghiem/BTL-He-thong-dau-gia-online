@@ -25,7 +25,12 @@
                   <Font size="16.0" />
                </font>
             </Button>
-            <Button fx:id="btnMyBids" maxWidth="1.7976931348623157E308" mnemonicParsing="false" onAction="#handleShowMyBids" style="-fx-background-color: transparent; -fx-text-fill: white; -fx-alignment: BASELINE_LEFT; -fx-cursor: hand;" text="My Bids">
+            <Button maxWidth="1.7976931348623157E308" mnemonicParsing="false" onAction="#handleShowMyBids" style="-fx-background-color: transparent; -fx-text-fill: white; -fx-alignment: BASELINE_LEFT; -fx-cursor: hand;" text="My Bids">
+               <font>
+                  <Font size="16.0" />
+               </font>
+            </Button>
+            <Button maxWidth="1.7976931348623157E308" mnemonicParsing="false" onAction="#handleShowDeposit" style="-fx-background-color: transparent; -fx-text-fill: white; -fx-alignment: BASELINE_LEFT; -fx-cursor: hand;" text="Wallet Funding">
                <font>
                   <Font size="16.0" />
                </font>

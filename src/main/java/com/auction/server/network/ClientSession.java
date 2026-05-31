@@ -40,15 +40,35 @@ public class ClientSession implements Runnable {
                 try {
                     Object received = in.readObject();
                     if (received instanceof NetworkMessage msg) {
-                        // Routing logic with short-circuiting: 
-                        // Try UserHandler first, if not handled, try AuctionHandler
-                        boolean handled = userHandler.handleMessage(msg);
+                        // Routing logic:
+                        // 1. Try UserHandler first
+                        com.auction.models.User authenticatedUser = userHandler.handleMessage(msg);
+                        boolean handled = (authenticatedUser != null);
+                        
+                        // 2. Synchronize user state if login occurred
+                        if (authenticatedUser != null) {
+                            auctionHandler.setCurrentUser(authenticatedUser);
+                        }
+
+                        // 3. If UserHandler didn't "handle" it as a successful login, 
+                        // it might still have been a logout or a failed login (which UserHandler already responded to).
+                        // If it's still not handled, try AuctionHandler.
                         if (!handled) {
-                            handled = auctionHandler.handleMessage(msg);
+                            // Check if UserHandler still wants it (e.g. LogoutRequest, RegisterRequest)
+                            // We need to re-check handled status or just trust the short-circuiting.
+                            // To be safe and clean:
+                            if (msg instanceof com.auction.models.dto.LogoutRequest || 
+                                msg instanceof com.auction.models.dto.RegisterRequest) {
+                                handled = true; // UserHandler handled it but returned null User
+                            }
+                            
+                            if (!handled) {
+                                handled = auctionHandler.handleMessage(msg);
+                            }
                         }
                         
                         if (!handled) {
-                            logger.warn("Unhandled message: {}", msg.getClass().getSimpleName());
+                            logger.warn("Unhandled message type: {}", msg.getClass().getSimpleName());
                         }
                     }
                 } catch (ClassNotFoundException e) {

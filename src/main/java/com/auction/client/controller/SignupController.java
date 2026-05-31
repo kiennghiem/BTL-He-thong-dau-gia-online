@@ -51,11 +51,13 @@ public class SignupController {
     public void handleSignup(ActionEvent event) {
         String username = tfUsername.getText().trim();
         String password = tfPassword.getText().trim();
-        ToggleGroup roleGroup = rbBidder.getToggleGroup();
-        RadioButton selectedButton = (RadioButton)roleGroup.getSelectedToggle();
+        RadioButton selectedButton = null;
+        if (rbBidder.isSelected()) selectedButton = rbBidder;
+        else if (rbSeller.isSelected()) selectedButton = rbSeller;
+        else if (rbAdmin.isSelected()) selectedButton = rbAdmin;
         
         if (username.isEmpty() || password.isEmpty() || selectedButton == null) {
-            ControllerUtils.showAlert("Vui lòng điền đầy đủ thông tin!");
+            ControllerUtils.showError("Thiếu thông tin", "Vui lòng điền đầy đủ thông tin!");
             return;
         }
 
@@ -70,31 +72,16 @@ public class SignupController {
         if (response.isSuccess()) {
             logger.info("[SIGNUP] Success: " + response.getMessage());
             
-            // Show success message
-            Alert alert = new Alert(Alert.AlertType.INFORMATION);
-            alert.setTitle("Thành công");
-            alert.setHeaderText(null);
-            alert.setContentText("Đăng ký tài khoản thành công! Vui lòng đăng nhập.");
-            alert.showAndWait();
+            ControllerUtils.showSuccess("Đăng ký thành công", "Đăng ký tài khoản thành công! Vui lòng đăng nhập.");
 
             // Redirect back to Login screen
             Stage stage = (Stage) buttonSignUp.getScene().getWindow();
             ControllerUtils.changeScene(stage, "Login.fxml");
 
-            if (response.getUser().getRole() == UserRole.SELLER) {
-                ControllerUtils.changeScene(stage, "SellerMainView.fxml");
-            } else if (response.getUser().getRole() == UserRole.BIDDER) {
-                ControllerUtils.changeScene(stage, "BidderMainView.fxml");
-            } else if (response.getUser().getRole() == UserRole.ADMIN) {
-                ControllerUtils.changeScene(stage, "AdminMainView.fxml");
-            } else {
-                ControllerUtils.changeScene(stage, "AuctionList.fxml");
-            }
-
             // Cleanup listener when leaving
             ClientManager.getInstance().removeMessageListener(responseListener);
         } else {
-            ControllerUtils.showAlert(response.getMessage());
+            ControllerUtils.showError("Đăng ký thất bại", response.getMessage());
         }
     }
 

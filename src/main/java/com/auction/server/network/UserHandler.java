@@ -3,13 +3,9 @@ package com.auction.server.network;
 import com.auction.exceptions.AuthenticationException;
 import com.auction.exceptions.ValidationException;
 import com.auction.models.User;
+import com.auction.models.dto.*;
 import com.auction.server.service.UserService;
 import com.auction.server.factory.UserRole;
-import com.auction.models.dto.LoginRequest;
-import com.auction.models.dto.LogoutRequest;
-import com.auction.models.dto.RegisterRequest;
-import com.auction.models.dto.AuthResponse;
-import com.auction.models.dto.NetworkMessage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -26,40 +22,66 @@ public class UserHandler {
     private final UserService userService;
     private String currentUsername;
 
+    private User currentUser;
+
     public UserHandler(ObjectOutputStream out) {
         this.out = out;
         this.userService = new UserService();
     }
 
-    /**
-     * Entry point for messages identified as user-related.
-     */
-    public boolean handleMessage(NetworkMessage message) {
-        if (message instanceof LoginRequest loginReq) {
-            handleLogin(loginReq);
-            return true;
-        } else if (message instanceof LogoutRequest logoutReq) {
-            handleLogout(logoutReq);
-            return true;
-        } else if (message instanceof RegisterRequest registerReq) {
-            handleRegister(registerReq);
-            return true;
-        }
-        return false;
+    public User getCurrentUser() {
+        return currentUser;
     }
 
-    private void handleLogin(LoginRequest req) {
+    /**
+     * Entry point for messages identified as user-related.
+     * @return The authenticated user if login success, null otherwise.
+     */
+    public User handleMessage(NetworkMessage message) {
+        if (message instanceof LoginRequest loginReq) {
+            return handleLogin(loginReq);
+        } else if (message instanceof LogoutRequest logoutReq) {
+            handleLogout(logoutReq);
+        } else if (message instanceof RegisterRequest registerReq) {
+            handleRegister(registerReq);
+        } else if (message instanceof DepositRequest depositReq) {
+            handleDeposit(depositReq);
+        }
+        return null;
+    }
+
+    private void handleDeposit(DepositRequest req) {
+        try {
+            userService.deposit(req.getUsername(), req.getAmount());
+            
+            // Fetch updated user from DB without calling login logic (which triggers 'already online' check)
+            com.auction.server.database.dao.UserDAO userDAO = com.auction.server.database.dao.DAOFactory.getUserDAO();
+            User updatedUser = userDAO.findByUsername(req.getUsername());
+            this.currentUser = updatedUser; 
+            
+            sendResponse(new AuthResponse(true, "DEPOSIT_SUCCESS: " + updatedUser.getBalance(), updatedUser));
+            logger.info("Virtual deposit successful for {}: +${}", req.getUsername(), req.getAmount());
+        } catch (Exception e) {
+            logger.error("Deposit failed for user {}", req.getUsername(), e);
+            sendResponse(new AuthResponse(false, "Lỗi nạp tiền: " + e.getMessage(), null));
+        }
+    }
+
+    private User handleLogin(LoginRequest req) {
         try {
             User user = userService.login(req.getUsername(), req.getPassword());
+            this.currentUser = user;
             this.currentUsername = user.getUsername();
             
             AuthResponse response = new AuthResponse(true, "Đăng nhập thành công!", user);
             sendResponse(response);
             
             logger.info("Login successful for: {}", currentUsername);
+            return user;
         } catch (AuthenticationException e) {
             logger.warn("Login failed for {}: {}", req.getUsername(), e.getMessage());
             sendResponse(new AuthResponse(false, e.getMessage(), null));
+            return null;
         }
     }
 

@@ -45,7 +45,7 @@ public class LoginController {
         String password = tfPassword.getText().trim();
 
         if (username.isEmpty() || password.isEmpty()) {
-            ControllerUtils.showAlert("Tên đăng nhập và mật khẩu không được để trống!");
+            ControllerUtils.showError("Thiếu thông tin", "Tên đăng nhập và mật khẩu không được để trống!");
             return;
         }
 
@@ -74,7 +74,7 @@ public class LoginController {
             // Cleanup listener when leaving
             ClientManager.getInstance().removeMessageListener(responseListener);
         } else {
-            ControllerUtils.showAlert(response.getMessage());
+            ControllerUtils.showError("Đăng nhập thất bại", response.getMessage());
         }
     }
 

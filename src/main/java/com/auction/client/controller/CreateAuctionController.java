@@ -55,12 +55,12 @@ public class CreateAuctionController {
             if (msg instanceof GenericResponse response) {
                 Platform.runLater(() -> {
                     if (response.isSuccess()) {
-                        showAlert(Alert.AlertType.INFORMATION, "Success", response.getMessage());
+                        ControllerUtils.showSuccess("Thành công", response.getMessage());
                         // Cleanup listener and navigate back only on success
                         ClientManager.getInstance().removeMessageListener(responseListener);
                         navigateBack(null); 
                     } else {
-                        showAlert(Alert.AlertType.ERROR, "Error", response.getMessage());
+                        ControllerUtils.showError("Lỗi", response.getMessage());
                     }
                 });
             }
@@ -79,7 +79,7 @@ public class CreateAuctionController {
         String endHourRaw = cbEndHour.getValue();
 
         if (title.isEmpty() || priceRaw.isEmpty() || startDate == null || endDate == null) {
-            showAlert(Alert.AlertType.WARNING, "Missing Info", "Please fill out all required fields!");
+            ControllerUtils.showError("Thiếu thông tin", "Vui lòng điền đầy đủ các trường bắt buộc!");
             return;
         }
 
@@ -87,11 +87,11 @@ public class CreateAuctionController {
         try {
             startingPrice = new BigDecimal(priceRaw);
             if (startingPrice.compareTo(BigDecimal.ZERO) <= 0) {
-                showAlert(Alert.AlertType.ERROR, "Invalid Data", "Starting price must be greater than 0!");
+                ControllerUtils.showError("Dữ liệu không hợp lệ", "Giá khởi điểm phải lớn hơn 0!");
                 return;
             }
         } catch (NumberFormatException e) {
-            showAlert(Alert.AlertType.ERROR, "Invalid Data", "Starting price must be a valid number!");
+            ControllerUtils.showError("Dữ liệu không hợp lệ", "Giá khởi điểm phải là một số hợp lệ!");
             return;
         }
 
@@ -99,7 +99,7 @@ public class CreateAuctionController {
         LocalDateTime endDateTime = LocalDateTime.of(endDate, LocalTime.parse(endHourRaw));
 
         if (endDateTime.isBefore(startDateTime) || endDateTime.isEqual(startDateTime)) {
-            showAlert(Alert.AlertType.ERROR, "Invalid Time", "End time must be after the start time!");
+            ControllerUtils.showError("Thời gian không hợp lệ", "Thời gian kết thúc phải sau thời gian bắt đầu!");
             return;
         }
 
@@ -134,13 +134,5 @@ public class CreateAuctionController {
             Stage stage = (Stage) btnSubmit.getScene().getWindow();
             ControllerUtils.changeScene(stage, "SellerMainView.fxml");
         }
-    }
-
-    private void showAlert(Alert.AlertType type, String title, String content) {
-        Alert alert = new Alert(type);
-        alert.setTitle(title);
-        alert.setHeaderText(null);
-        alert.setContentText(content);
-        alert.showAndWait();
     }
 }

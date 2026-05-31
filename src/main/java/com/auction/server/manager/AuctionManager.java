@@ -31,7 +31,7 @@ public class AuctionManager {
     private static final Logger logger = LoggerFactory.getLogger(AuctionManager.class);
     private static AuctionManager instance;
     private final Map<String, Auction> activeAuctions;
-    private final List<AuctionObserver> observers; // Consolidated list
+    private final List<AuctionObserver> observers; // Consolidated list (Global Observer)
     private final ScheduledExecutorService scheduler;
     private AuctionService auctionService;
 
@@ -124,32 +124,9 @@ public class AuctionManager {
         }
     }
 
-    public void cancelAuction(String auctionId) throws AuctionNotFoundException {
-        Auction auction = activeAuctions.get(auctionId);
-        if (auction == null) {
-            throw new AuctionNotFoundException("Auction with ID " + auctionId + " not found.");
-        }
-
-        synchronized (auction) {
-            try {
-                auction.setStatus(AuctionStatus.CANCELED);
-                logger.info("[INFO] Auction {} canceled by Admin.", auctionId);
-
-                // Notify about status change
-                broadcastNotification(new Notification(
-                        Notification.Type.STATUS_CHANGED,
-                        auctionId,
-                        createUpdateDTO(auction)
-                ));
-
-                // Optional: Remove from active auctions if you want to stop tracking it in memory
-                // activeAuctions.remove(auctionId);
-            } catch (Exception e) {
-                logger.error("[ERROR] Failed to cancel auction: {}", auctionId, e);
-            }
-        }
-    }
-
+    /**
+     * Cancels an auction (Admin functionality).
+     */
     public void cancelAuction(String auctionId) throws AuctionNotFoundException {
         Auction auction = activeAuctions.get(auctionId);
         if (auction == null) {
@@ -168,7 +145,7 @@ public class AuctionManager {
                         createUpdateDTO(auction)
                 ));
             } catch (Exception e) {
-                logger.error("[ERROR] Failed to cancel auction: {}", auctionId, e);
+                logger.error("[ERROR] Failed to cancel auction {}: {}", auctionId, e.getMessage(), e);
             }
         }
     }
@@ -194,12 +171,13 @@ public class AuctionManager {
                                     auction.getId(),
                                     createUpdateDTO(auction)
                             ));
+                            logger.info("[AuctionManager] Auction {} started (RUNNING).", auction.getId());
                         } 
                         else if (oldStatus == AuctionStatus.RUNNING && now.isAfter(auction.getEndTime())) {
                             auction.updateStatus(AuctionStatus.FINISHED);
                             logger.info("[INFO] Auction {} finished.", auction.getId());
                             
-                            // PERSISTENCE
+                            // PERSISTENCE: Ensure DB reflects finished state
                             if (auctionService != null) {
                                 auctionService.finishAuction(auction.getId());
                             }
@@ -211,7 +189,6 @@ public class AuctionManager {
                             ));
                         }
                     } catch (Exception e) {
-                        logger.error("[ERROR] Status checker error: {}", e.getMessage(), e);
                         logger.error("[ERROR] Status checker error for auction {}: {}", auction.getId(), e.getMessage(), e);
                     }
                 }

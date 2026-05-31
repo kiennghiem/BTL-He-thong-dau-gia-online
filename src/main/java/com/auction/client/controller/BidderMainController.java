@@ -54,6 +54,11 @@ public class BidderMainController {
     }
 
     @FXML
+    private void handleShowDeposit(ActionEvent event) {
+        loadView("DepositView.fxml", false);
+    }
+
+    @FXML
     private void handleLogout(ActionEvent event) {
         if (currentUser != null) {
             LogoutRequest logoutRequest = new LogoutRequest(currentUser.getUsername());
@@ -99,13 +104,13 @@ public class BidderMainController {
     }
 
     private void handleAuthResponse(AuthResponse response) {
-        if (response.isSuccess()) {
+        if (response.isSuccess() && response.getMessage() != null && response.getMessage().contains("Đăng xuất")) {
             ClientManager.getInstance().removeMessageListener(responseListener);
             SessionManager.getInstance().clearSession();
 
             Stage stage = (Stage) mainBorderPane.getScene().getWindow();
             ControllerUtils.changeScene(stage, "Login.fxml");
-        } else {
+        } else if (!response.isSuccess()) {
             ControllerUtils.showAlert(response.getMessage());
         }
     }

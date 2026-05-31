@@ -6,15 +6,15 @@ import com.auction.models.Auction;
 import com.auction.server.factory.ItemType;
 import com.auction.server.manager.AuctionManager;
 import com.auction.server.observer.AuctionObserver;
+import com.auction.server.observer.AuctionStatus;
 import com.auction.server.service.AuctionService;
 import com.auction.models.dto.*;
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
 
 import java.math.BigDecimal;
 import java.io.IOException;
 import java.io.ObjectOutputStream;
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * AuctionHandler manages auction-related communication for a specific client connection.
@@ -24,6 +24,7 @@ public class AuctionHandler implements AuctionObserver {
     private final ObjectOutputStream out;
     private final AuctionService auctionService;
     private final AuctionManager auctionManager;
+    private com.auction.models.User currentUser;
 
     public AuctionHandler(ObjectOutputStream out) {
         this.out = out;
@@ -32,6 +33,10 @@ public class AuctionHandler implements AuctionObserver {
         
         // Register as a Global Observer immediately
         this.auctionManager.addObserver(this);
+    }
+
+    public void setCurrentUser(com.auction.models.User user) {
+        this.currentUser = user;
     }
 
     /**
@@ -66,26 +71,18 @@ public class AuctionHandler implements AuctionObserver {
             handleGetActiveAuctions(req);
             return true;
         }
-        if (message instanceof CancelAuctionRequest req) {
-            handleCancelAuction(req);
-            return true;
-        }
 
         return false;
     }
 
-    private void handleCancelAuction(CancelAuctionRequest req) {
-        try {
-            auctionService.cancelAuction(req.getAuctionId(), req.getAdminId());
-            sendResponse(new GenericResponse(true, "Hủy phiên đấu giá thành công!"));
-            System.out.println("[AuctionHandler] Auction canceled: " + req.getAuctionId() + " by " + req.getAdminId());
-        } catch (Exception e) {
-            sendResponse(new GenericResponse(false, "Lỗi hủy đấu giá: " + e.getMessage()));
-        }
-    }
-
     private void handleBid(BidRequest req) {
         try {
+            // Server-side safety: Prevent sellers from bidding on anything (or their own items)
+            if (currentUser != null && currentUser.getRole() == com.auction.server.factory.UserRole.SELLER) {
+                sendResponse(new GenericResponse(false, "Người bán không được phép đặt giá!"));
+                return;
+            }
+
             auctionService.placeBid(req.getAuctionId(), req.getBidderId(), req.getAmount());
             sendResponse(new GenericResponse(true, "Đặt giá thành công!"));
             System.out.println("[AuctionHandler] Bid successful: " + req.getBidderId() + " on " + req.getAuctionId());
@@ -108,8 +105,6 @@ public class AuctionHandler implements AuctionObserver {
     }
 
     private void handleSubscribe(SubscribeRequest req) {
-        // In Global Mode, we already receive all updates. 
-        // We just send back the CURRENT state of THIS auction for initial sync.
         System.out.println("[AuctionHandler] Sync request for auction: " + req.getAuctionId());
         Auction auction = auctionManager.getAuction(req.getAuctionId());
         if (auction != null) {
@@ -124,7 +119,8 @@ public class AuctionHandler implements AuctionObserver {
     private void handleCancelAuction(CancelAuctionRequest req) {
         try {
             auctionService.cancelAuction(req.getAuctionId(), req.getAdminId());
-            sendResponse(new GenericResponse(true, "Phiên đấu giá đã được hủy."));
+            sendResponse(new GenericResponse(true, "Hủy phiên đấu giá thành công!"));
+            System.out.println("[AuctionHandler] Auction canceled: " + req.getAuctionId() + " by " + req.getAdminId());
         } catch (Exception e) {
             sendResponse(new GenericResponse(false, "Lỗi hủy đấu giá: " + e.getMessage()));
         }
@@ -165,8 +161,34 @@ public class AuctionHandler implements AuctionObserver {
     }
 
     public void handleGetActiveAuctions(GetActiveAuctionsRequest req) {
-        List<Auction> activeAuctions = auctionService.getAllActiveAuctions();
-        sendResponse(activeAuctions);
+        List<Auction> allAuctions = auctionService.getAllActiveAuctions();
+        
+        // ADMIN can see everything
+        if (currentUser != null && currentUser.getRole() == com.auction.server.factory.UserRole.ADMIN) {
+            sendResponse(allAuctions);
+            return;
+        }
+
+        String currentUserId = (currentUser != null) ? currentUser.getId() : "";
+        
+        // VISIBILITY RULES:
+        // 1. OPEN / RUNNING: Visible to everyone
+        // 2. FINISHED / PAID / CANCELED: Only visible to Seller OR any Bidder who participated
+        List<Auction> filtered = allAuctions.stream().filter(a -> {
+            AuctionStatus status = a.getStatus();
+            if (status == AuctionStatus.OPEN || status == AuctionStatus.RUNNING) {
+                return true;
+            }
+            
+            // For completed/canceled auctions:
+            boolean isSeller = (a.getSeller() != null && currentUserId.equals(a.getSeller().getId()));
+            boolean isParticipant = (a.getBidHistory() != null && 
+                                    a.getBidHistory().stream().anyMatch(b -> b.getBidderId().equals(currentUserId)));
+            
+            return isSeller || isParticipant;
+        }).collect(Collectors.toList());
+
+        sendResponse(filtered);
     }
 
     public void cleanUp() {

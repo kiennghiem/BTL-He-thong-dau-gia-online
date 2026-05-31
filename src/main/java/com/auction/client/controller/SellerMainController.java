@@ -60,6 +60,11 @@ public class SellerMainController {
     }
 
     @FXML
+    private void handleShowDeposit(ActionEvent event) {
+        loadView("DepositView.fxml", false);
+    }
+
+    @FXML
     private void handleLogout(ActionEvent event) {
         LogoutRequest logoutRequest = new LogoutRequest(currentUser.getUsername());
         ClientManager.getInstance().sendRequest(logoutRequest);
@@ -100,7 +105,7 @@ public class SellerMainController {
     }
 
     private void handleAuthResponse(AuthResponse response) {
-        if (response.isSuccess()) {
+        if (response.isSuccess() && response.getMessage() != null && response.getMessage().contains("Đăng xuất")) {
             logger.info("[LOGOUT] Success: " + response.getMessage());
 
             // Clean up listener and clear session with the current user
@@ -109,7 +114,7 @@ public class SellerMainController {
 
             Stage stage = (Stage) mainBorderPane.getScene().getWindow();
             ControllerUtils.changeScene(stage, "Login.fxml");
-        } else {
+        } else if (!response.isSuccess()) {
             ControllerUtils.showAlert(response.getMessage());
         }
     }

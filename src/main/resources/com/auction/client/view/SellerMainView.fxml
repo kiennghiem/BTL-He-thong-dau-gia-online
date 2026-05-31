@@ -25,12 +25,17 @@
                   <Font size="16.0" />
                </font>
             </Button>
-            <Button fx:id="btnMyAuctions" maxWidth="1.7976931348623157E308" mnemonicParsing="false" onAction="#handleShowMyAuctions" style="-fx-background-color: transparent; -fx-text-fill: white; -fx-alignment: BASELINE_LEFT; -fx-cursor: hand;" text="My Auctions">
+            <Button maxWidth="1.7976931348623157E308" mnemonicParsing="false" onAction="#handleShowMyAuctions" style="-fx-background-color: transparent; -fx-text-fill: white; -fx-alignment: BASELINE_LEFT; -fx-cursor: hand;" text="My Auctions">
                <font>
                   <Font size="16.0" />
                </font>
             </Button>
-            <Button fx:id="btnCreateAuction" maxWidth="1.7976931348623157E308" mnemonicParsing="false" onAction="#handleShowCreateAuction" style="-fx-background-color: transparent; -fx-text-fill: white; -fx-alignment: BASELINE_LEFT; -fx-cursor: hand;" text="Create an Auction">
+            <Button maxWidth="1.7976931348623157E308" mnemonicParsing="false" onAction="#handleShowCreateAuction" style="-fx-background-color: transparent; -fx-text-fill: white; -fx-alignment: BASELINE_LEFT; -fx-cursor: hand;" text="Create Auction">
+               <font>
+                  <Font size="16.0" />
+               </font>
+            </Button>
+            <Button maxWidth="1.7976931348623157E308" mnemonicParsing="false" onAction="#handleShowDeposit" style="-fx-background-color: transparent; -fx-text-fill: white; -fx-alignment: BASELINE_LEFT; -fx-cursor: hand;" text="Wallet Funding">
                <font>
                   <Font size="16.0" />
                </font>

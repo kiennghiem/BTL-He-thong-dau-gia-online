@@ -5,13 +5,17 @@ import com.auction.client.util.SessionManager;
 import com.auction.models.Auction;
 import com.auction.models.User;
 import com.auction.models.dto.GetActiveAuctionsRequest;
+import com.auction.server.factory.UserRole;
+import com.auction.server.observer.AuctionStatus;
 import javafx.application.Platform;
 import javafx.collections.FXCollections;
-import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
 import javafx.scene.control.TableColumn;
+import javafx.scene.control.TableRow;
 import javafx.scene.control.TableView;
 import javafx.scene.control.cell.PropertyValueFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -20,55 +24,86 @@ import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 public class AuctionListController {
+    private static final Logger logger = LoggerFactory.getLogger(AuctionListController.class);
 
-    // Table UI Elements
     @FXML private TableView<Auction> auctionTable;
     @FXML private TableColumn<Auction, String> colTitle;
     @FXML private TableColumn<Auction, BigDecimal> colPrice;
     @FXML private TableColumn<Auction, String> colStatus;
     @FXML private TableColumn<Auction, LocalDateTime> colEndTime;
 
-    // Used to check if
     private boolean myAuctionsMode = false;
     private Consumer<Auction> onAuctionSelected;
     private Consumer<Object> messageListener;
 
     public void setMyAuctionsMode(boolean myAuctionsMode) {
         this.myAuctionsMode = myAuctionsMode;
+        logger.info("AuctionList mode set to: myAuctionsMode={}", myAuctionsMode);
         refreshAuctionList();
     }
 
     public void setOnAuctionSelected(Consumer<Auction> onAuctionSelected) {
         this.onAuctionSelected = onAuctionSelected;
+        logger.info("Selection handler attached to AuctionListController");
     }
 
-    // This method runs automatically when the screen loads
     @FXML
     public void initialize() {
-        // 1. Tell the columns which variables to look for in your Auction model
         colTitle.setCellValueFactory(new PropertyValueFactory<>("title"));
         colPrice.setCellValueFactory(new PropertyValueFactory<>("currentPrice"));
         colStatus.setCellValueFactory(new PropertyValueFactory<>("status"));
         colEndTime.setCellValueFactory(new PropertyValueFactory<>("endTime"));
 
-        // 2. Add row selection listener
+        // Set the Row Factory ONCE during initialization
         auctionTable.setRowFactory(tv -> {
-            javafx.scene.control.TableRow<Auction> row = new javafx.scene.control.TableRow<>();
+            TableRow<Auction> row = new TableRow<>() {
+                @Override
+                protected void updateItem(Auction item, boolean empty) {
+                    super.updateItem(item, empty);
+                    if (empty || item == null) {
+                        setStyle("");
+                    } else {
+                        User currentUser = SessionManager.getInstance().getCurrentUser();
+                        if (currentUser != null && myAuctionsMode) {
+                            String currentUserId = currentUser.getId();
+                            if (currentUser.getRole() == UserRole.SELLER) {
+                                if ("CANCELED".equalsIgnoreCase(item.getStatusAsString())) {
+                                    setStyle("-fx-background-color: #e0e0e0; -fx-opacity: 0.6;");
+                                } else if (item.getHighestBidderId() != null && !"None".equalsIgnoreCase(item.getHighestBidderId())) {
+                                    setStyle("-fx-background-color: #d4edda;");
+                                } else {
+                                    setStyle("");
+                                }
+                            } else if (currentUser.getRole() == UserRole.BIDDER) {
+                                if (currentUserId.equals(item.getHighestBidderId())) {
+                                    setStyle("-fx-background-color: #d4edda;");
+                                } else {
+                                    setStyle("-fx-background-color: #f8d7da;");
+                                }
+                            }
+                        } else {
+                            setStyle("");
+                        }
+                    }
+                }
+            };
+
             row.setOnMouseClicked(event -> {
-                if (event.getClickCount() == 2 && (!row.isEmpty())) {
-                    Auction rowData = row.getItem();
+                if (event.getClickCount() == 2 && !row.isEmpty()) {
+                    Auction selectedAuction = row.getItem();
+                    logger.info("Row double-clicked: {}", selectedAuction.getId());
                     if (onAuctionSelected != null) {
-                        onAuctionSelected.accept(rowData);
+                        onAuctionSelected.accept(selectedAuction);
+                    } else {
+                        logger.warn("No selection handler defined for AuctionListController!");
                     }
                 }
             });
             return row;
         });
 
-        // 3. Register network listener
         messageListener = msg -> {
             if (msg instanceof List<?> list) {
-                // Check if it's a list of Auctions
                 if (!list.isEmpty() && list.get(0) instanceof Auction) {
                     @SuppressWarnings("unchecked")
                     List<Auction> auctions = (List<Auction>) list;
@@ -76,16 +111,17 @@ public class AuctionListController {
                 } else if (list.isEmpty()) {
                     Platform.runLater(() -> updateTable(List.of()));
                 }
+            } else if (msg instanceof com.auction.models.Notification) {
+                Platform.runLater(this::refreshAuctionList);
             }
         };
         ClientManager.getInstance().addMessageListener(messageListener);
 
-        // 4. Load the data
         refreshAuctionList();
     }
 
     public void refreshAuctionList() {
-        // Send a network request to your server asking for all active auctions
+        logger.info("Requesting fresh auction list from server...");
         ClientManager.getInstance().sendRequest(new GetActiveAuctionsRequest());
     }
 
@@ -94,97 +130,30 @@ public class AuctionListController {
         if (currentUser == null) return;
         String currentUserId = currentUser.getId();
 
+        List<Auction> displayList;
         if (myAuctionsMode) {
-            if (currentUser.getRole() == com.auction.server.factory.UserRole.SELLER) {
-                // "My Auctions" Mode for Sellers: Show ALL auctions I created, including CANCELED
-                List<Auction> myOwn = allData.stream()
+            if (currentUser.getRole() == UserRole.SELLER) {
+                // Show ALL auctions I created
+                displayList = allData.stream()
                         .filter(a -> a.getSeller() != null && currentUserId.equals(a.getSeller().getId()))
                         .collect(Collectors.toList());
-                
-                auctionTable.setItems(FXCollections.observableArrayList(myOwn));
-                
-                // Row Factory for Sellers
-                auctionTable.setRowFactory(tv -> {
-                    javafx.scene.control.TableRow<Auction> row = new javafx.scene.control.TableRow<>() {
-                        @Override
-                        protected void updateItem(Auction item, boolean empty) {
-                            super.updateItem(item, empty);
-                            if (empty || item == null) {
-                                setStyle("");
-                            } else {
-                                if ("CANCELED".equalsIgnoreCase(item.getStatusAsString())) {
-                                    setStyle("-fx-background-color: #e0e0e0; -fx-opacity: 0.6;"); // Gray out for canceled
-                                } else {
-                                    boolean hasBids = (item.getHighestBidderId() != null && !item.getHighestBidderId().equalsIgnoreCase("None"));
-                                    if (hasBids) {
-                                        setStyle("-fx-background-color: #d4edda;"); // Green: Active interest
-                                    } else {
-                                        // Check if it's ending in less than 1 hour
-                                        java.time.Duration remaining = java.time.Duration.between(java.time.LocalDateTime.now(), item.getEndTime());
-                                        if (!remaining.isNegative() && remaining.toHours() < 1) {
-                                            setStyle("-fx-background-color: #f8d7da;"); // Red: Ending soon with no bids
-                                        } else {
-                                            setStyle(""); // Neutral: Normal state
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    };
-                    row.setOnMouseClicked(event -> {
-                        if (event.getClickCount() == 2 && (!row.isEmpty())) {
-                            if (onAuctionSelected != null) onAuctionSelected.accept(row.getItem());
-                        }
-                    });
-                    return row;
-                });
             } else {
-                // "My Bids" Mode for Bidders: Show auctions I participated in
-                List<Auction> participated = allData.stream()
+                // Show ALL auctions I participated in (even if finished/paid)
+                displayList = allData.stream()
                         .filter(a -> a.getBidHistory() != null && 
                                      a.getBidHistory().stream().anyMatch(b -> b.getBidderId().equals(currentUserId)))
                         .collect(Collectors.toList());
-                
-                auctionTable.setItems(FXCollections.observableArrayList(participated));
-                
-                // Row Factory for Bidders: Green if leading, Red if outbid
-                auctionTable.setRowFactory(tv -> {
-                    javafx.scene.control.TableRow<Auction> row = new javafx.scene.control.TableRow<>() {
-                        @Override
-                        protected void updateItem(Auction item, boolean empty) {
-                            super.updateItem(item, empty);
-                            if (empty || item == null) {
-                                setStyle("");
-                            } else {
-                                String leaderId = item.getHighestBidderId();
-                                if (currentUserId.equals(leaderId)) {
-                                    setStyle("-fx-background-color: #d4edda;"); // Light Green for leading
-                                } else {
-                                    setStyle("-fx-background-color: #f8d7da;"); // Light Red for outbid
-                                }
-                            }
-                        }
-                    };
-                    row.setOnMouseClicked(event -> {
-                        if (event.getClickCount() == 2 && (!row.isEmpty())) {
-                            if (onAuctionSelected != null) onAuctionSelected.accept(row.getItem());
-                        }
-                    });
-                    return row;
-                });
             }
         } else {
-            // Default Mode: Show all active/upcoming auctions
-            auctionTable.setItems(FXCollections.observableArrayList(allData));
-            auctionTable.setRowFactory(tv -> {
-                javafx.scene.control.TableRow<Auction> row = new javafx.scene.control.TableRow<>();
-                row.setOnMouseClicked(event -> {
-                    if (event.getClickCount() == 2 && (!row.isEmpty())) {
-                        if (onAuctionSelected != null) onAuctionSelected.accept(row.getItem());
-                    }
-                });
-                return row;
-            });
+            // Public mode: only show OPEN or RUNNING
+            displayList = allData.stream().filter(a -> {
+                AuctionStatus status = a.getStatus();
+                return status == AuctionStatus.OPEN || status == AuctionStatus.RUNNING;
+            }).collect(Collectors.toList());
         }
+        
+        logger.info("Updating table with {} items", displayList.size());
+        auctionTable.setItems(FXCollections.observableArrayList(displayList));
+        // No need to call setRowFactory here anymore, it's already set in initialize()
     }
 }

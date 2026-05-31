@@ -169,22 +169,16 @@ public class AuctionService {
      * Should be called when the Server starts.
      */
     public void loadActiveAuctions() {
-        System.out.println("[AuctionService] Loading active and upcoming auctions from database...");
+        System.out.println("[AuctionService] Initializing: Loading all auctions from database (Optimized JOIN)...");
         try {
-            // Load both RUNNING and OPEN auctions
-            List<Auction> running = auctionDAO.findByStatus(AuctionStatus.RUNNING);
-            List<Auction> upcoming = auctionDAO.findByStatus(AuctionStatus.OPEN);
-            
-            for (Auction auction : running) {
+            // Load ALL auctions from DB into memory (Optimized query prevents deadlocks)
+            List<Auction> allAuctions = auctionDAO.findAll();
+            for (Auction auction : allAuctions) {
                 auctionManager.addAuction(auction);
             }
-            for (Auction auction : upcoming) {
-                auctionManager.addAuction(auction);
-            }
-            
-            System.out.println("[AuctionService] Successfully loaded " + (running.size() + upcoming.size()) + " auctions into memory.");
+            System.out.println("[AuctionService] Successfully loaded " + allAuctions.size() + " auctions (including historical).");
         } catch (SQLException e) {
-            System.err.println("[AuctionService] Failed to load active auctions from DB: " + e.getMessage());
+            System.err.println("[AuctionService] Failed to load auctions from DB: " + e.getMessage());
         }
     }
 

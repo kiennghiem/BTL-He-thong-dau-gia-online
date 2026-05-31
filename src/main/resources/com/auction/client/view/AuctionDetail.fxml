@@ -5,67 +5,45 @@
 <?import javafx.scene.control.Label?>
 <?import javafx.scene.layout.GridPane?>
 <?import javafx.scene.layout.HBox?>
-<?import javafx.scene.layout.AnchorPane?>
 <?import javafx.scene.layout.VBox?>
 <?import javafx.scene.text.Font?>
 
-<AnchorPane prefHeight="400.0" prefWidth="600.0" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.auction.client.controller.AuctionDetailController">
-   <children>
-      <VBox alignment="TOP_CENTER" layoutX="50.0" layoutY="30.0" prefHeight="340.0" prefWidth="500.0" spacing="20.0">
-         <children>
-            <Label fx:id="lblTitle" text="Auction Title">
-               <font>
-                  <Font name="System Bold" size="24.0" />
-               </font>
-            </Label>
-            <Label fx:id="lblDescription" text="Description of the item..." wrapText="true" />
-            <VBox spacing="10.0">
-               <children>
-                  <Label fx:id="lblPrice" text="Current Price: $0.00">
-                     <font>
-                        <Font size="18.0" />
-                     </font>
-                  </Label>
-                  <Label fx:id="lblStatus" text="Status: OPEN" />
-                  <Label fx:id="lblEndTime" text="End Time: ..." />
-               </children>
-            </VBox>
-            <Button fx:id="btnCancel" mnemonicParsing="false" onAction="#handleCancelAuction" prefWidth="150.0" style="-fx-background-color: #e74c3c; -fx-text-fill: white;" text="Cancel Auction" visible="false" />
-            <Button mnemonicParsing="false" onAction="#handleBack" prefWidth="100.0" text="Back" />
-         </children>
-      </VBox>
-   </children>
-</AnchorPane>
-<VBox alignment="TOP_CENTER" prefHeight="400.0" prefWidth="600.0" spacing="20.0" xmlns="http://javafx.com/javafx/26" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.auction.client.controller.AuctionDetailController">
+<VBox alignment="TOP_CENTER" prefHeight="400.0" prefWidth="600.0" spacing="25.0" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.auction.client.controller.AuctionDetailController">
     <children>
-        <Label fx:id="lblTitle" text="Auction Title">
+        <Label fx:id="lblTitle" text="Auction Details">
             <font>
-                <Font name="System Bold" size="24.0" />
+                <Font name="System Bold" size="28.0" />
             </font>
         </Label>
-        <GridPane hgap="10.0" vgap="10.0">
+        
+        <VBox spacing="15.0" style="-fx-border-color: #bdc3c7; -fx-border-width: 1; -fx-padding: 20; -fx-background-color: #fcfcfc; -fx-background-radius: 5; -fx-border-radius: 5;">
             <children>
-                <Label text="Description:" GridPane.columnIndex="0" GridPane.rowIndex="0" />
-                <Label fx:id="lblDescription" text="Description here" GridPane.columnIndex="1" GridPane.rowIndex="0" />
+                <GridPane hgap="15.0" vgap="15.0">
+                    <children>
+                        <Label text="Description:" style="-fx-font-weight: bold;" GridPane.columnIndex="0" GridPane.rowIndex="0" />
+                        <Label fx:id="lblDescription" text="N/A" wrapText="true" GridPane.columnIndex="1" GridPane.rowIndex="0" />
 
-                <Label text="Current Price:" GridPane.columnIndex="0" GridPane.rowIndex="1" />
-                <Label fx:id="lblPrice" text="0.00" GridPane.columnIndex="1" GridPane.rowIndex="1" />
+                        <Label text="Current Price:" style="-fx-font-weight: bold;" GridPane.columnIndex="0" GridPane.rowIndex="1" />
+                        <Label fx:id="lblPrice" text="0.00" style="-fx-text-fill: #c0392b; -fx-font-weight: bold;" GridPane.columnIndex="1" GridPane.rowIndex="1" />
 
-                <Label text="Status:" GridPane.columnIndex="0" GridPane.rowIndex="2" />
-                <Label fx:id="lblStatus" text="OPEN" GridPane.columnIndex="1" GridPane.rowIndex="2" />
+                        <Label text="Status:" style="-fx-font-weight: bold;" GridPane.columnIndex="0" GridPane.rowIndex="2" />
+                        <Label fx:id="lblStatus" text="OPEN" GridPane.columnIndex="1" GridPane.rowIndex="2" />
 
-                <Label text="End Time:" GridPane.columnIndex="0" GridPane.rowIndex="3" />
-                <Label fx:id="lblEndTime" text="Time here" GridPane.columnIndex="1" GridPane.rowIndex="3" />
+                        <Label text="End Time:" style="-fx-font-weight: bold;" GridPane.columnIndex="0" GridPane.rowIndex="3" />
+                        <Label fx:id="lblEndTime" text="N/A" GridPane.columnIndex="1" GridPane.rowIndex="3" />
+                    </children>
+                </GridPane>
             </children>
-        </GridPane>
+        </VBox>
+
         <HBox alignment="CENTER" spacing="20.0">
             <children>
-                <Button fx:id="btnCancel" mnemonicParsing="false" onAction="#handleCancelAuction" style="-fx-background-color: #e74c3c; -fx-text-fill: white;" text="Cancel Auction" visible="false" />
-                <Button mnemonicParsing="false" onAction="#handleBack" text="Back" />
+                <Button fx:id="btnCancel" mnemonicParsing="false" onAction="#handleCancelAuction" prefHeight="35.0" prefWidth="150.0" style="-fx-background-color: #e74c3c; -fx-text-fill: white; -fx-font-weight: bold; -fx-cursor: hand;" text="Cancel Auction" visible="false" managed="false" />
+                <Button mnemonicParsing="false" onAction="#handleBack" prefHeight="35.0" prefWidth="100.0" style="-fx-cursor: hand;" text="Back" />
             </children>
         </HBox>
     </children>
     <padding>
-        <Insets bottom="20.0" left="20.0" right="20.0" top="20.0" />
+        <Insets bottom="30.0" left="40.0" right="40.0" top="30.0" />
     </padding>
 </VBox>
