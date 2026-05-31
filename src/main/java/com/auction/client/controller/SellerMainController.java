@@ -16,6 +16,7 @@ import javafx.stage.Stage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javafx.scene.control.Label;
 import java.io.IOException;
 import java.util.function.Consumer;
 
@@ -26,6 +27,9 @@ public class SellerMainController {
     @FXML
     private BorderPane mainBorderPane;
 
+    @FXML
+    private Label lblBalance;
+
     private Consumer<Object> responseListener;
     private User currentUser = SessionManager.getInstance().getCurrentUser();
 
@@ -34,6 +38,7 @@ public class SellerMainController {
         mainBorderPane.getProperties().put("controller", this);
         // Show Available Auctions by default
         handleShowAvailableAuctions(null);
+        updateBalanceDisplay();
 
         // Register listener for server responses
         responseListener = msg -> {
@@ -42,6 +47,13 @@ public class SellerMainController {
             }
         };
         ClientManager.getInstance().addMessageListener(responseListener);
+    }
+
+    public void updateBalanceDisplay() {
+        User user = SessionManager.getInstance().getCurrentUser();
+        if (user != null && lblBalance != null) {
+            lblBalance.setText(String.format("Balance: $%.2f", user.getBalance()));
+        }
     }
 
     @FXML
@@ -72,6 +84,7 @@ public class SellerMainController {
 
     public void loadView(String fxmlFile, boolean myAuctionsMode) {
         try {
+            updateBalanceDisplay();
             FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/auction/client/view/" + fxmlFile));
             Parent view = loader.load();
             
@@ -117,6 +130,10 @@ public class SellerMainController {
                 Stage stage = (Stage) mainBorderPane.getScene().getWindow();
                 ControllerUtils.changeScene(stage, "Login.fxml");
             }
+        } else if (response.isSuccess() && response.getUser() != null) {
+            // If we get a user back, it might have an updated balance
+            SessionManager.getInstance().setCurrentUser(response.getUser());
+            updateBalanceDisplay();
         } else if (!response.isSuccess()) {
             ControllerUtils.showAlert(response.getMessage());
         }

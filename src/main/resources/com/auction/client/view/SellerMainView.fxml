@@ -17,7 +17,15 @@
                   <Font name="System Bold" size="24.0" />
                </font>
                <VBox.margin>
-                  <Insets bottom="20.0" top="10.0" />
+                  <Insets bottom="10.0" top="10.0" />
+               </VBox.margin>
+            </Label>
+            <Label fx:id="lblBalance" text="Balance: $0.00" textFill="#2ecc71">
+               <font>
+                  <Font name="System Bold" size="18.0" />
+               </font>
+               <VBox.margin>
+                  <Insets bottom="20.0" />
                </VBox.margin>
             </Label>
             <Button fx:id="btnAvailableAuctions" maxWidth="1.7976931348623157E308" mnemonicParsing="false" onAction="#handleShowAvailableAuctions" style="-fx-background-color: transparent; -fx-text-fill: white; -fx-alignment: BASELINE_LEFT; -fx-cursor: hand;" text="Available Auctions">

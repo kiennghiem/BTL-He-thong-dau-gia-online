@@ -22,13 +22,8 @@ public class AuctionApp extends Application {
 
     @Override
     public void start(Stage stage) throws IOException {
-        // Attempt to connect to the server on startup
-        try {
-            ClientManager.getInstance().connect();
-        } catch (IOException e) {
-            logger.error("[CLIENT] Could not connect to server on startup", e);
-            // We can continue, ClientManager will try to reconnect when sending first request
-        }
+        // Attempt to connect to the server on startup (Non-blocking background thread)
+        ClientManager.getInstance().connect();
 
         Parent root = FXMLLoader.load(getClass().getResource("/com/auction/client/view/Login.fxml"));
         Scene scene = new Scene(root);

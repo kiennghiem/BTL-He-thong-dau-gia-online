@@ -40,24 +40,42 @@ public class ClientManager {
     }
 
     /**
-     * Establishes a connection to the server using constants from AppConstants.
+     * Establishes a connection to the server using a non-blocking background task.
      */
-    public void connect() throws IOException {
+    public void connect() {
         if (socket != null && !socket.isClosed()) return;
 
-        socket = new Socket(AppConstants.SERVER_HOST, AppConstants.SERVER_PORT);
-        // Important: Create 'out' before 'in' to avoid deadlock when server does the same (the OutputStream
-        // constructor will send a Stream Header to the other side, but the InputStream constructor will wait
-        // until it receives a Stream Header, so declaring 'out' before 'in' ensures the Stream Header will always
-        // get sent first, allowing the InputStream of the other side to finish and terminate).
-        out = new ObjectOutputStream(socket.getOutputStream());
-        in = new ObjectInputStream(socket.getInputStream());
-        running = true;
+        new Thread(() -> {
+            try {
+                // SMART CONNECT: Try localhost first (for the host), then fall back to the Public IP
+                String[] hostsToTry = {"localhost", AppConstants.SERVER_HOST};
+                
+                for (String host : hostsToTry) {
+                    try {
+                        logger.info("[CLIENT] Attempting to connect to: " + host);
+                        socket = new Socket();
+                        socket.connect(new java.net.InetSocketAddress(host, AppConstants.SERVER_PORT), 2000); // 2 second timeout
+                        
+                        out = new ObjectOutputStream(socket.getOutputStream());
+                        in = new ObjectInputStream(socket.getInputStream());
+                        running = true;
 
-        Thread listenerThread = new Thread(() -> listen(), "ClientListenerThread");
-        listenerThread.setDaemon(true); // Allow app to exit if this thread is still running
-        listenerThread.start();
-        logger.info("[CLIENT] Connected to server at " + AppConstants.SERVER_HOST + ":" + AppConstants.SERVER_PORT);
+                        Thread listenerThread = new Thread(() -> listen(), "ClientListenerThread");
+                        listenerThread.setDaemon(true);
+                        listenerThread.start();
+                        
+                        logger.info("[CLIENT] Connected successfully to " + host);
+                        return; // Successfully connected
+                    } catch (IOException e) {
+                        logger.warn("[CLIENT] Failed to connect to " + host + ". Trying next...");
+                    }
+                }
+                
+                logger.error("[CLIENT] All connection attempts failed.");
+            } catch (Exception e) {
+                logger.error("[CLIENT] Error during connection sequence", e);
+            }
+        }, "ConnectionThread").start();
     }
 
     /**
@@ -96,6 +114,13 @@ public class ClientManager {
             }
         } catch (IOException e) {
             logger.error("[CLIENT] Failed to send request", e);
+            // Show alert to user so they know why nothing is happening
+            javafx.application.Platform.runLater(() -> {
+                com.auction.client.controller.ControllerUtils.showAlert(
+                    "Không thể kết nối tới máy chủ! Vui lòng kiểm tra lại kết nối mạng hoặc địa chỉ IP.\n" +
+                    "Chi tiết: " + e.getMessage()
+                );
+            });
         }
     }
 

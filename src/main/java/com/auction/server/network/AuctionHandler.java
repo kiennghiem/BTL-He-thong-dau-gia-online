@@ -63,6 +63,10 @@ public class AuctionHandler implements AuctionObserver {
             handleCancelAuction(cancelReq);
             return true;
         }
+        if (message instanceof EndAuctionEarlyRequest endEarlyReq) {
+            handleEndAuctionEarly(endEarlyReq);
+            return true;
+        }
         if (message instanceof CreateAuctionRequest req) {
             handleCreateAuction(req);
             return true;
@@ -73,6 +77,28 @@ public class AuctionHandler implements AuctionObserver {
         }
 
         return false;
+    }
+
+    private void handleEndAuctionEarly(EndAuctionEarlyRequest req) {
+        try {
+            Auction auction = auctionManager.getAuction(req.getAuctionId());
+            if (auction == null) {
+                sendResponse(new GenericResponse(false, "Không tìm thấy phiên đấu giá!"));
+                return;
+            }
+
+            // Check if requester is the seller
+            if (currentUser == null || !currentUser.getId().equals(auction.getSellerId())) {
+                sendResponse(new GenericResponse(false, "Bạn không có quyền kết thúc sớm phiên này!"));
+                return;
+            }
+
+            auctionService.endAuctionEarly(req.getAuctionId(), req.getSellerId());
+            sendResponse(new GenericResponse(true, "Kết thúc sớm phiên đấu giá thành công!"));
+            System.out.println("[AuctionHandler] Auction ended early: " + req.getAuctionId() + " by " + req.getSellerId());
+        } catch (Exception e) {
+            sendResponse(new GenericResponse(false, "Lỗi kết thúc sớm: " + e.getMessage()));
+        }
     }
 
     private void handleBid(BidRequest req) {
@@ -95,7 +121,10 @@ public class AuctionHandler implements AuctionObserver {
         try {
             boolean success = auctionService.processPayment(req.getAuctionId(), req.getBidderId(), req.getAmount());
             if (success) {
-                sendResponse(new GenericResponse(true, "Thanh toán thành công! Chúc mừng bạn đã sở hữu món đồ."));
+                // Fetch updated user to send back balance
+                com.auction.models.User updatedUser = com.auction.server.database.dao.DAOFactory.getUserDAO().findById(req.getBidderId());
+                this.currentUser = updatedUser;
+                sendResponse(new AuthResponse(true, "Thanh toán thành công! Chúc mừng bạn đã sở hữu món đồ.", updatedUser));
             } else {
                 sendResponse(new GenericResponse(false, "Thanh toán thất bại."));
             }
@@ -118,9 +147,24 @@ public class AuctionHandler implements AuctionObserver {
 
     private void handleCancelAuction(CancelAuctionRequest req) {
         try {
-            auctionService.cancelAuction(req.getAuctionId(), req.getAdminId());
+            Auction auction = auctionManager.getAuction(req.getAuctionId());
+            if (auction == null) {
+                sendResponse(new GenericResponse(false, "Không tìm thấy phiên đấu giá!"));
+                return;
+            }
+
+            // Allow if Admin OR if Seller of the auction
+            boolean isAdmin = currentUser != null && currentUser.getRole() == com.auction.server.factory.UserRole.ADMIN;
+            boolean isOwner = currentUser != null && currentUser.getId().equals(auction.getSellerId());
+
+            if (!isAdmin && !isOwner) {
+                sendResponse(new GenericResponse(false, "Bạn không có quyền hủy phiên này!"));
+                return;
+            }
+
+            auctionService.cancelAuction(req.getAuctionId(), currentUser.getId());
             sendResponse(new GenericResponse(true, "Hủy phiên đấu giá thành công!"));
-            System.out.println("[AuctionHandler] Auction canceled: " + req.getAuctionId() + " by " + req.getAdminId());
+            System.out.println("[AuctionHandler] Auction canceled: " + req.getAuctionId() + " by " + currentUser.getId());
         } catch (Exception e) {
             sendResponse(new GenericResponse(false, "Lỗi hủy đấu giá: " + e.getMessage()));
         }

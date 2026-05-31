@@ -43,6 +43,7 @@ public class AuctionBidController {
     @FXML private TextField tfBidAmount;
     @FXML private Button btnPlaceBid;
     @FXML private VBox bidSection;
+    @FXML private VBox sellerSection;
 
     @FXML private LineChart<String, Number> priceChart;
     @FXML private CategoryAxis xAxis;
@@ -98,16 +99,33 @@ public class AuctionBidController {
                 if (currentAuction != null && notification.getAuctionId().equals(currentAuction.getId())) {
                     Platform.runLater(() -> handleNotification(notification));
                 }
-            } else if (msg instanceof GenericResponse resp) {
+            } else if (msg instanceof AuthResponse resp) {
                 if (resp.getMessage().toLowerCase().contains("thanh toán") || resp.getMessage().toLowerCase().contains("pay")) {
                     Platform.runLater(() -> {
                         if (resp.isSuccess()) {
                             ControllerUtils.showSuccess("Thanh toán thành công", resp.getMessage());
+                            if (resp.getUser() != null) {
+                                SessionManager.getInstance().setCurrentUser(resp.getUser());
+                                updateUI();
+                                try {
+                                    BorderPane mainPane = (BorderPane) lblItemName.getScene().lookup("#mainBorderPane");
+                                    if (mainPane != null) {
+                                        Object mainCtrl = mainPane.getProperties().get("controller");
+                                        if (mainCtrl instanceof BidderMainController) {
+                                            ((BidderMainController) mainCtrl).updateBalanceDisplay();
+                                        } else if (mainCtrl instanceof SellerMainController) {
+                                            ((SellerMainController) mainCtrl).updateBalanceDisplay();
+                                        }
+                                    }
+                                } catch (Exception ignored) {}
+                            }
                         } else {
                             ControllerUtils.showError("Thanh toán thất bại", resp.getMessage());
                         }
                     });
-                } else if (resp.getMessage().toLowerCase().contains("đặt giá") || resp.getMessage().toLowerCase().contains("bid")) {
+                }
+            } else if (msg instanceof GenericResponse resp) {
+                if (resp.getMessage().toLowerCase().contains("đặt giá") || resp.getMessage().toLowerCase().contains("bid")) {
                     if (!resp.isSuccess()) {
                         Platform.runLater(() -> ControllerUtils.showError("Lỗi đặt giá", resp.getMessage()));
                     }
@@ -145,6 +163,15 @@ public class AuctionBidController {
 
         // Manage Visibility Sections
         boolean isSeller = (currentUser != null && currentUser.getRole() == com.auction.server.factory.UserRole.SELLER);
+        boolean isOwner = (currentUser != null && currentAuction.getSeller() != null && currentUser.getId().equals(currentAuction.getSeller().getId()));
+
+        if (isOwner && !isFinished && !hasPaid && currentAuction.getStatus() != AuctionStatus.CANCELED) {
+            sellerSection.setVisible(true);
+            sellerSection.setManaged(true);
+        } else {
+            sellerSection.setVisible(false);
+            sellerSection.setManaged(false);
+        }
 
         if (hasPaid) {
             bidSection.setVisible(false);
@@ -161,12 +188,26 @@ public class AuctionBidController {
             if (isWinner) {
                 paySection.setVisible(true);
                 paySection.setManaged(true);
-                if (currentBalance.compareTo(currentAuction.getCurrentPrice()) >= 0) {
+
+                // --- 24-HOUR PAYMENT RULE ---
+                LocalDateTime now = LocalDateTime.now();
+                boolean within24h = currentAuction.getEndTime() != null && now.isBefore(currentAuction.getEndTime().plusHours(24));
+
+                if (!within24h) {
+                    btnPay.setDisable(true);
+                    btnPay.setText("Payment Expired (24h Passed)");
+                    lblPayTitle.setText("Time for payment has expired.");
+                    lblPayTitle.setStyle("-fx-text-fill: #e74c3c;");
+                } else if (currentBalance.compareTo(currentAuction.getCurrentPrice()) >= 0) {
                     btnPay.setDisable(false);
                     btnPay.setText("Pay for Item ($" + currentAuction.getCurrentPrice() + ")");
+                    lblPayTitle.setText("Congratulations! You Won.");
+                    lblPayTitle.setStyle("-fx-text-fill: #27ae60;");
                 } else {
                     btnPay.setDisable(true);
                     btnPay.setText("Insufficient Balance ($" + currentBalance + ")");
+                    lblPayTitle.setText("Congratulations! You Won.");
+                    lblPayTitle.setStyle("-fx-text-fill: #27ae60;");
                 }
             } else {
                 paySection.setVisible(false);
@@ -299,6 +340,22 @@ public class AuctionBidController {
         User user = SessionManager.getInstance().getCurrentUser();
         if (currentAuction != null && user != null) {
             ClientManager.getInstance().sendRequest(new PayRequest(currentAuction.getId(), user.getId(), currentAuction.getCurrentPrice()));
+        }
+    }
+
+    @FXML
+    private void handleEndEarly(ActionEvent event) {
+        User user = SessionManager.getInstance().getCurrentUser();
+        if (currentAuction != null && user != null) {
+            ClientManager.getInstance().sendRequest(new EndAuctionEarlyRequest(currentAuction.getId(), user.getId()));
+        }
+    }
+
+    @FXML
+    private void handleCancelAuction(ActionEvent event) {
+        User user = SessionManager.getInstance().getCurrentUser();
+        if (currentAuction != null && user != null) {
+            ClientManager.getInstance().sendRequest(new CancelAuctionRequest(currentAuction.getId(), user.getId()));
         }
     }
 

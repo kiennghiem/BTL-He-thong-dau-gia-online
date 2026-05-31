@@ -125,6 +125,33 @@ public class AuctionManager {
     }
 
     /**
+     * Ends an auction early (Seller functionality).
+     */
+    public void endAuctionEarly(String auctionId) throws AuctionNotFoundException {
+        Auction auction = activeAuctions.get(auctionId);
+        if (auction == null) {
+            throw new AuctionNotFoundException("Auction with ID " + auctionId + " not found.");
+        }
+
+        synchronized (auction) {
+            try {
+                auction.updateStatus(AuctionStatus.FINISHED);
+                auction.setEndTime(LocalDateTime.now());
+                logger.info("[INFO] Auction {} ended early by Seller.", auctionId);
+
+                // Notify about status and time change
+                broadcastNotification(new Notification(
+                        Notification.Type.STATUS_CHANGED,
+                        auctionId,
+                        createUpdateDTO(auction)
+                ));
+            } catch (Exception e) {
+                logger.error("[ERROR] Failed to end auction early {}: {}", auctionId, e.getMessage(), e);
+            }
+        }
+    }
+
+    /**
      * Cancels an auction (Admin functionality).
      */
     public void cancelAuction(String auctionId) throws AuctionNotFoundException {

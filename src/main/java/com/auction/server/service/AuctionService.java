@@ -145,9 +145,31 @@ public class AuctionService {
     }
 
     /**
-     * Cancels an auction (Admin functionality).
+     * Ends an auction early (Seller functionality).
      */
-    public void cancelAuction(String auctionId, String adminId) throws AuctionNotFoundException {
+    public void endAuctionEarly(String auctionId, String sellerId) throws AuctionNotFoundException {
+        // 1. Update real-time state
+        auctionManager.endAuctionEarly(auctionId);
+
+        // 2. Persist status and endTime change to database
+        persistenceExecutor.submit(() -> {
+            try {
+                Auction auction = auctionManager.getAuction(auctionId);
+                if (auction != null) {
+                    auctionDAO.update(auction); // Updates endTime
+                    auctionDAO.updateStatus(auctionId, AuctionStatus.FINISHED);
+                    System.out.println("[AuctionService-Async] Auction " + auctionId + " ended early in DB by seller " + sellerId);
+                }
+            } catch (SQLException e) {
+                System.err.println("[AuctionService-Async] Error ending auction early in DB: " + e.getMessage());
+            }
+        });
+    }
+
+    /**
+     * Cancels an auction (Admin/Seller functionality).
+     */
+    public void cancelAuction(String auctionId, String requesterId) throws AuctionNotFoundException {
         // 1. Update real-time state
         auctionManager.cancelAuction(auctionId);
 
@@ -156,7 +178,7 @@ public class AuctionService {
             try {
                 boolean updated = auctionDAO.updateStatus(auctionId, AuctionStatus.CANCELED);
                 if (updated) {
-                    System.out.println("[AuctionService-Async] Auction " + auctionId + " canceled in DB by admin " + adminId);
+                    System.out.println("[AuctionService-Async] Auction " + auctionId + " canceled in DB by " + requesterId);
                 }
             } catch (SQLException e) {
                 System.err.println("[AuctionService-Async] Error canceling auction in DB: " + e.getMessage());
@@ -197,6 +219,12 @@ public class AuctionService {
 
         if (auction.getStatus() != AuctionStatus.FINISHED) {
             throw new RuntimeException("Auction is not in FINISHED state.");
+        }
+
+        // --- 24-HOUR PAYMENT RULE ---
+        LocalDateTime now = LocalDateTime.now();
+        if (auction.getEndTime() != null && now.isAfter(auction.getEndTime().plusHours(24))) {
+            throw new RuntimeException("Payment deadline (24 hours) has passed. You can no longer pay for this item.");
         }
 
         if (auction.getHighestBidderId() == null || !auction.getHighestBidderId().equals(bidderId)) {

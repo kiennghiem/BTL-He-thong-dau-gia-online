@@ -68,6 +68,22 @@
                      </children>
                   </VBox>
 
+                  <VBox fx:id="sellerSection" alignment="CENTER" spacing="10.0" style="-fx-border-color: #e67e22; -fx-border-width: 1; -fx-padding: 15; -fx-background-color: #fffaf0; -fx-background-radius: 5; -fx-border-radius: 5;" visible="false" managed="false">
+                     <children>
+                        <Label text="Seller Actions">
+                           <font>
+                              <Font name="System Bold" size="16.0" />
+                           </font>
+                        </Label>
+                        <HBox spacing="10.0">
+                           <children>
+                              <Button mnemonicParsing="false" onAction="#handleEndEarly" prefWidth="100.0" style="-fx-background-color: #e67e22; -fx-text-fill: white; -fx-cursor: hand;" text="End Early" />
+                              <Button mnemonicParsing="false" onAction="#handleCancelAuction" prefWidth="100.0" style="-fx-background-color: #c0392b; -fx-text-fill: white; -fx-cursor: hand;" text="Cancel" />
+                           </children>
+                        </HBox>
+                     </children>
+                  </VBox>
+
                   <VBox fx:id="paySection" alignment="CENTER" spacing="10.0" style="-fx-border-color: #27ae60; -fx-border-width: 2; -fx-padding: 15; -fx-background-color: #f0fff0; -fx-background-radius: 5; -fx-border-radius: 5;" visible="false" managed="false">
                      <children>
                         <Label fx:id="lblPayTitle" text="Congratulations! You Won." textFill="#27ae60">

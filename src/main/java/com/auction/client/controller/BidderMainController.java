@@ -15,7 +15,10 @@ import javafx.scene.Parent;
 import javafx.scene.layout.BorderPane;
 import javafx.stage.Stage;
 
+import javafx.scene.control.Label;
+import com.auction.server.observer.AuctionStatus;
 import java.io.IOException;
+import java.util.List;
 import java.util.function.Consumer;
 
 public class BidderMainController {
@@ -23,22 +26,58 @@ public class BidderMainController {
     @FXML
     private BorderPane mainBorderPane;
 
+    @FXML
+    private Label lblBalance;
+
     private Consumer<Object> responseListener;
     private User currentUser = SessionManager.getInstance().getCurrentUser();
+    private boolean initialWinCheckDone = false;
 
     @FXML
     public void initialize() {
         mainBorderPane.getProperties().put("controller", this);
-        // Show Available Auctions by default
-        handleShowAvailableAuctions(null);
 
-        // Register listener for server responses
+        // Register listener for server responses FIRST
         responseListener = msg -> {
             if (msg instanceof AuthResponse response) {
                 Platform.runLater(() -> handleAuthResponse(response));
+            } else if (msg instanceof List<?> list && !initialWinCheckDone) {
+                if (!list.isEmpty() && list.get(0) instanceof Auction) {
+                    @SuppressWarnings("unchecked")
+                    List<Auction> auctions = (List<Auction>) list;
+                    Platform.runLater(() -> checkForWins(auctions));
+                }
             }
         };
         ClientManager.getInstance().addMessageListener(responseListener);
+
+        // Show Available Auctions by default
+        handleShowAvailableAuctions(null);
+        updateBalanceDisplay();
+    }
+
+    private void checkForWins(List<Auction> auctions) {
+        User user = SessionManager.getInstance().getCurrentUser();
+        if (initialWinCheckDone || user == null) return;
+        
+        // Find the first auction where this user is the winner and it's waiting for payment
+        Auction wonAuction = auctions.stream()
+                .filter(a -> a.getStatus() == AuctionStatus.FINISHED && user.getId().equals(a.getHighestBidderId()))
+                .findFirst()
+                .orElse(null);
+                
+        if (wonAuction != null) {
+            initialWinCheckDone = true;
+            handleAuctionSelected(wonAuction);
+            ControllerUtils.showSuccess("Chúc mừng!", "Bạn đã thắng cuộc trong phiên đấu giá: " + wonAuction.getTitle() + "\nHãy thực hiện thanh toán ngay.");
+        }
+    }
+
+    public void updateBalanceDisplay() {
+        User user = SessionManager.getInstance().getCurrentUser();
+        if (user != null && lblBalance != null) {
+            lblBalance.setText(String.format("Balance: $%.2f", user.getBalance()));
+        }
     }
 
     @FXML
@@ -72,6 +111,7 @@ public class BidderMainController {
 
     public void loadView(String fxmlFile, boolean myMode) {
         try {
+            updateBalanceDisplay();
             FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/auction/client/view/" + fxmlFile));
             Parent view = loader.load();
             
@@ -113,6 +153,10 @@ public class BidderMainController {
                 Stage stage = (Stage) mainBorderPane.getScene().getWindow();
                 ControllerUtils.changeScene(stage, "Login.fxml");
             }
+        } else if (response.isSuccess() && response.getUser() != null) {
+            // If we get a user back, it might have an updated balance
+            SessionManager.getInstance().setCurrentUser(response.getUser());
+            updateBalanceDisplay();
         } else if (!response.isSuccess()) {
             ControllerUtils.showAlert(response.getMessage());
         }
