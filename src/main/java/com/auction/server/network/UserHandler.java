@@ -6,25 +6,25 @@ import com.auction.models.User;
 import com.auction.models.dto.*;
 import com.auction.server.service.UserService;
 import com.auction.server.factory.UserRole;
+import com.auction.util.JsonUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.io.ObjectOutputStream;
+import java.io.PrintWriter;
 
 /**
- * UserHandler manages authentication and user-profile communication.
- * Standardizes security checks and session tracking for each connection.
+ * UserHandler manages authentication and user-profile communication via JSON.
  */
 public class UserHandler {
     private static final Logger logger = LoggerFactory.getLogger(UserHandler.class);
-    private final ObjectOutputStream out;
+    private final PrintWriter out;
     private final UserService userService;
     private String currentUsername;
 
     private User currentUser;
 
-    public UserHandler(ObjectOutputStream out) {
+    public UserHandler(PrintWriter out) {
         this.out = out;
         this.userService = new UserService();
     }
@@ -33,10 +33,6 @@ public class UserHandler {
         return currentUser;
     }
 
-    /**
-     * Entry point for messages identified as user-related.
-     * @return The authenticated user if login success, null otherwise.
-     */
     public User handleMessage(NetworkMessage message) {
         if (message instanceof LoginRequest loginReq) {
             return handleLogin(loginReq);
@@ -53,8 +49,6 @@ public class UserHandler {
     private void handleDeposit(DepositRequest req) {
         try {
             userService.deposit(req.getUsername(), req.getAmount());
-            
-            // Fetch updated user from DB without calling login logic (which triggers 'already online' check)
             com.auction.server.database.dao.UserDAO userDAO = com.auction.server.database.dao.DAOFactory.getUserDAO();
             User updatedUser = userDAO.findByUsername(req.getUsername());
             this.currentUser = updatedUser; 
@@ -96,35 +90,25 @@ public class UserHandler {
 
     private void handleRegister(RegisterRequest req) {
         try {
-            // 1. Convert role string from request to UserRole enum
             UserRole role;
             try {
                 role = UserRole.valueOf(req.getRole().toUpperCase());
             } catch (Exception e) {
-                role = UserRole.BIDDER; // Safe default
+                role = UserRole.BIDDER;
             }
 
-            // 2. Delegate creation and persistence to the Orchestrator Service
             User newUser = userService.register(role, req.getUsername(), req.getPassword());
-            
-            // 3. Success response
             sendResponse(new AuthResponse(true, "Đăng ký tài khoản thành công!", newUser));
-
             logger.info("Registration successful: {}", newUser.getUsername());
         } catch (ValidationException e) {
-            // User-friendly validation error
             logger.warn("Registration failed for {}: {}", req.getUsername(), e.getMessage());
             sendResponse(new AuthResponse(false, e.getMessage(), null));
         } catch (Exception e) {
-            // System error
             logger.error("System error during registration for {}: {}", req.getUsername(), e.getMessage(), e);
             sendResponse(new AuthResponse(false, "Lỗi hệ thống: " + e.getMessage(), null));
         }
     }
 
-    /**
-     * Ensures session cleanup if the connection is lost.
-     */
     public void cleanUp() {
         if (currentUsername != null) {
             userService.forceLogout(currentUsername);
@@ -133,14 +117,11 @@ public class UserHandler {
     }
 
     private void sendResponse(Object response) {
-        try {
+        String json = JsonUtil.toJson(response);
+        if (json != null) {
             synchronized (out) {
-                out.writeObject(response);
-                out.flush();
-                out.reset(); // Crucial: prevents object caching issues in persistent streams
+                out.println(json);
             }
-        } catch (IOException e) {
-            logger.error("Connection error while sending response: {}", e.getMessage(), e);
         }
     }
 }

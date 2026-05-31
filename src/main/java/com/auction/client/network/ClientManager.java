@@ -2,6 +2,7 @@ package com.auction.client.network;
 
 import com.auction.models.dto.NetworkMessage;
 import com.auction.models.dto.AppConstants;
+import com.auction.util.JsonUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -13,7 +14,7 @@ import java.util.function.Consumer;
 
 /**
  * Singleton class to manage the Socket connection on the client side.
- * It handles connecting, sending requests, and receiving messages from the server.
+ * It handles connecting, sending requests, and receiving messages from the server using JSON.
  */
 public class ClientManager {
 
@@ -21,13 +22,9 @@ public class ClientManager {
 
     private static ClientManager instance;
     private Socket socket;
-    private ObjectOutputStream out;
-    private ObjectInputStream in;
+    private PrintWriter out;
+    private BufferedReader in;
     private boolean running = false;
-    // Consumer<Object> is an interface that has one method accept(Object obj), which takes the object and
-    // does something with it, and not returning anything. In this case, each Consumer<Object> is a listener
-    // for a specific type of messages, and the controllers each have their own Consumer<Object> which handles
-    // the message differently.
     private final List<Consumer<Object>> messageListeners = new CopyOnWriteArrayList<>();
 
     private ClientManager() {}
@@ -47,17 +44,16 @@ public class ClientManager {
 
         new Thread(() -> {
             try {
-                // SMART CONNECT: Try localhost first (for the host), then fall back to the Public IP
                 String[] hostsToTry = {"localhost", AppConstants.SERVER_HOST};
                 
                 for (String host : hostsToTry) {
                     try {
                         logger.info("[CLIENT] Attempting to connect to: " + host);
                         socket = new Socket();
-                        socket.connect(new java.net.InetSocketAddress(host, AppConstants.SERVER_PORT), 2000); // 2 second timeout
+                        socket.connect(new java.net.InetSocketAddress(host, AppConstants.SERVER_PORT), 2000);
                         
-                        out = new ObjectOutputStream(socket.getOutputStream());
-                        in = new ObjectInputStream(socket.getInputStream());
+                        out = new PrintWriter(socket.getOutputStream(), true);
+                        in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
                         running = true;
 
                         Thread listenerThread = new Thread(() -> listen(), "ClientListenerThread");
@@ -65,7 +61,7 @@ public class ClientManager {
                         listenerThread.start();
                         
                         logger.info("[CLIENT] Connected successfully to " + host);
-                        return; // Successfully connected
+                        return;
                     } catch (IOException e) {
                         logger.warn("[CLIENT] Failed to connect to " + host + ". Trying next...");
                     }
@@ -79,17 +75,18 @@ public class ClientManager {
     }
 
     /**
-     * Continuous loop to read objects from the server.
+     * Continuous loop to read JSON strings from the server.
      */
     private void listen() {
         try {
-            while (running) {
-                Object msg = in.readObject();
+            String line;
+            while (running && (line = in.readLine()) != null) {
+                Object msg = JsonUtil.fromJson(line);
                 if (msg != null) {
                     notifyListeners(msg);
                 }
             }
-        } catch (IOException | ClassNotFoundException e) {
+        } catch (IOException e) {
             if (running) {
                 logger.error("[CLIENT] Connection lost or error", e);
                 running = false;
@@ -100,40 +97,34 @@ public class ClientManager {
     }
 
     /**
-     * Sends a request to the server. Connects if not already connected.
+     * Sends a request to the server as a JSON string.
      */
     public void sendRequest(NetworkMessage request) {
         try {
             if (out == null || socket == null || socket.isClosed()) {
                 connect();
             }
-            synchronized (out) {
-                out.writeObject(request);
-                out.flush();
-                out.reset(); // Clear cache for stateful objects
+            
+            String json = JsonUtil.toJson(request);
+            if (json != null) {
+                synchronized (this) {
+                    out.println(json);
+                }
             }
-        } catch (IOException e) {
+        } catch (Exception e) {
             logger.error("[CLIENT] Failed to send request", e);
-            // Show alert to user so they know why nothing is happening
             javafx.application.Platform.runLater(() -> {
                 com.auction.client.controller.ControllerUtils.showAlert(
-                    "Không thể kết nối tới máy chủ! Vui lòng kiểm tra lại kết nối mạng hoặc địa chỉ IP.\n" +
-                    "Chi tiết: " + e.getMessage()
+                    "Không thể gửi yêu cầu tới máy chủ! Chi tiết: " + e.getMessage()
                 );
             });
         }
     }
 
-    /**
-     * Registers a listener for any object received from the server.
-     */
     public void addMessageListener(Consumer<Object> listener) {
         messageListeners.add(listener);
     }
 
-    /**
-     * Removes a previously registered listener.
-     */
     public void removeMessageListener(Consumer<Object> listener) {
         messageListeners.remove(listener);
     }
@@ -141,7 +132,7 @@ public class ClientManager {
     private void notifyListeners(Object msg) {
         if (msg instanceof com.auction.models.Notification notification) {
             if (notification.getType() == com.auction.models.Notification.Type.STATUS_CHANGED) {
-                com.auction.models.dto.AuctionUpdateDTO update = (com.auction.models.dto.AuctionUpdateDTO) notification.getData();
+                com.auction.models.dto.AuctionUpdateDTO update = notification.getData();
                 if ("CANCELED".equalsIgnoreCase(update.getStatus())) {
                     javafx.application.Platform.runLater(() -> {
                         com.auction.client.controller.ControllerUtils.showWarning("Phiên đấu giá đã bị hủy", 
@@ -155,16 +146,12 @@ public class ClientManager {
         }
     }
 
-    /**
-     * Closes the socket and streams.
-     */
     public void close() {
         running = false;
         try {
             if (socket != null && !socket.isClosed()) {
                 socket.close();
             }
-            // Streams are closed by closing the socket
         } catch (IOException e) {
             logger.error("[CLIENT] Error closing connection", e);
         }

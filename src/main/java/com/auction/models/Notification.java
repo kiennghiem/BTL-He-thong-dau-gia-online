@@ -1,5 +1,6 @@
 package com.auction.models;
 
+import com.auction.models.dto.AuctionUpdateDTO;
 import com.auction.models.dto.NetworkMessage;
 
 import java.io.Serializable;
@@ -19,9 +20,9 @@ public class Notification implements NetworkMessage {
 
     private final Type type;
     private final String auctionId;
-    private final Object data;
+    private final AuctionUpdateDTO data;
 
-    public Notification(Type type, String auctionId, Object data) {
+    public Notification(Type type, String auctionId, AuctionUpdateDTO data) {
         this.type = type;
         this.auctionId = auctionId;
         this.data = data;
@@ -35,7 +36,7 @@ public class Notification implements NetworkMessage {
         return auctionId;
     }
 
-    public Object getData() {
+    public AuctionUpdateDTO getData() {
         return data;
     }
 
