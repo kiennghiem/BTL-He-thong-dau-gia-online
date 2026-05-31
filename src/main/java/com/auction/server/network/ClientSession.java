@@ -1,16 +1,15 @@
 package com.auction.server.network;
 
 import com.auction.models.dto.NetworkMessage;
+import com.auction.util.JsonUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
+import java.io.*;
 import java.net.Socket;
 
 /**
- * Manages a persistent session with one specific client.
+ * Manages a persistent session with one specific client using JSON for communication.
  */
 public class ClientSession implements Runnable {
     private static final Logger logger = LoggerFactory.getLogger(ClientSession.class);
@@ -26,19 +25,20 @@ public class ClientSession implements Runnable {
         AuctionHandler auctionHandler = null;
         
         try (
-            ObjectOutputStream out = new ObjectOutputStream(socket.getOutputStream());
-            ObjectInputStream in = new ObjectInputStream(socket.getInputStream())
+            PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
+            BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()))
         ) {
             // Initialize specialized handlers for this session
+            // Handlers now take PrintWriter for JSON communication
             userHandler = new UserHandler(out);
             auctionHandler = new AuctionHandler(out);
 
             logger.info("Handlers initialized for {}", socket.getInetAddress());
 
-            // Continuous listening loop
-            while (true) {
+            String line;
+            while ((line = in.readLine()) != null) {
                 try {
-                    Object received = in.readObject();
+                    Object received = JsonUtil.fromJson(line);
                     if (received instanceof NetworkMessage msg) {
                         // Routing logic:
                         // 1. Try UserHandler first
@@ -50,16 +50,11 @@ public class ClientSession implements Runnable {
                             auctionHandler.setCurrentUser(authenticatedUser);
                         }
 
-                        // 3. If UserHandler didn't "handle" it as a successful login, 
-                        // it might still have been a logout or a failed login (which UserHandler already responded to).
-                        // If it's still not handled, try AuctionHandler.
                         if (!handled) {
-                            // Check if UserHandler still wants it (e.g. LogoutRequest, RegisterRequest)
-                            // We need to re-check handled status or just trust the short-circuiting.
-                            // To be safe and clean:
                             if (msg instanceof com.auction.models.dto.LogoutRequest || 
-                                msg instanceof com.auction.models.dto.RegisterRequest) {
-                                handled = true; // UserHandler handled it but returned null User
+                                msg instanceof com.auction.models.dto.RegisterRequest ||
+                                msg instanceof com.auction.models.dto.DepositRequest) {
+                                handled = true; 
                             }
                             
                             if (!handled) {
@@ -68,22 +63,17 @@ public class ClientSession implements Runnable {
                         }
                         
                         if (!handled) {
-                            logger.warn("Unhandled message type: {}", msg.getClass().getSimpleName());
+                            logger.warn("Unhandled message type in JSON: {}", msg.getClass().getSimpleName());
                         }
                     }
-                } catch (ClassNotFoundException e) {
-                    logger.error("Unknown data received: {}", e.getMessage(), e);
-                } catch (IOException e) {
-                    // Connection closed by client
-                    break;
+                } catch (Exception e) {
+                    logger.error("Error processing JSON line: {}", e.getMessage());
                 }
             }
         } catch (IOException e) {
-            // IO Error (e.g. broken pipe)
             logger.error("IO Error in client session: {}", e.getMessage());
         } finally {
             logger.info("Client disconnected: {}", socket.getInetAddress());
-            // Mandatory cleanup to prevent memory leaks and ghost users
             if (userHandler != null) {
                 userHandler.cleanUp();
             }
