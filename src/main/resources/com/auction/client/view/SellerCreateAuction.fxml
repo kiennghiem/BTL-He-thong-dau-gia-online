@@ -28,6 +28,8 @@
 
         <rowConstraints>
             <RowConstraints minHeight="35.0" />
+            <RowConstraints minHeight="35.0" />
+            <RowConstraints minHeight="35.0" />
             <RowConstraints minHeight="80.0" valignment="TOP" />
             <RowConstraints minHeight="35.0" />
             <RowConstraints minHeight="35.0" />
@@ -39,29 +41,39 @@
         </Label>
         <TextField fx:id="txtTitle" promptText="e.g. Vintage Rolex Watch" GridPane.rowIndex="0" GridPane.columnIndex="1" prefHeight="35.0"/>
 
-        <Label text="Description:" GridPane.rowIndex="1" GridPane.columnIndex="0">
+        <Label text="Category:" GridPane.rowIndex="1" GridPane.columnIndex="0">
+            <font><Font size="16.0"/></font>
+        </Label>
+        <ComboBox fx:id="cbCategory" promptText="Select Category" GridPane.rowIndex="1" GridPane.columnIndex="1" prefHeight="35.0" maxWidth="Infinity"/>
+
+        <Label fx:id="lblSpecificAttribute" text="Specific Info:" GridPane.rowIndex="2" GridPane.columnIndex="0">
+            <font><Font size="16.0"/></font>
+        </Label>
+        <TextField fx:id="txtSpecificAttribute" promptText="Extra details" GridPane.rowIndex="2" GridPane.columnIndex="1" prefHeight="35.0"/>
+
+        <Label text="Description:" GridPane.rowIndex="3" GridPane.columnIndex="0">
             <font><Font size="16.0"/></font>
             <GridPane.margin><Insets top="5.0" /></GridPane.margin>
         </Label>
-        <TextArea fx:id="txtDescription" promptText="Condition, specs, etc." GridPane.rowIndex="1" GridPane.columnIndex="1" prefHeight="80.0" wrapText="true"/>
+        <TextArea fx:id="txtDescription" promptText="Condition, specs, etc." GridPane.rowIndex="3" GridPane.columnIndex="1" prefHeight="80.0" wrapText="true"/>
 
-        <Label text="Starting Price ($):" GridPane.rowIndex="2" GridPane.columnIndex="0">
+        <Label text="Starting Price ($):" GridPane.rowIndex="4" GridPane.columnIndex="0">
             <font><Font size="16.0"/></font>
         </Label>
-        <TextField fx:id="txtStartingPrice" promptText="e.g. 500" GridPane.rowIndex="2" GridPane.columnIndex="1" prefHeight="35.0"/>
+        <TextField fx:id="txtStartingPrice" promptText="e.g. 500" GridPane.rowIndex="4" GridPane.columnIndex="1" prefHeight="35.0"/>
 
-        <Label text="Start Date:" GridPane.rowIndex="3" GridPane.columnIndex="0">
+        <Label text="Start Date:" GridPane.rowIndex="5" GridPane.columnIndex="0">
             <font><Font size="16.0"/></font>
         </Label>
-        <HBox spacing="10.0" GridPane.rowIndex="3" GridPane.columnIndex="1">
+        <HBox spacing="10.0" GridPane.rowIndex="5" GridPane.columnIndex="1">
             <DatePicker fx:id="dpStartDate" prefHeight="35.0" HBox.hgrow="ALWAYS" maxWidth="Infinity"/>
             <ComboBox fx:id="cbStartHour" prefHeight="35.0" prefWidth="90.0" promptText="Hour"/>
         </HBox>
 
-        <Label text="End Date:" GridPane.rowIndex="4" GridPane.columnIndex="0">
+        <Label text="End Date:" GridPane.rowIndex="6" GridPane.columnIndex="0">
             <font><Font size="16.0"/></font>
         </Label>
-        <HBox spacing="10.0" GridPane.rowIndex="4" GridPane.columnIndex="1">
+        <HBox spacing="10.0" GridPane.rowIndex="6" GridPane.columnIndex="1">
             <DatePicker fx:id="dpEndDate" prefHeight="35.0" HBox.hgrow="ALWAYS" maxWidth="Infinity"/>
             <ComboBox fx:id="cbEndHour" prefHeight="35.0" prefWidth="90.0" promptText="Hour"/>
         </HBox>

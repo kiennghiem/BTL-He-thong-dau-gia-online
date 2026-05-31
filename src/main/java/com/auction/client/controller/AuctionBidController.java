@@ -37,6 +37,7 @@ public class AuctionBidController {
 
     @FXML private Label lblItemName;
     @FXML private Label lblStatus;
+    @FXML private Label lblCategory;
     @FXML private Label lblCurrentPrice;
     @FXML private Label lblHighestBidder;
     @FXML private Label lblTimeRemaining;
@@ -139,6 +140,10 @@ public class AuctionBidController {
         if (currentAuction == null) return;
         lblItemName.setText(currentAuction.getTitle());
         lblStatus.setText(currentAuction.getStatusAsString());
+        
+        if (currentAuction.getItem() != null) {
+            lblCategory.setText(currentAuction.getItem().getType().toString());
+        }
 
         // Update Status Label Color
         switch (currentAuction.getStatus()) {

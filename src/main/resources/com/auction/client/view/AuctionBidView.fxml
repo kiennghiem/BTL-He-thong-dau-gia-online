@@ -26,6 +26,7 @@
                      </font>
                   </Label>
                   <Label fx:id="lblStatus" style="-fx-background-color: #27ae60; -fx-text-fill: white; -fx-padding: 2 10 2 10; -fx-background-radius: 5;" text="RUNNING" />
+                  <Label fx:id="lblCategory" style="-fx-background-color: #34495e; -fx-text-fill: white; -fx-padding: 2 10 2 10; -fx-background-radius: 5;" text="Category" />
                </children>
             </HBox>
             

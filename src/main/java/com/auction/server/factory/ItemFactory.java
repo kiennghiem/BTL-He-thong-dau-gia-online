@@ -20,6 +20,9 @@ public class ItemFactory {
             case VEHICLE -> {
                 return new Vehicle(name, description, startingPrice, specialAttribute, owner);
             }
+            case OTHERS -> {
+                return new OtherItem(name, description, startingPrice, specialAttribute, owner);
+            }
             default -> throw new IllegalArgumentException("Invalid item type");
         }
     }
@@ -36,6 +39,9 @@ public class ItemFactory {
             }
             case VEHICLE -> {
                 return new Vehicle(id, name, description, startingPrice, currentPrice, specialAttribute, owner, buyer);
+            }
+            case OTHERS -> {
+                return new OtherItem(id, name, description, startingPrice, currentPrice, specialAttribute, owner, buyer);
             }
             default -> throw new IllegalArgumentException("Invalid item type");
         }

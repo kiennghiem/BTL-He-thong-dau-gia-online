@@ -23,6 +23,9 @@ import java.util.function.Consumer;
 public class CreateAuctionController {
 
     @FXML private TextField txtTitle;
+    @FXML private ComboBox<ItemType> cbCategory;
+    @FXML private Label lblSpecificAttribute;
+    @FXML private TextField txtSpecificAttribute;
     @FXML private TextArea txtDescription;
     @FXML private TextField txtStartingPrice;
     @FXML private DatePicker dpStartDate;
@@ -36,6 +39,31 @@ public class CreateAuctionController {
 
     @FXML
     public void initialize() {
+        // Populate Categories with custom display names
+        cbCategory.setItems(FXCollections.observableArrayList(ItemType.values()));
+        cbCategory.setConverter(new javafx.util.StringConverter<>() {
+            @Override
+            public String toString(ItemType type) {
+                if (type == null) return "";
+                String name = type.name().toLowerCase();
+                return name.substring(0, 1).toUpperCase() + name.substring(1);
+            }
+
+            @Override
+            public ItemType fromString(String string) {
+                return ItemType.valueOf(string.toUpperCase());
+            }
+        });
+        cbCategory.getSelectionModel().select(ItemType.ELECTRONICS);
+        updateSpecificAttributeField(ItemType.ELECTRONICS);
+
+        // Listener for category change
+        cbCategory.getSelectionModel().selectedItemProperty().addListener((obs, oldVal, newVal) -> {
+            if (newVal != null) {
+                updateSpecificAttributeField(newVal);
+            }
+        });
+
         // Populate Hours into the combo boxes
         ObservableList<String> hours = FXCollections.observableArrayList();
         for (int i = 0; i < 24; i++) {
@@ -68,9 +96,32 @@ public class CreateAuctionController {
         ClientManager.getInstance().addMessageListener(responseListener);
     }
 
+    private void updateSpecificAttributeField(ItemType type) {
+        switch (type) {
+            case ART -> {
+                lblSpecificAttribute.setText("Artist:");
+                txtSpecificAttribute.setPromptText("e.g. Leonardo da Vinci");
+            }
+            case ELECTRONICS -> {
+                lblSpecificAttribute.setText("Brand:");
+                txtSpecificAttribute.setPromptText("e.g. Apple, Sony");
+            }
+            case VEHICLE -> {
+                lblSpecificAttribute.setText("Mileage:");
+                txtSpecificAttribute.setPromptText("e.g. 50,000 km");
+            }
+            case OTHERS -> {
+                lblSpecificAttribute.setText("Specific Info:");
+                txtSpecificAttribute.setPromptText("e.g. Material, Origin");
+            }
+        }
+    }
+
     @FXML
     public void handleSubmitAuction(ActionEvent event) {
         String title = txtTitle.getText().trim();
+        ItemType category = cbCategory.getValue();
+        String specificAttr = txtSpecificAttribute.getText().trim();
         String description = txtDescription.getText().trim();
         String priceRaw = txtStartingPrice.getText().trim();
         LocalDate startDate = dpStartDate.getValue();
@@ -78,8 +129,13 @@ public class CreateAuctionController {
         LocalDate endDate = dpEndDate.getValue();
         String endHourRaw = cbEndHour.getValue();
 
-        if (title.isEmpty() || priceRaw.isEmpty() || startDate == null || endDate == null) {
+        if (title.isEmpty() || category == null || priceRaw.isEmpty() || startDate == null || endDate == null) {
             ControllerUtils.showError("Thiếu thông tin", "Vui lòng điền đầy đủ các trường bắt buộc!");
+            return;
+        }
+
+        if (specificAttr.isEmpty()) {
+            ControllerUtils.showError("Thiếu thông tin", "Vui lòng điền thông tin chi tiết cho loại mặt hàng này!");
             return;
         }
 
@@ -105,14 +161,13 @@ public class CreateAuctionController {
 
         // Create the request
         User currentUser = SessionManager.getInstance().getCurrentUser();
-        // Fix: Call constructor with 8 arguments (removed the extra BigDecimal)
         CreateAuctionRequest request = new CreateAuctionRequest(
                 currentUser,
-                ItemType.ELECTRONICS, // Defaulting for now
+                category,
                 title,
                 description,
                 startingPrice,
-                "General",      // specificAttribute
+                specificAttr,
                 startDateTime,
                 endDateTime
         );
