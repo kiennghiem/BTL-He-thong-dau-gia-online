@@ -28,9 +28,9 @@ public final class AppConstants {
     public static final String ROLE_SELLER = "SELLER";
     public static final String ROLE_ADMIN = "ADMIN";
     // --- Anti-Sniping (Gia hạn phiên) ---
-    // If a bid is placed in the last 10 seconds, extend by 30 seconds
-    public static final int SNIPE_WINDOW_SECONDS = 10;
-    public static final int EXTENSION_TIME_SECONDS = 30;
+    // If a bid is placed in the last 5 minutes, extend by 5 minutes
+    public static final int SNIPE_WINDOW_SECONDS = 300;
+    public static final int EXTENSION_TIME_SECONDS = 300;
     // --- Error Messages ---
     public static final String ERR_LOW_BID = "Giá đặt phải cao hơn giá hiện tại!";
     public static final String ERR_AUCTION_CLOSED = "Phiên đấu giá đã kết thúc!";
